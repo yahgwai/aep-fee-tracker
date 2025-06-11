@@ -1,0 +1,33 @@
+#!/bin/sh
+# Pre-push hook for running tests
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo "Running pre-push checks..."
+
+# Check if we're in a Node.js project
+if [ -f "package.json" ] && command -v npm &> /dev/null; then
+    # Run tests
+    echo "Running tests..."
+    if ! npm test; then
+        echo "${RED}Tests failed${NC}"
+        echo "Fix failing tests before pushing"
+        exit 1
+    fi
+    echo "${GREEN}All tests passed${NC}"
+    
+    # Run build to ensure it compiles
+    echo "Running build..."
+    if ! npm run build > /dev/null 2>&1; then
+        echo "${RED}Build failed${NC}"
+        exit 1
+    fi
+    echo "${GREEN}Build successful${NC}"
+fi
+
+echo "${GREEN}All pre-push checks passed!${NC}"
+exit 0

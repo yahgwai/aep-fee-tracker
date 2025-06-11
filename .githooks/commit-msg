@@ -1,0 +1,54 @@
+#!/bin/sh
+# Commit message validation hook
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+COMMIT_MSG_FILE=$1
+
+# Check for Claude Code references
+if grep -i "claude code\|claude.ai/code\|Generated with.*Claude" "$COMMIT_MSG_FILE" > /dev/null 2>&1; then
+    echo "${RED}Error: Commit message contains Claude Code references${NC}"
+    echo "Please remove any Claude Code or claude.ai references from your commit message"
+    exit 1
+fi
+
+# Check for emojis - using a more portable approach
+if perl -ne 'exit 1 if /[\x{1F300}-\x{1F9FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]|[\x{1F680}-\x{1F6FF}]|[\x{1F900}-\x{1F9FF}]/' "$COMMIT_MSG_FILE" 2>/dev/null; then
+    true
+else
+    echo "${RED}Error: Commit message contains emojis${NC}"
+    echo "Please remove emojis from your commit message"
+    exit 1
+fi
+
+# Check for Conventional Commits format
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
+
+# Conventional commit pattern: type(scope): description or type: description
+# Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert
+CONVENTIONAL_PATTERN="^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\([a-zA-Z0-9_\-]+\))?: .+$"
+
+if ! echo "$FIRST_LINE" | grep -E "$CONVENTIONAL_PATTERN" > /dev/null; then
+    echo "${RED}Error: Commit message does not follow Conventional Commits format${NC}"
+    echo ""
+    echo "Expected format: <type>(<scope>): <description>"
+    echo "                 or"
+    echo "                 <type>: <description>"
+    echo ""
+    echo "Valid types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+    echo ""
+    echo "Examples:"
+    echo "  feat: add user authentication"
+    echo "  fix(auth): resolve login timeout issue"
+    echo "  docs(readme): update installation instructions"
+    echo ""
+    echo "Your commit message: $FIRST_LINE"
+    exit 1
+fi
+
+echo "${GREEN}Commit message validation passed${NC}"
+exit 0
