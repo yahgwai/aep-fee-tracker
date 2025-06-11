@@ -1,6 +1,3 @@
-// ABOUTME: Tests for FileManager outflow data read/write operations
-// ABOUTME: Covers event handling, total calculations, and empty event arrays
-
 import { FileManager } from '../src/file-manager';
 import { OutflowData, CHAIN_IDS } from '../src/types';
 import * as fs from 'fs';

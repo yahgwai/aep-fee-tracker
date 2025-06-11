@@ -1,6 +1,3 @@
-// ABOUTME: Tests for FileManager block number read/write operations
-// ABOUTME: Covers empty file handling, data persistence, and JSON formatting
-
 import { FileManager } from '../src/file-manager';
 import { BlockNumberData, CHAIN_IDS } from '../src/types';
 import * as fs from 'fs';

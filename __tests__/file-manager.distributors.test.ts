@@ -1,6 +1,3 @@
-// ABOUTME: Tests for FileManager distributor registry read/write operations
-// ABOUTME: Covers metadata preservation, multiple distributors, and data integrity
-
 import { FileManager } from '../src/file-manager';
 import { DistributorsData, DistributorType, CONTRACTS, CHAIN_IDS } from '../src/types';
 import * as fs from 'fs';

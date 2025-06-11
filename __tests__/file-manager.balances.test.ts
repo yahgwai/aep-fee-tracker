@@ -1,6 +1,3 @@
-// ABOUTME: Tests for FileManager balance data read/write operations
-// ABOUTME: Covers directory creation, wei value preservation, and large datasets
-
 import { FileManager } from '../src/file-manager';
 import { BalanceData, CHAIN_IDS } from '../src/types';
 import * as fs from 'fs';

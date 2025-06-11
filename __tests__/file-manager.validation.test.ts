@@ -1,6 +1,3 @@
-// ABOUTME: Tests for FileManager validation methods
-// ABOUTME: Covers address checksumming, date formatting, and input validation
-
 import { FileManager } from '../src/file-manager';
 import { ValidationError } from '../src/types';
 import * as fs from 'fs';

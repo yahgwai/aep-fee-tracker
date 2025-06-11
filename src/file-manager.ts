@@ -1,6 +1,3 @@
-// ABOUTME: File Manager implementation providing unified interface for all file operations
-// ABOUTME: Handles reading/writing block numbers, distributors, balances, and outflows data
-
 import * as fs from 'fs';
 import * as path from 'path';
 import { getAddress } from 'ethers';

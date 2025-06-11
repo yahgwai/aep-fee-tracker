@@ -1,6 +1,3 @@
-// ABOUTME: Core TypeScript interfaces and types for the AEP Fee Calculator
-// ABOUTME: Defines data structures for blocks, distributors, balances, and outflows
-
 export interface BlockNumberData {
   metadata: {
     chain_id: number;
