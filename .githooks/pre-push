@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 echo "Running pre-push checks..."
 
 # Check if we're in a Node.js project
-if [ -f "package.json" ] && command -v npm &> /dev/null; then
+if [ -f "package.json" ] && command -v npm > /dev/null 2>&1; then
     # Run tests
     echo "Running tests..."
     if ! npm test; then

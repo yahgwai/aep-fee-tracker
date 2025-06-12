@@ -26,7 +26,7 @@ enum DistributorType {
   L2_BASE_FEE = "L2_BASE_FEE",
   L2_SURPLUS_FEE = "L2_SURPLUS_FEE",
   L1_SURPLUS_FEE = "L1_SURPLUS_FEE",
-  L1_BASE_FEE = "L1_BASE_FEE" // Note: Skipping L1_BASE_FEE detection for now
+  L1_BASE_FEE = "L1_BASE_FEE", // Note: Skipping L1_BASE_FEE detection for now
 }
 
 interface DistributorsData {
@@ -119,11 +119,12 @@ type TxHash = string;
 const DISTRIBUTOR_METHODS = {
   L2_BASE_FEE: "0xee95a824",
   L2_SURPLUS_FEE: "0x2d9125e9",
-  L1_SURPLUS_FEE: "0x934be07d"
+  L1_SURPLUS_FEE: "0x934be07d",
   // L1_BASE_FEE: TBD - skipping for now
 } as const;
 
-type DistributorMethod = typeof DISTRIBUTOR_METHODS[keyof typeof DISTRIBUTOR_METHODS];
+type DistributorMethod =
+  (typeof DISTRIBUTOR_METHODS)[keyof typeof DISTRIBUTOR_METHODS];
 ```
 
 ## Component Interfaces
@@ -135,18 +136,18 @@ interface FileManager {
   // Block number operations
   readBlockNumbers(): Promise<BlockNumberData>;
   writeBlockNumbers(data: BlockNumberData): Promise<void>;
-  
+
   // Distributor operations
   readDistributors(): Promise<DistributorsData>;
   writeDistributors(data: DistributorsData): Promise<void>;
-  
+
   // Per-distributor data operations
   readDistributorBalances(address: Address): Promise<BalanceData>;
   writeDistributorBalances(address: Address, data: BalanceData): Promise<void>;
-  
+
   readDistributorOutflows(address: Address): Promise<OutflowData>;
   writeDistributorOutflows(address: Address, data: OutflowData): Promise<void>;
-  
+
   // Utility methods
   ensureStoreDirectory(): Promise<void>;
   validateAddress(address: string): Address;
@@ -163,7 +164,7 @@ class FileManagerError extends Error {
     message: string,
     public readonly operation: string,
     public readonly path?: string,
-    public readonly cause?: Error
+    public readonly cause?: Error,
   ) {
     super(message);
     this.name = "FileManagerError";
@@ -176,7 +177,7 @@ class ValidationError extends Error {
     message: string,
     public readonly field: string,
     public readonly value: any,
-    public readonly expected: string
+    public readonly expected: string,
   ) {
     super(message);
     this.name = "ValidationError";
@@ -190,13 +191,13 @@ class ValidationError extends Error {
 // Known contract addresses
 const CONTRACTS = {
   ARB_OWNER: "0x0000000000000000000000000000000000000070",
-  ARB_INFO: "0x000000000000000000000000000000000000006D"
+  ARB_INFO: "0x000000000000000000000000000000000000006D",
 } as const;
 
 // Chain IDs
 const CHAIN_IDS = {
   ARBITRUM_ONE: 42161,
-  ARBITRUM_NOVA: 42170
+  ARBITRUM_NOVA: 42170,
 } as const;
 
 // File paths
@@ -229,15 +230,15 @@ function isValidDecimalString(value: string): boolean {
 
 ```typescript
 // In component files
-import { 
+import {
   BlockNumberData,
   DistributorsData,
   BalanceData,
   OutflowData,
   DistributorType,
   Address,
-  DateString
-} from '../types';
+  DateString,
+} from "../types";
 ```
 
 ### Working with Wei Values
@@ -254,7 +255,7 @@ const balance: string = "1000000000000000000000"; // 1000 ETH
 
 ```typescript
 // Always checksum addresses before storing
-import { getAddress } from 'ethers';
+import { getAddress } from "ethers";
 
 const checksummed: Address = getAddress(userInput);
 ```
@@ -264,7 +265,6 @@ const checksummed: Address = getAddress(userInput);
 ```typescript
 // Always use UTC and YYYY-MM-DD format
 function formatDate(date: Date): DateString {
-  return date.toISOString().split('T')[0];
+  return date.toISOString().split("T")[0];
 }
 ```
-
