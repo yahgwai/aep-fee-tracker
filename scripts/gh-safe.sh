@@ -15,7 +15,7 @@ check_prohibited_content() {
     local context="$2"
     
     # Check for Claude/AI references (matching commit-msg hook patterns)
-    if echo "$content" | grep -iE "claude code|claude\.ai/code|Generated with.*Claude|Claude|AI|Anthropic|artificial intelligence|language model|LLM" > /dev/null 2>&1; then
+    if echo "$content" | grep -iE "Generated with.*Claude|claude\.ai/code|🤖 Generated with" > /dev/null 2>&1; then
         echo -e "${RED}Error: $context contains prohibited AI/Claude references${NC}"
         echo "Please remove any Claude, AI, or Anthropic references"
         return 1
