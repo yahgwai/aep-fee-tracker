@@ -33,6 +33,7 @@ const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const TX_HASH_LENGTH = 64;
 const JSON_INDENT_SIZE = 2;
 const MAX_REASONABLE_BLOCK = 1000000000; // 1 billion blocks - Arbitrum mainnet started at block ~0 in 2021
+const EXAMPLE_WEI_VALUE = "1230000000000000000000";
 
 export class FileManager implements FileManagerInterface {
   constructor() {}
@@ -230,12 +231,17 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
+  /**
+   * Validates that a date string is in YYYY-MM-DD format and represents a valid calendar date
+   * @throws {Error} If the date format is invalid or the date doesn't exist
+   */
   validateDateFormat(date: string): void {
+    // First check format: YYYY-MM-DD with valid month/day ranges
     if (!DATE_FORMAT_REGEX.test(date)) {
       throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
     }
 
-    // Validate actual calendar date
+    // Then validate it's an actual calendar date
     const parts = date.split("-");
     if (parts.length !== 3) {
       throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
@@ -246,6 +252,7 @@ export class FileManager implements FileManagerInterface {
     const day = parseInt(parts[2]!, 10);
     const dateObj = new Date(year, month - 1, day);
 
+    // Check if the date components match (catches invalid dates like Feb 30)
     if (
       dateObj.getFullYear() !== year ||
       dateObj.getMonth() !== month - 1 ||
@@ -255,6 +262,10 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
+  /**
+   * Validates that a block number is a positive integer within reasonable bounds
+   * @throws {Error} If the block number is invalid
+   */
   validateBlockNumber(blockNumber: number): void {
     if (!Number.isInteger(blockNumber) || blockNumber <= 0) {
       throw new Error(
@@ -270,52 +281,45 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
+  /**
+   * Validates that a value is a valid wei amount (non-negative integer string)
+   * @param value The value to validate
+   * @param field Optional field name for error context
+   * @param date Optional date for error context
+   * @throws {Error} If the value is not a valid wei amount
+   */
   validateWeiValue(value: string, field?: string, date?: string): void {
-    // Check if it's a string
-    if (typeof value !== "string") {
+    const formatError = (message: string, expected: string): Error => {
       if (field) {
-        throw new Error(
-          `Invalid wei value\n` +
+        return new Error(
+          `${message}\n` +
             `  Field: ${field}\n` +
             (date ? `  Date: ${date}\n` : "") +
             `  Value: ${value}\n` +
-            `  Expected: String value\n`,
+            `  Expected: ${expected}\n`,
         );
       }
-      throw new Error(
-        `Invalid wei value. Value: ${value}. Expected: String value`,
-      );
+      return new Error(`${message}. Value: ${value}. Expected: ${expected}`);
+    };
+
+    // Check if it's a string
+    if (typeof value !== "string") {
+      throw formatError("Invalid wei value", "String value");
     }
 
     // Check for scientific notation
     if (value.includes("e") || value.includes("E")) {
-      if (field) {
-        throw new Error(
-          `Invalid numeric format\n` +
-            `  Field: ${field}\n` +
-            (date ? `  Date: ${date}\n` : "") +
-            `  Value: ${value}\n` +
-            `  Expected: Decimal string (e.g., "1230000000000000000000")\n`,
-        );
-      }
-      throw new Error(
-        `Invalid numeric format. Value: ${value}. Expected: Decimal string (e.g., "1230000000000000000000")`,
+      throw formatError(
+        "Invalid numeric format",
+        `Decimal string (e.g., "${EXAMPLE_WEI_VALUE}")`,
       );
     }
 
     // Check for decimal point
     if (value.includes(".")) {
-      if (field) {
-        throw new Error(
-          `Invalid wei value\n` +
-            `  Field: ${field}\n` +
-            (date ? `  Date: ${date}\n` : "") +
-            `  Value: ${value}\n` +
-            `  Expected: Integer string (no decimal points)\n`,
-        );
-      }
-      throw new Error(
-        `Invalid wei value. Value: ${value}. Expected: Integer string (no decimal points)`,
+      throw formatError(
+        "Invalid wei value",
+        "Integer string (no decimal points)",
       );
     }
 
@@ -323,30 +327,11 @@ export class FileManager implements FileManagerInterface {
     if (!/^\d+$/.test(value)) {
       // Check for negative values
       if (value.startsWith("-")) {
-        if (field) {
-          throw new Error(
-            `Invalid wei value\n` +
-              `  Field: ${field}\n` +
-              (date ? `  Date: ${date}\n` : "") +
-              `  Value: ${value}\n` +
-              `  Expected: Non-negative decimal string\n`,
-          );
-        }
-        throw new Error(
-          `Invalid wei value. Value: ${value}. Expected: Non-negative decimal string`,
-        );
+        throw formatError("Invalid wei value", "Non-negative decimal string");
       }
-      if (field) {
-        throw new Error(
-          `Invalid wei value\n` +
-            `  Field: ${field}\n` +
-            (date ? `  Date: ${date}\n` : "") +
-            `  Value: ${value}\n` +
-            `  Expected: Decimal string containing only digits\n`,
-        );
-      }
-      throw new Error(
-        `Invalid wei value. Value: ${value}. Expected: Decimal string containing only digits`,
+      throw formatError(
+        "Invalid wei value",
+        "Decimal string containing only digits",
       );
     }
   }
@@ -419,12 +404,8 @@ export class FileManager implements FileManagerInterface {
     for (const [date, balance] of Object.entries(data.balances)) {
       this.validateDateFormat(date);
       this.validateBlockNumber(balance.block_number);
-      this.validateWeiValueForBalance(balance.balance_wei, date);
+      this.validateWeiValue(balance.balance_wei, "balance_wei", date);
     }
-  }
-
-  private validateWeiValueForBalance(value: string, date: string): void {
-    this.validateWeiValue(value, "balance_wei", date);
   }
 
   private validateOutflowData(address: Address, data: OutflowData): void {
@@ -474,6 +455,10 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
+  /**
+   * Validates that a transaction hash is in the correct format (0x followed by 64 hex characters)
+   * @throws {Error} If the transaction hash format is invalid
+   */
   validateTransactionHash(txHash: string): void {
     if (!TX_HASH_REGEX.test(txHash)) {
       throw new Error(
@@ -482,6 +467,13 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
+  /**
+   * Validates that a value is one of the allowed enum values
+   * @param value The value to validate
+   * @param enumName The name of the enum for error messages
+   * @param validValues Array of valid values
+   * @throws {Error} If the value is not in the list of valid values
+   */
   validateEnumValue(
     value: string,
     enumName: string,
