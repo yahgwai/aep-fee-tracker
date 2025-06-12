@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as path from "path";
 import { getAddress } from "ethers";
 import {
   FileManager as FileManagerInterface,
@@ -9,6 +10,7 @@ import {
   BalanceData,
   OutflowData,
   STORE_DIR,
+  CHAIN_IDS,
 } from "./types";
 
 // Error messages
@@ -19,17 +21,31 @@ const ERROR_BAD_CHECKSUM = "bad address checksum";
 // Constants
 const ADDRESS_PREFIX = "0x";
 const ISO_DATE_SEPARATOR = "T";
+const BLOCK_NUMBERS_FILE = "block_numbers.json";
+const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const JSON_INDENT_SIZE = 2;
 
 export class FileManager implements FileManagerInterface {
   constructor() {}
 
   async readBlockNumbers(): Promise<BlockNumberData> {
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
+
+    if (!fs.existsSync(filePath)) {
+      return this.createEmptyBlockNumberData();
+    }
+
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(fileContent) as BlockNumberData;
   }
 
   async writeBlockNumbers(data: BlockNumberData): Promise<void> {
-    void data;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    this.validateBlockNumberData(data);
+
+    await this.ensureStoreDirectory();
+
+    const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
   }
 
   async readDistributors(): Promise<DistributorsData> {
@@ -95,5 +111,35 @@ export class FileManager implements FileManagerInterface {
 
   formatDate(date: Date): DateString {
     return date.toISOString().split(ISO_DATE_SEPARATOR)[0] as DateString;
+  }
+
+  private createEmptyBlockNumberData(): BlockNumberData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+      },
+      blocks: {},
+    };
+  }
+
+  private validateBlockNumberData(data: BlockNumberData): void {
+    for (const [date, blockNumber] of Object.entries(data.blocks)) {
+      this.validateDateFormat(date);
+      this.validateBlockNumber(blockNumber);
+    }
+  }
+
+  private validateDateFormat(date: string): void {
+    if (!DATE_FORMAT_REGEX.test(date)) {
+      throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
+    }
+  }
+
+  private validateBlockNumber(blockNumber: number): void {
+    if (!Number.isInteger(blockNumber) || blockNumber <= 0) {
+      throw new Error(
+        `Block number must be a positive integer, got: ${blockNumber}`,
+      );
+    }
   }
 }
