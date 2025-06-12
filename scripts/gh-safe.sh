@@ -14,10 +14,12 @@ check_prohibited_content() {
     local content="$1"
     local context="$2"
     
-    # Check for Claude/AI references (matching commit-msg hook patterns)
-    if echo "$content" | grep -iE "Generated with.*Claude|claude\.ai/code|🤖 Generated with" > /dev/null 2>&1; then
-        echo -e "${RED}Error: $context contains prohibited AI/Claude references${NC}"
-        echo "Please remove any Claude, AI, or Anthropic references"
+    # Check for Claude/Anthropic references (matching commit-msg hook patterns)
+    # This includes direct mentions, co-authorship, and generation notices
+    if echo "$content" | grep -iE "claude|anthropic|co-authored-by:.*claude|generated with.*claude|claude\.ai|🤖.*generated.*claude" > /dev/null 2>&1; then
+        echo -e "${RED}Error: $context contains prohibited Claude/Anthropic references${NC}"
+        echo "Please remove any Claude or Anthropic references"
+        echo "This includes Co-Authored-By lines and 'Generated with' notices"
         return 1
     fi
     

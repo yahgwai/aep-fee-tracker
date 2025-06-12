@@ -8,10 +8,12 @@ NC='\033[0m' # No Color
 
 COMMIT_MSG_FILE=$1
 
-# Check for Claude Code references
-if grep -i "claude code\|claude.ai/code\|Generated with.*Claude" "$COMMIT_MSG_FILE" > /dev/null 2>&1; then
-    echo "${RED}Error: Commit message contains Claude Code references${NC}"
-    echo "Please remove any Claude Code or claude.ai references from your commit message"
+# Check for Claude or Anthropic references  
+# This includes direct mentions, co-authorship, and generation notices
+if grep -iE "claude|anthropic|co-authored-by:.*claude|generated with.*claude|claude\.ai|🤖.*generated.*claude" "$COMMIT_MSG_FILE" > /dev/null 2>&1; then
+    echo "${RED}Error: Commit message contains Claude or Anthropic references${NC}"
+    echo "Please remove any Claude or Anthropic references from your commit message"
+    echo "This includes Co-Authored-By lines and 'Generated with' notices"
     exit 1
 fi
 
