@@ -10,6 +10,7 @@ import {
   DistributorType,
   BalanceData,
   OutflowData,
+  OutflowEvent,
   CHAIN_IDS,
   CONTRACTS,
 } from "../../src/types";
@@ -1037,7 +1038,7 @@ describe("FileManager - Core Structure", () => {
             total_outflow_wei: "4000000000000000000000",
             events: [
               {
-                recipient: "0xAAA1234567890123456789012345678901234567",
+                recipient: "0xAaa1234567890123456789012345678901234567",
                 value_wei: "1500000000000000000000",
                 tx_hash:
                   "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -1072,13 +1073,13 @@ describe("FileManager - Core Structure", () => {
             total_outflow_wei: "4000000000000000000000",
             events: [
               {
-                recipient: "0xAAA1234567890123456789012345678901234567",
+                recipient: "0xAaa1234567890123456789012345678901234567",
                 value_wei: "1500000000000000000000",
                 tx_hash:
                   "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
               },
               {
-                recipient: "0xBBB2345678901234567890123456789012345678",
+                recipient: "0xbbB2345678901234567890123456789012345678",
                 value_wei: "2500000000000000000000",
                 tx_hash:
                   "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
@@ -1090,7 +1091,7 @@ describe("FileManager - Core Structure", () => {
             total_outflow_wei: "1000000000000000000000",
             events: [
               {
-                recipient: "0xCCC3456789012345678901234567890123456789",
+                recipient: "0xcCc3456789012345678901234567890123456789",
                 value_wei: "1000000000000000000000",
                 tx_hash:
                   "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -1134,15 +1135,28 @@ describe("FileManager - Core Structure", () => {
       fileManager = new FileManager();
 
       const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
-      const events = [];
+      const events: OutflowEvent[] = [];
       let totalWei = BigInt(0);
 
-      // Create 10 events for the same day
+      // Create 10 events for the same day with properly checksummed addresses
+      const recipients = [
+        "0x0aA1234567890123456789012345678901234567",
+        "0x1aA1234567890123456789012345678901234567",
+        "0x2aA1234567890123456789012345678901234567",
+        "0x3aA1234567890123456789012345678901234567",
+        "0x4aA1234567890123456789012345678901234567",
+        "0x5aA1234567890123456789012345678901234567",
+        "0x6aA1234567890123456789012345678901234567",
+        "0x7aA1234567890123456789012345678901234567",
+        "0x8aA1234567890123456789012345678901234567",
+        "0x9aA1234567890123456789012345678901234567",
+      ];
+
       for (let i = 0; i < 10; i++) {
         const valueWei = `${1000 + i}000000000000000000`;
         totalWei += BigInt(valueWei);
         events.push({
-          recipient: `0x${i.toString().padStart(1, "0")}AA1234567890123456789012345678901234567`,
+          recipient: recipients[i]!,
           value_wei: valueWei,
           tx_hash: `0x${i.toString().padStart(1, "0")}ef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef`,
         });
@@ -1186,7 +1200,7 @@ describe("FileManager - Core Structure", () => {
             total_outflow_wei: exactWeiValue,
             events: [
               {
-                recipient: "0xAAA1234567890123456789012345678901234567",
+                recipient: "0xAaa1234567890123456789012345678901234567",
                 value_wei: exactWeiValue,
                 tx_hash:
                   "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -1249,7 +1263,7 @@ describe("FileManager - Core Structure", () => {
         outflows: {
           "2024-01-15": {
             block_number: 12345678,
-            total_outflow_wei: "1000000000000000000000",
+            total_outflow_wei: "0",
             events: [],
           },
         },
@@ -1373,7 +1387,7 @@ describe("FileManager - Core Structure", () => {
             total_outflow_wei: "1230000000000000000000",
             events: [
               {
-                recipient: "0xAAA1234567890123456789012345678901234567",
+                recipient: "0xAaa1234567890123456789012345678901234567",
                 value_wei: "1.23e+21",
                 tx_hash:
                   "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -1433,7 +1447,7 @@ describe("FileManager - Core Structure", () => {
             total_outflow_wei: "1000000000000000000000",
             events: [
               {
-                recipient: "0xAAA1234567890123456789012345678901234567",
+                recipient: "0xAaa1234567890123456789012345678901234567",
                 value_wei: "1000000000000000000000",
                 tx_hash: "0xinvalid", // invalid tx hash
               },
@@ -1462,13 +1476,13 @@ describe("FileManager - Core Structure", () => {
             total_outflow_wei: "1000000000000000000000", // total is 1000
             events: [
               {
-                recipient: "0xAAA1234567890123456789012345678901234567",
+                recipient: "0xAaa1234567890123456789012345678901234567",
                 value_wei: "500000000000000000000", // 500
                 tx_hash:
                   "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
               },
               {
-                recipient: "0xBBB2345678901234567890123456789012345678",
+                recipient: "0xbbB2345678901234567890123456789012345678",
                 value_wei: "600000000000000000000", // 600 - sum is 1100, not 1000!
                 tx_hash:
                   "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
@@ -1501,7 +1515,7 @@ describe("FileManager - Core Structure", () => {
             total_outflow_wei: maxUint256,
             events: [
               {
-                recipient: "0xAAA1234567890123456789012345678901234567",
+                recipient: "0xAaa1234567890123456789012345678901234567",
                 value_wei: maxUint256,
                 tx_hash:
                   "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -1535,7 +1549,7 @@ describe("FileManager - Core Structure", () => {
             total_outflow_wei: "1000000000000000000000",
             events: [
               {
-                recipient: "0xAAA1234567890123456789012345678901234567",
+                recipient: "0xAaa1234567890123456789012345678901234567",
                 value_wei: "1000000000000000000000",
                 tx_hash:
                   "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",

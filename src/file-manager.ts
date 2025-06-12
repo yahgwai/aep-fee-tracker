@@ -133,6 +133,7 @@ export class FileManager implements FileManagerInterface {
     data: OutflowData,
   ): Promise<void> {
     const validatedAddress = this.validateAddress(address);
+    this.validateOutflowData(validatedAddress, data);
 
     await this.ensureDistributorDirectory(validatedAddress);
 
@@ -374,6 +375,115 @@ export class FileManager implements FileManagerInterface {
           `  Expected: Decimal string containing only digits\n` +
           `  File: store/distributors/${address}/balances.json`,
       );
+    }
+  }
+
+  private validateOutflowData(address: Address, data: OutflowData): void {
+    // Validate metadata
+    if (data.metadata.reward_distributor !== address) {
+      throw new Error(
+        `Reward distributor address mismatch: expected ${address}, got ${data.metadata.reward_distributor}`,
+      );
+    }
+
+    // Validate outflows
+    for (const [date, outflow] of Object.entries(data.outflows)) {
+      this.validateDateFormat(date);
+      this.validateBlockNumber(outflow.block_number);
+      this.validateOutflowWeiValue(outflow.total_outflow_wei, date, address);
+
+      // Validate events
+      let totalEventWei = BigInt(0);
+      for (const event of outflow.events) {
+        // Validate recipient address is checksummed
+        if (event.recipient !== this.validateAddress(event.recipient)) {
+          throw new Error(
+            `Recipient address must be checksummed: ${event.recipient}`,
+          );
+        }
+
+        // Validate event value
+        this.validateOutflowWeiValue(event.value_wei, date, address);
+
+        // Validate transaction hash
+        this.validateTransactionHash(event.tx_hash);
+
+        // Add to total
+        totalEventWei += BigInt(event.value_wei);
+      }
+
+      // Validate that total matches sum of events
+      if (totalEventWei.toString() !== outflow.total_outflow_wei) {
+        throw new Error(
+          `Total outflow mismatch for ${date}: expected ${totalEventWei.toString()}, got ${outflow.total_outflow_wei}`,
+        );
+      }
+    }
+  }
+
+  private validateOutflowWeiValue(
+    value: string,
+    date: string,
+    address: Address,
+  ): void {
+    // Check if it's a string
+    if (typeof value !== "string") {
+      throw new Error(
+        `Invalid outflow value in outflows.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: String value\n` +
+          `  File: store/distributors/${address}/outflows.json`,
+      );
+    }
+
+    // Check for scientific notation
+    if (value.includes("e") || value.includes("E")) {
+      throw new Error(
+        `Invalid numeric format in outflows.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: Decimal string (e.g., "1230000000000000000000")\n` +
+          `  File: store/distributors/${address}/outflows.json`,
+      );
+    }
+
+    // Check for decimal point
+    if (value.includes(".")) {
+      throw new Error(
+        `Invalid outflow value in outflows.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: Integer string (no decimal points)\n` +
+          `  File: store/distributors/${address}/outflows.json`,
+      );
+    }
+
+    // Check if it's a valid decimal string (only digits)
+    if (!/^\d+$/.test(value)) {
+      // Check for negative values
+      if (value.startsWith("-")) {
+        throw new Error(
+          `Invalid outflow value in outflows.json\n` +
+            `  Date: ${date}\n` +
+            `  Value: ${value}\n` +
+            `  Expected: Non-negative decimal string\n` +
+            `  File: store/distributors/${address}/outflows.json`,
+        );
+      }
+      throw new Error(
+        `Invalid outflow value in outflows.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: Decimal string containing only digits\n` +
+          `  File: store/distributors/${address}/outflows.json`,
+      );
+    }
+  }
+
+  private validateTransactionHash(txHash: string): void {
+    if (!TX_HASH_REGEX.test(txHash)) {
+      throw new Error(`Invalid transaction hash: ${txHash}`);
     }
   }
 }
