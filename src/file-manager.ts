@@ -34,11 +34,7 @@ const TX_HASH_LENGTH = 64;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 
 // Date and time constants
-const ISO_DATE_SEPARATOR = "T";
 const DATE_FORMAT_REGEX = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-const DATE_SEPARATOR = "-";
-const DATE_PARTS_COUNT = 3;
-const MONTH_INDEX_OFFSET = 1; // JavaScript months are 0-indexed
 
 // Validation constants
 const MAX_REASONABLE_BLOCK = 1000000000; // 1 billion blocks - Arbitrum mainnet started at block ~0 in 2021
@@ -46,57 +42,36 @@ const EXAMPLE_WEI_VALUE = "1230000000000000000000";
 const WEI_DECIMAL_REGEX = /^\d+$/;
 
 export class FileManager implements FileManagerInterface {
-  constructor() {}
-
   async readBlockNumbers(): Promise<BlockNumberData> {
-    const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyBlockNumberData();
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as BlockNumberData;
+    return this.readJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), () =>
+      this.createEmptyBlockNumberData(),
+    );
   }
 
   async writeBlockNumbers(data: BlockNumberData): Promise<void> {
     this.validateBlockNumberData(data);
-    await this.ensureStoreDirectory();
-    const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
-    this.writeJsonFile(filePath, data);
+    this.ensureStoreDirectory();
+    this.writeJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), data);
   }
 
   async readDistributors(): Promise<DistributorsData> {
-    const filePath = path.join(STORE_DIR, DISTRIBUTORS_FILE);
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyDistributorsData();
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as DistributorsData;
+    return this.readJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), () =>
+      this.createEmptyDistributorsData(),
+    );
   }
 
   async writeDistributors(data: DistributorsData): Promise<void> {
     this.validateDistributorsData(data);
-    await this.ensureStoreDirectory();
-    const filePath = path.join(STORE_DIR, DISTRIBUTORS_FILE);
-    this.writeJsonFile(filePath, data);
+    this.ensureStoreDirectory();
+    this.writeJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), data);
   }
 
   async readDistributorBalances(address: Address): Promise<BalanceData> {
     const validatedAddress = this.validateAddress(address);
-    const filePath = this.getDistributorFilePath(
-      validatedAddress,
-      BALANCES_FILE,
+    return this.readJsonFile(
+      this.getDistributorFilePath(validatedAddress, BALANCES_FILE),
+      () => this.createEmptyBalanceData(validatedAddress),
     );
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyBalanceData(validatedAddress);
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as BalanceData;
   }
 
   async writeDistributorBalances(
@@ -105,29 +80,19 @@ export class FileManager implements FileManagerInterface {
   ): Promise<void> {
     const validatedAddress = this.validateAddress(address);
     this.validateBalanceData(validatedAddress, data);
-
-    await this.ensureDistributorDirectory(validatedAddress);
-
-    const filePath = this.getDistributorFilePath(
-      validatedAddress,
-      BALANCES_FILE,
+    this.ensureDistributorDirectory(validatedAddress);
+    this.writeJsonFile(
+      this.getDistributorFilePath(validatedAddress, BALANCES_FILE),
+      data,
     );
-    this.writeJsonFile(filePath, data);
   }
 
   async readDistributorOutflows(address: Address): Promise<OutflowData> {
     const validatedAddress = this.validateAddress(address);
-    const filePath = this.getDistributorFilePath(
-      validatedAddress,
-      OUTFLOWS_FILE,
+    return this.readJsonFile(
+      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
+      () => this.createEmptyOutflowData(validatedAddress),
     );
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyOutflowData(validatedAddress);
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as OutflowData;
   }
 
   async writeDistributorOutflows(
@@ -136,14 +101,11 @@ export class FileManager implements FileManagerInterface {
   ): Promise<void> {
     const validatedAddress = this.validateAddress(address);
     this.validateOutflowData(validatedAddress, data);
-
-    await this.ensureDistributorDirectory(validatedAddress);
-
-    const filePath = this.getDistributorFilePath(
-      validatedAddress,
-      OUTFLOWS_FILE,
+    this.ensureDistributorDirectory(validatedAddress);
+    this.writeJsonFile(
+      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
+      data,
     );
-    this.writeJsonFile(filePath, data);
   }
 
   async ensureStoreDirectory(): Promise<void> {
@@ -171,12 +133,7 @@ export class FileManager implements FileManagerInterface {
   }
 
   formatDate(date: Date): DateString {
-    const isoString = date.toISOString();
-    const datePart = isoString.split(ISO_DATE_SEPARATOR)[0];
-    if (!datePart) {
-      throw new Error("Failed to format date");
-    }
-    return datePart;
+    return date.toISOString().split("T")[0]!;
   }
 
   private createEmptyBlockNumberData(): BlockNumberData {
@@ -229,6 +186,13 @@ export class FileManager implements FileManagerInterface {
     return path.join(STORE_DIR, DISTRIBUTORS_DIR, address, fileName);
   }
 
+  private readJsonFile<T>(filePath: string, defaultFactory: () => T): T {
+    if (!fs.existsSync(filePath)) {
+      return defaultFactory();
+    }
+    return JSON.parse(fs.readFileSync(filePath, "utf-8")) as T;
+  }
+
   private writeJsonFile(filePath: string, data: unknown): void {
     const tempPath = `${filePath}.tmp`;
     fs.writeFileSync(tempPath, JSON.stringify(data, null, JSON_INDENT_SIZE));
@@ -247,28 +211,14 @@ export class FileManager implements FileManagerInterface {
    * @throws {Error} If the date format is invalid or the date doesn't exist
    */
   validateDateFormat(date: string): void {
-    // First check format: YYYY-MM-DD with valid month/day ranges
     if (!DATE_FORMAT_REGEX.test(date)) {
       throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
     }
 
-    // Then validate it's an actual calendar date
-    const dateParts = date.split(DATE_SEPARATOR);
-    if (dateParts.length !== DATE_PARTS_COUNT) {
-      throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
-    }
-
-    const year = parseInt(dateParts[0]!, 10);
-    const month = parseInt(dateParts[1]!, 10);
-    const day = parseInt(dateParts[2]!, 10);
-    const dateObj = new Date(year, month - MONTH_INDEX_OFFSET, day);
-
-    // Check if the date components match (catches invalid dates like Feb 30)
-    if (
-      dateObj.getFullYear() !== year ||
-      dateObj.getMonth() !== month - MONTH_INDEX_OFFSET ||
-      dateObj.getDate() !== day
-    ) {
+    // Validate it's an actual calendar date by parsing and checking roundtrip
+    const parsed = new Date(date + "T00:00:00Z");
+    const roundtrip = parsed.toISOString().split("T")[0];
+    if (roundtrip !== date) {
       throw new Error(`Invalid calendar date: ${date}`);
     }
   }
