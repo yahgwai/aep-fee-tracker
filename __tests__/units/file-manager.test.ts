@@ -3,7 +3,11 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { FileManager } from "../../src/file-manager";
-import { FileManager as FileManagerInterface } from "../../src/types";
+import {
+  FileManager as FileManagerInterface,
+  BlockNumberData,
+  CHAIN_IDS,
+} from "../../src/types";
 
 describe("FileManager - Core Structure", () => {
   let tempDir: string;
@@ -167,6 +171,190 @@ describe("FileManager - Core Structure", () => {
           "0x67a24CE4321ab3af51c2d0a4801c3e111d88c9d9",
         );
       }).toThrow(/bad address checksum/i);
+    });
+  });
+
+  describe("readBlockNumbers()", () => {
+    it("should return empty BlockNumberData when block_numbers.json does not exist", async () => {
+      fileManager = new FileManager();
+
+      const result: BlockNumberData = await fileManager.readBlockNumbers();
+
+      expect(result).toEqual({
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {},
+      });
+    });
+
+    it("should write and read back BlockNumberData with multiple date entries", async () => {
+      fileManager = new FileManager();
+
+      const testData: BlockNumberData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {
+          "2024-01-15": 12345678,
+          "2024-01-16": 12356789,
+          "2024-01-17": 12367890,
+        },
+      };
+
+      await fileManager.writeBlockNumbers(testData);
+      const result = await fileManager.readBlockNumbers();
+
+      expect(result).toEqual(testData);
+    });
+
+    it("should preserve block number precision for large block numbers", async () => {
+      fileManager = new FileManager();
+
+      const largeBlockNumber = 200000000;
+      const testData: BlockNumberData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {
+          "2024-01-15": largeBlockNumber,
+        },
+      };
+
+      await fileManager.writeBlockNumbers(testData);
+      const result = await fileManager.readBlockNumbers();
+
+      expect(result.blocks["2024-01-15"]).toBe(largeBlockNumber);
+    });
+
+    it("should format JSON with 2-space indentation for human readability", async () => {
+      fileManager = new FileManager();
+
+      const testData: BlockNumberData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {
+          "2024-01-15": 12345678,
+        },
+      };
+
+      await fileManager.writeBlockNumbers(testData);
+
+      const fileContent = fs.readFileSync("store/block_numbers.json", "utf-8");
+      expect(fileContent).toBe(JSON.stringify(testData, null, 2));
+    });
+
+    it("should maintain date ordering in blocks object", async () => {
+      fileManager = new FileManager();
+
+      const testData: BlockNumberData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {
+          "2024-01-17": 12367890,
+          "2024-01-15": 12345678,
+          "2024-01-16": 12356789,
+        },
+      };
+
+      await fileManager.writeBlockNumbers(testData);
+      const result = await fileManager.readBlockNumbers();
+
+      const dates = Object.keys(result.blocks);
+      expect(dates).toEqual(["2024-01-17", "2024-01-15", "2024-01-16"]);
+    });
+
+    it("should handle single date entry correctly", async () => {
+      fileManager = new FileManager();
+
+      const testData: BlockNumberData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {
+          "2024-01-15": 12345678,
+        },
+      };
+
+      await fileManager.writeBlockNumbers(testData);
+      const result = await fileManager.readBlockNumbers();
+
+      expect(result).toEqual(testData);
+    });
+  });
+
+  describe("writeBlockNumbers()", () => {
+    it("should validate date formats are YYYY-MM-DD", async () => {
+      fileManager = new FileManager();
+
+      const invalidData: BlockNumberData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {
+          "01/15/2024": 12345678,
+        },
+      };
+
+      await expect(fileManager.writeBlockNumbers(invalidData)).rejects.toThrow(
+        /Invalid date format/,
+      );
+    });
+
+    it("should ensure block numbers are positive integers", async () => {
+      fileManager = new FileManager();
+
+      const negativeBlockData: BlockNumberData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {
+          "2024-01-15": -12345678,
+        },
+      };
+
+      await expect(
+        fileManager.writeBlockNumbers(negativeBlockData),
+      ).rejects.toThrow(/positive integer/);
+    });
+
+    it("should reject zero as block number", async () => {
+      fileManager = new FileManager();
+
+      const zeroBlockData: BlockNumberData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {
+          "2024-01-15": 0,
+        },
+      };
+
+      await expect(
+        fileManager.writeBlockNumbers(zeroBlockData),
+      ).rejects.toThrow(/positive integer/);
+    });
+
+    it("should create store directory if it does not exist", async () => {
+      fileManager = new FileManager();
+
+      expect(fs.existsSync("store")).toBe(false);
+
+      const testData: BlockNumberData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        },
+        blocks: {
+          "2024-01-15": 12345678,
+        },
+      };
+
+      await fileManager.writeBlockNumbers(testData);
+
+      expect(fs.existsSync("store")).toBe(true);
+      expect(fs.existsSync("store/block_numbers.json")).toBe(true);
     });
   });
 });
