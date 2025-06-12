@@ -97,6 +97,7 @@ export class FileManager implements FileManagerInterface {
     data: BalanceData,
   ): Promise<void> {
     const validatedAddress = this.validateAddress(address);
+    this.validateBalanceData(validatedAddress, data);
 
     await this.ensureDistributorDirectory(validatedAddress);
 
@@ -267,5 +268,81 @@ export class FileManager implements FileManagerInterface {
 
     // Validate owner address
     this.validateAddress(info.owner);
+  }
+
+  private validateBalanceData(address: Address, data: BalanceData): void {
+    // Validate metadata
+    if (data.metadata.reward_distributor !== address) {
+      throw new Error(
+        `Reward distributor address mismatch: expected ${address}, got ${data.metadata.reward_distributor}`,
+      );
+    }
+
+    // Validate balances
+    for (const [date, balance] of Object.entries(data.balances)) {
+      this.validateDateFormat(date);
+      this.validateBlockNumber(balance.block_number);
+      this.validateWeiValue(balance.balance_wei, date, address);
+    }
+  }
+
+  private validateWeiValue(
+    value: string,
+    date: string,
+    address: Address,
+  ): void {
+    // Check if it's a string
+    if (typeof value !== "string") {
+      throw new Error(
+        `Invalid balance value in balances.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: String value\n` +
+          `  File: store/distributors/${address}/balances.json`,
+      );
+    }
+
+    // Check for scientific notation
+    if (value.includes("e") || value.includes("E")) {
+      throw new Error(
+        `Invalid numeric format in balances.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: Decimal string (e.g., "1230000000000000000000")\n` +
+          `  File: store/distributors/${address}/balances.json`,
+      );
+    }
+
+    // Check for decimal point
+    if (value.includes(".")) {
+      throw new Error(
+        `Invalid balance value in balances.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: Integer string (no decimal points)\n` +
+          `  File: store/distributors/${address}/balances.json`,
+      );
+    }
+
+    // Check if it's a valid decimal string (only digits)
+    if (!/^\d+$/.test(value)) {
+      // Check for negative values
+      if (value.startsWith("-")) {
+        throw new Error(
+          `Invalid balance value in balances.json\n` +
+            `  Date: ${date}\n` +
+            `  Value: ${value}\n` +
+            `  Expected: Non-negative decimal string\n` +
+            `  File: store/distributors/${address}/balances.json`,
+        );
+      }
+      throw new Error(
+        `Invalid balance value in balances.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: Decimal string containing only digits\n` +
+          `  File: store/distributors/${address}/balances.json`,
+      );
+    }
   }
 }
