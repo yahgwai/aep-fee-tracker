@@ -30,7 +30,9 @@ const BALANCES_FILE = "balances.json";
 const OUTFLOWS_FILE = "outflows.json";
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
+const TX_HASH_LENGTH = 64;
 const JSON_INDENT_SIZE = 2;
+const MAX_REASONABLE_BLOCK = 1000000000; // 1 billion blocks - Arbitrum mainnet started at block ~0 in 2021
 
 export class FileManager implements FileManagerInterface {
   constructor() {}
@@ -260,8 +262,7 @@ export class FileManager implements FileManagerInterface {
       );
     }
 
-    // Check reasonable range (Arbitrum mainnet started at block ~0 in 2021)
-    const MAX_REASONABLE_BLOCK = 1000000000; // 1 billion blocks
+    // Check reasonable range
     if (blockNumber > MAX_REASONABLE_BLOCK) {
       throw new Error(`Block number outside reasonable range: ${blockNumber}`);
     }
@@ -487,65 +488,33 @@ export class FileManager implements FileManagerInterface {
     valueType: string,
     fileName: string,
   ): void {
-    // Check if it's a string
-    if (typeof value !== "string") {
-      throw new Error(
-        `Invalid ${valueType} value in ${fileName}\n` +
-          `  Date: ${date}\n` +
-          `  Value: ${value}\n` +
-          `  Expected: String value\n` +
-          `  File: store/distributors/${address}/${fileName}`,
-      );
-    }
+    try {
+      this.validateWeiValue(value, valueType, date, address);
+    } catch (error) {
+      if (error instanceof Error) {
+        // Re-throw with file-specific context
+        const message = error.message
+          .replace(
+            /Invalid wei value/,
+            `Invalid ${valueType} value in ${fileName}`,
+          )
+          .replace(
+            /Invalid numeric format/,
+            `Invalid numeric format in ${fileName}`,
+          );
 
-    // Check for scientific notation
-    if (value.includes("e") || value.includes("E")) {
-      throw new Error(
-        `Invalid numeric format in ${fileName}\n` +
-          `  Date: ${date}\n` +
-          `  Value: ${value}\n` +
-          `  Expected: Decimal string (e.g., "1230000000000000000000")\n` +
-          `  File: store/distributors/${address}/${fileName}`,
-      );
-    }
-
-    // Check for decimal point
-    if (value.includes(".")) {
-      throw new Error(
-        `Invalid ${valueType} value in ${fileName}\n` +
-          `  Date: ${date}\n` +
-          `  Value: ${value}\n` +
-          `  Expected: Integer string (no decimal points)\n` +
-          `  File: store/distributors/${address}/${fileName}`,
-      );
-    }
-
-    // Check if it's a valid decimal string (only digits)
-    if (!/^\d+$/.test(value)) {
-      // Check for negative values
-      if (value.startsWith("-")) {
         throw new Error(
-          `Invalid ${valueType} value in ${fileName}\n` +
-            `  Date: ${date}\n` +
-            `  Value: ${value}\n` +
-            `  Expected: Non-negative decimal string\n` +
-            `  File: store/distributors/${address}/${fileName}`,
+          message + `\n  File: store/distributors/${address}/${fileName}`,
         );
       }
-      throw new Error(
-        `Invalid ${valueType} value in ${fileName}\n` +
-          `  Date: ${date}\n` +
-          `  Value: ${value}\n` +
-          `  Expected: Decimal string containing only digits\n` +
-          `  File: store/distributors/${address}/${fileName}`,
-      );
+      throw error;
     }
   }
 
   validateTransactionHash(txHash: string): void {
     if (!TX_HASH_REGEX.test(txHash)) {
       throw new Error(
-        `Invalid transaction hash: ${txHash}. Expected 0x followed by 64 hex characters`,
+        `Invalid transaction hash: ${txHash}. Expected 0x followed by ${TX_HASH_LENGTH} hex characters`,
       );
     }
   }
