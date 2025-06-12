@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach } from "@jest/globals";
 import { FileManager } from "../../../src/file-manager";
+import { setupFileManager } from "./test-utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 describe("FileManager - Validation Helper Methods", () => {
   let fileManager: FileManager;
 
   beforeEach(() => {
-    fileManager = new FileManager();
+    fileManager = setupFileManager() as FileManager;
   });
 
   describe("validateDateFormat()", () => {

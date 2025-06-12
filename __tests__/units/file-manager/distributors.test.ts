@@ -1,10 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
-import { FileManager } from "../../../src/file-manager";
 import {
-  FileManager as FileManagerInterface,
+  setupTestEnvironment,
+  cleanupTestEnvironment,
+  VALID_ADDRESS,
+  VALID_ADDRESS_LOWERCASE,
+  INVALID_ADDRESS,
+  VALID_TX_HASH,
+  createTestDate,
+  TestContext,
+} from "./test-utils";
+import {
   DistributorsData,
   DistributorType,
   CHAIN_IDS,
@@ -12,11 +18,7 @@ import {
 } from "../../../src/types";
 
 // Test constants
-const VALID_ADDRESS = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
-const VALID_ADDRESS_LOWERCASE = "0x67a24ce4321ab3af51c2d0a4801c3e111d88c9d9";
-const VALID_TX_HASH =
-  "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc";
-const TEST_DATE = "2024-01-15";
+const TEST_DATE = createTestDate();
 const TEST_BLOCK_NUMBER = 12345678;
 
 // Test data factory functions
@@ -66,29 +68,20 @@ function createDistributorInfo(
   };
 }
 
-// Test setup helper
-function setupFileManager(): FileManagerInterface {
-  return new FileManager();
-}
-
 describe("FileManager - Distributors", () => {
-  let tempDir: string;
-  let fileManager: FileManagerInterface;
+  let testContext: TestContext;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "file-manager-test-"));
-    process.chdir(tempDir);
-    fileManager = setupFileManager();
+    testContext = setupTestEnvironment();
   });
 
   afterEach(() => {
-    process.chdir("/");
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    cleanupTestEnvironment(testContext.tempDir);
   });
 
   describe("readDistributors()", () => {
     it("should return empty DistributorsData when distributors.json does not exist", async () => {
-      const result = await fileManager.readDistributors();
+      const result = await testContext.fileManager.readDistributors();
       expect(result).toEqual(createDistributorsData());
     });
 
@@ -96,7 +89,7 @@ describe("FileManager - Distributors", () => {
       const testData = createDistributorsData({
         distributors: {
           [VALID_ADDRESS]: createDistributorInfo(),
-          "0x1234567890123456789012345678901234567890": createDistributorInfo({
+          [INVALID_ADDRESS]: createDistributorInfo({
             type: DistributorType.L2_SURPLUS_FEE,
             discovered_block: 15678901,
             discovered_date: "2024-06-01",
@@ -119,8 +112,8 @@ describe("FileManager - Distributors", () => {
         },
       });
 
-      await fileManager.writeDistributors(testData);
-      const result = await fileManager.readDistributors();
+      await testContext.fileManager.writeDistributors(testData);
+      const result = await testContext.fileManager.readDistributors();
 
       expect(result).toEqual(testData);
     });
@@ -134,9 +127,9 @@ describe("FileManager - Distributors", () => {
         },
       });
 
-      await expect(fileManager.writeDistributors(invalidData)).rejects.toThrow(
-        /address.*checksum/i,
-      );
+      await expect(
+        testContext.fileManager.writeDistributors(invalidData),
+      ).rejects.toThrow(/address.*checksum/i);
     });
 
     it("should validate distributor types match the DistributorType enum", async () => {
@@ -149,9 +142,9 @@ describe("FileManager - Distributors", () => {
         },
       });
 
-      await expect(fileManager.writeDistributors(invalidData)).rejects.toThrow(
-        /Invalid DistributorType value/,
-      );
+      await expect(
+        testContext.fileManager.writeDistributors(invalidData),
+      ).rejects.toThrow(/Invalid DistributorType value/);
     });
 
     it("should ensure all required fields are present", async () => {
@@ -165,7 +158,7 @@ describe("FileManager - Distributors", () => {
       });
 
       await expect(
-        fileManager.writeDistributors(missingFieldData),
+        testContext.fileManager.writeDistributors(missingFieldData),
       ).rejects.toThrow(/Missing required field.*discovered_date/);
     });
 
@@ -191,7 +184,7 @@ describe("FileManager - Distributors", () => {
       };
 
       await expect(
-        fileManager.writeDistributors(invalidDateData),
+        testContext.fileManager.writeDistributors(invalidDateData),
       ).rejects.toThrow(/Invalid date format/);
     });
 
@@ -216,7 +209,7 @@ describe("FileManager - Distributors", () => {
       };
 
       await expect(
-        fileManager.writeDistributors(invalidTxHashData),
+        testContext.fileManager.writeDistributors(invalidTxHashData),
       ).rejects.toThrow(/Invalid transaction hash/);
     });
 
@@ -241,7 +234,7 @@ describe("FileManager - Distributors", () => {
         },
       };
 
-      await fileManager.writeDistributors(testData);
+      await testContext.fileManager.writeDistributors(testData);
 
       const fileContent = fs.readFileSync("store/distributors.json", "utf-8");
       expect(fileContent).toBe(JSON.stringify(testData, null, 2));
@@ -258,7 +251,7 @@ describe("FileManager - Distributors", () => {
         distributors: {},
       };
 
-      await fileManager.writeDistributors(testData);
+      await testContext.fileManager.writeDistributors(testData);
 
       expect(fs.existsSync("store")).toBe(true);
       expect(fs.existsSync("store/distributors.json")).toBe(true);
@@ -288,7 +281,9 @@ describe("FileManager - Distributors", () => {
         },
       };
 
-      await expect(fileManager.writeDistributors(testData)).rejects.toThrow(
+      await expect(
+        testContext.fileManager.writeDistributors(testData),
+      ).rejects.toThrow(
         "Invalid DistributorType value: INVALID_TYPE. Valid values are: L2_BASE_FEE, L2_SURPLUS_FEE",
       );
     });

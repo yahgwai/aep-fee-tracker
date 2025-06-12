@@ -4,6 +4,7 @@ import {
   cleanupTestEnvironment,
   VALID_ADDRESS,
   VALID_ADDRESS_LOWERCASE,
+  INVALID_ADDRESS,
   MAX_UINT256,
   TestContext,
 } from "../test-utils";
@@ -49,7 +50,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
     });
 
     it("should validate reward_distributor matches the address parameter", async () => {
-      const differentAddress = "0x1234567890123456789012345678901234567890";
+      const differentAddress = INVALID_ADDRESS;
 
       const testData: BalanceData = {
         metadata: {

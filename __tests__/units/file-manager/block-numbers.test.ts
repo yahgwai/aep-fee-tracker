@@ -1,16 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
-import { FileManager } from "../../../src/file-manager";
 import {
-  FileManager as FileManagerInterface,
-  BlockNumberData,
-  CHAIN_IDS,
-} from "../../../src/types";
+  setupTestEnvironment,
+  cleanupTestEnvironment,
+  createTestDate,
+  TestContext,
+} from "./test-utils";
+import { BlockNumberData, CHAIN_IDS } from "../../../src/types";
 
 // Test constants
-const TEST_DATE = "2024-01-15";
+const TEST_DATE = createTestDate();
 const TEST_BLOCK_NUMBER = 12345678;
 
 // Test data factory functions
@@ -26,29 +25,20 @@ function createBlockNumberData(
   };
 }
 
-// Test setup helper
-function setupFileManager(): FileManagerInterface {
-  return new FileManager();
-}
-
 describe("FileManager - Block Numbers", () => {
-  let tempDir: string;
-  let fileManager: FileManagerInterface;
+  let testContext: TestContext;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "file-manager-test-"));
-    process.chdir(tempDir);
-    fileManager = setupFileManager();
+    testContext = setupTestEnvironment();
   });
 
   afterEach(() => {
-    process.chdir("/");
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    cleanupTestEnvironment(testContext.tempDir);
   });
 
   describe("readBlockNumbers()", () => {
     it("should return empty BlockNumberData when block_numbers.json does not exist", async () => {
-      const result = await fileManager.readBlockNumbers();
+      const result = await testContext.fileManager.readBlockNumbers();
       expect(result).toEqual(createBlockNumberData());
     });
 
@@ -61,8 +51,8 @@ describe("FileManager - Block Numbers", () => {
         },
       });
 
-      await fileManager.writeBlockNumbers(testData);
-      const result = await fileManager.readBlockNumbers();
+      await testContext.fileManager.writeBlockNumbers(testData);
+      const result = await testContext.fileManager.readBlockNumbers();
 
       expect(result).toEqual(testData);
     });
@@ -75,8 +65,8 @@ describe("FileManager - Block Numbers", () => {
         },
       });
 
-      await fileManager.writeBlockNumbers(testData);
-      const result = await fileManager.readBlockNumbers();
+      await testContext.fileManager.writeBlockNumbers(testData);
+      const result = await testContext.fileManager.readBlockNumbers();
 
       expect(result.blocks["2024-01-15"]).toBe(largeBlockNumber);
     });
@@ -88,7 +78,7 @@ describe("FileManager - Block Numbers", () => {
         },
       });
 
-      await fileManager.writeBlockNumbers(testData);
+      await testContext.fileManager.writeBlockNumbers(testData);
 
       const fileContent = fs.readFileSync("store/block_numbers.json", "utf-8");
       expect(fileContent).toBe(JSON.stringify(testData, null, 2));
@@ -103,8 +93,8 @@ describe("FileManager - Block Numbers", () => {
         },
       });
 
-      await fileManager.writeBlockNumbers(testData);
-      const result = await fileManager.readBlockNumbers();
+      await testContext.fileManager.writeBlockNumbers(testData);
+      const result = await testContext.fileManager.readBlockNumbers();
 
       const dates = Object.keys(result.blocks);
       expect(dates).toEqual(["2024-01-17", "2024-01-15", "2024-01-16"]);
@@ -117,8 +107,8 @@ describe("FileManager - Block Numbers", () => {
         },
       });
 
-      await fileManager.writeBlockNumbers(testData);
-      const result = await fileManager.readBlockNumbers();
+      await testContext.fileManager.writeBlockNumbers(testData);
+      const result = await testContext.fileManager.readBlockNumbers();
 
       expect(result).toEqual(testData);
     });
@@ -132,9 +122,9 @@ describe("FileManager - Block Numbers", () => {
         },
       });
 
-      await expect(fileManager.writeBlockNumbers(invalidData)).rejects.toThrow(
-        /Invalid date format/,
-      );
+      await expect(
+        testContext.fileManager.writeBlockNumbers(invalidData),
+      ).rejects.toThrow(/Invalid date format/);
     });
 
     it("should ensure block numbers are positive integers", async () => {
@@ -145,7 +135,7 @@ describe("FileManager - Block Numbers", () => {
       });
 
       await expect(
-        fileManager.writeBlockNumbers(negativeBlockData),
+        testContext.fileManager.writeBlockNumbers(negativeBlockData),
       ).rejects.toThrow(/positive integer/);
     });
 
@@ -157,7 +147,7 @@ describe("FileManager - Block Numbers", () => {
       });
 
       await expect(
-        fileManager.writeBlockNumbers(zeroBlockData),
+        testContext.fileManager.writeBlockNumbers(zeroBlockData),
       ).rejects.toThrow(/positive integer/);
     });
 
@@ -170,7 +160,7 @@ describe("FileManager - Block Numbers", () => {
         },
       });
 
-      await fileManager.writeBlockNumbers(testData);
+      await testContext.fileManager.writeBlockNumbers(testData);
 
       expect(fs.existsSync("store")).toBe(true);
       expect(fs.existsSync("store/block_numbers.json")).toBe(true);
@@ -183,9 +173,9 @@ describe("FileManager - Block Numbers", () => {
         },
       });
 
-      await expect(fileManager.writeBlockNumbers(testData)).rejects.toThrow(
-        "Invalid calendar date: 2024-02-30",
-      );
+      await expect(
+        testContext.fileManager.writeBlockNumbers(testData),
+      ).rejects.toThrow("Invalid calendar date: 2024-02-30");
     });
 
     it("should validate block numbers are within reasonable range", async () => {
@@ -195,7 +185,9 @@ describe("FileManager - Block Numbers", () => {
         },
       });
 
-      await expect(fileManager.writeBlockNumbers(testData)).rejects.toThrow(
+      await expect(
+        testContext.fileManager.writeBlockNumbers(testData),
+      ).rejects.toThrow(
         "Block number exceeds reasonable maximum: 2000000000 (max: 1000000000)",
       );
     });
