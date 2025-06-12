@@ -7,10 +7,13 @@ import {
   DateString,
   BlockNumberData,
   DistributorsData,
+  DistributorInfo,
   BalanceData,
   OutflowData,
   STORE_DIR,
   CHAIN_IDS,
+  CONTRACTS,
+  isValidDistributorType,
 } from "./types";
 
 // Error messages
@@ -22,7 +25,9 @@ const ERROR_BAD_CHECKSUM = "bad address checksum";
 const ADDRESS_PREFIX = "0x";
 const ISO_DATE_SEPARATOR = "T";
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
+const DISTRIBUTORS_FILE = "distributors.json";
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const JSON_INDENT_SIZE = 2;
 
 export class FileManager implements FileManagerInterface {
@@ -49,12 +54,23 @@ export class FileManager implements FileManagerInterface {
   }
 
   async readDistributors(): Promise<DistributorsData> {
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const filePath = path.join(STORE_DIR, DISTRIBUTORS_FILE);
+
+    if (!fs.existsSync(filePath)) {
+      return this.createEmptyDistributorsData();
+    }
+
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(fileContent) as DistributorsData;
   }
 
   async writeDistributors(data: DistributorsData): Promise<void> {
-    void data;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    this.validateDistributorsData(data);
+
+    await this.ensureStoreDirectory();
+
+    const filePath = path.join(STORE_DIR, DISTRIBUTORS_FILE);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
   }
 
   async readDistributorBalances(address: Address): Promise<BalanceData> {
@@ -122,6 +138,16 @@ export class FileManager implements FileManagerInterface {
     };
   }
 
+  private createEmptyDistributorsData(): DistributorsData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        arbowner_address: CONTRACTS.ARB_OWNER,
+      },
+      distributors: {},
+    };
+  }
+
   private validateBlockNumberData(data: BlockNumberData): void {
     for (const [date, blockNumber] of Object.entries(data.blocks)) {
       this.validateDateFormat(date);
@@ -141,5 +167,65 @@ export class FileManager implements FileManagerInterface {
         `Block number must be a positive integer, got: ${blockNumber}`,
       );
     }
+  }
+
+  private validateDistributorsData(data: DistributorsData): void {
+    for (const [address, distributorInfo] of Object.entries(
+      data.distributors,
+    )) {
+      // Validate checksummed address
+      if (address !== this.validateAddress(address)) {
+        throw new Error(`Distributor address must be checksummed: ${address}`);
+      }
+
+      this.validateDistributorInfo(address, distributorInfo);
+    }
+  }
+
+  private validateDistributorInfo(
+    address: string,
+    info: DistributorInfo,
+  ): void {
+    // Check required fields
+    const requiredFields: (keyof DistributorInfo)[] = [
+      "type",
+      "discovered_block",
+      "discovered_date",
+      "tx_hash",
+      "method",
+      "owner",
+      "event_data",
+    ];
+
+    for (const field of requiredFields) {
+      if (info[field] === undefined || info[field] === null) {
+        throw new Error(
+          `Missing required field '${field}' for distributor ${address}`,
+        );
+      }
+    }
+
+    // Validate distributor type
+    if (!isValidDistributorType(info.type)) {
+      throw new Error(
+        `Invalid distributor type '${info.type}' for distributor ${address}`,
+      );
+    }
+
+    // Validate date format
+    this.validateDateFormat(info.discovered_date);
+
+    // Validate transaction hash
+    if (!TX_HASH_REGEX.test(info.tx_hash)) {
+      throw new Error(
+        `Invalid transaction hash '${info.tx_hash}' for distributor ${address}`,
+      );
+    }
+
+    // Validate block number
+    this.validateBlockNumber(info.discovered_block);
+
+    // Validate owner address
+    this.validateAddress(info.owner);
   }
 }
