@@ -27,6 +27,7 @@ const ISO_DATE_SEPARATOR = "T";
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
 const BALANCES_FILE = "balances.json";
+const OUTFLOWS_FILE = "outflows.json";
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const JSON_INDENT_SIZE = 2;
@@ -116,7 +117,7 @@ export class FileManager implements FileManagerInterface {
       STORE_DIR,
       DISTRIBUTORS_DIR,
       validatedAddress,
-      "outflows.json",
+      OUTFLOWS_FILE,
     );
 
     if (!fs.existsSync(filePath)) {
@@ -139,7 +140,7 @@ export class FileManager implements FileManagerInterface {
       STORE_DIR,
       DISTRIBUTORS_DIR,
       validatedAddress,
-      "outflows.json",
+      OUTFLOWS_FILE,
     );
 
     fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
