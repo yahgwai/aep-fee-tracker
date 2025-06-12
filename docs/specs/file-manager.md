@@ -326,132 +326,94 @@ Error: Missing required field in distributor data
 
 All tests use real file system operations with temporary directories. No mocking.
 
-### Test Cases
+### Functional Test Areas
 
-#### 1. Block Numbers - Read/Write Operations
+The File Manager component should be tested in the following functional areas:
 
-- `should return empty BlockNumberData when block_numbers.json does not exist` - Reads missing file and returns proper empty structure with metadata
-- `should write and read back BlockNumberData with multiple date entries` - Writes complete block data and verifies exact match on read
-- `should preserve block number precision for large block numbers` - Tests with block numbers like 200000000+ to ensure no precision loss
-- `should format JSON with 2-space indentation for human readability` - Verifies output file has proper pretty-printing
-- `should maintain date ordering in blocks object` - Ensures dates remain in chronological order after write/read cycle
-- `should handle single date entry correctly` - Tests edge case of just one date-block mapping
+#### 1. Core File Operations
 
-#### 2. Distributors - Read/Write Operations
+**Block Numbers Management**
+- Reading and writing block number mappings
+- Handling missing files (return empty structures)
+- Preserving data integrity through read/write cycles
+- Supporting incremental updates
 
-- `should return empty DistributorsData when distributors.json does not exist` - Reads missing file and returns proper empty structure with metadata
-- `should write and read back DistributorsData with multiple distributors` - Tests with 5+ distributors of different types
-- `should preserve all distributor metadata fields` - Verifies no fields are lost in serialization (tx_hash, event_data, etc.)
-- `should maintain distributor addresses as object keys` - Ensures addresses used as keys are preserved exactly
-- `should handle distributors with very long event_data hex strings` - Tests with actual mainnet event data lengths
+**Distributors Registry**
+- Managing the distributors list and metadata
+- Preserving all fields during serialization
+- Using addresses as object keys correctly
 
-#### 3. Balance Data - Read/Write Operations
+**Per-Distributor Data**
+- Reading and writing balance histories
+- Reading and writing outflow events
+- Creating distributor directories automatically
+- Supporting large datasets (365+ days)
 
-- `should return empty BalanceData when balances.json does not exist` - Returns proper structure with metadata for missing file
-- `should create distributor directory when writing balances for new address` - Verifies directory creation happens automatically
-- `should write and read back BalanceData with many dates` - Tests with 365+ daily balance entries
-- `should preserve wei values as strings without modification` - Ensures "1000000000000000000000" stays exactly as string
-- `should handle balance of 0 correctly` - Tests edge case of "0" balance storage and retrieval
-- `should update existing balance file with new dates` - Tests incremental updates to existing balance data
+#### 2. Data Type Handling
 
-#### 4. Outflow Data - Read/Write Operations
+**Wei Values**
+- Storing as decimal strings (no scientific notation)
+- Preventing precision loss
+- Handling zero and maximum uint256 values
 
-- `should return empty OutflowData when outflows.json does not exist` - Returns proper structure with metadata for missing file
-- `should create distributor directory when writing outflows for new address` - Verifies directory creation for new distributor
-- `should write and read back OutflowData with multiple events per day` - Tests days with 10+ distribution events
-- `should preserve event order within daily arrays` - Ensures events maintain their array order
-- `should handle days with no events (empty events array)` - Tests edge case of days with total_outflow_wei "0" and empty events
-- `should calculate and store total_outflow_wei correctly` - Verifies sum of event values matches total
+**Block Numbers**
+- Storing as regular numbers (not strings)
+- Supporting large block numbers without overflow
 
-#### 5. Address Validation
+**Dates**
+- Enforcing YYYY-MM-DD format
+- Validating actual calendar dates
 
-- `should checksum lowercase addresses before storing` - Converts "0xabc..." to properly checksummed "0xAbC..."
-- `should accept already checksummed addresses` - Passes through correctly formatted addresses unchanged
-- `should reject addresses shorter than 42 characters` - Throws ValidationError with clear message
-- `should reject addresses longer than 42 characters` - Throws ValidationError with clear message
-- `should reject addresses with invalid characters` - Rejects addresses containing non-hex characters
-- `should reject addresses that don't start with 0x` - Ensures proper Ethereum address format
-- `should provide specific error for invalid checksum` - Clear error when address has wrong capitalization
+#### 3. Validation Logic
 
-#### 6. Date Validation
+**Address Validation**
+- Checksumming addresses using ethers.js
+- Rejecting invalid formats
+- Providing clear error messages
 
-- `should accept valid YYYY-MM-DD format dates` - Validates dates like "2024-01-15" pass validation
-- `should reject dates with invalid format (MM/DD/YYYY)` - Throws error for American date format
-- `should reject dates with invalid format (DD-MM-YYYY)` - Throws error for European date format
-- `should reject dates with single digit months` - Rejects "2024-1-15" in favor of "2024-01-15"
-- `should reject dates with single digit days` - Rejects "2024-01-5" in favor of "2024-01-05"
-- `should reject invalid dates like February 30` - Validates actual calendar dates
-- `should handle leap year dates correctly` - Accepts "2024-02-29" but rejects "2023-02-29"
+**Schema Validation**
+- Enforcing required fields
+- Validating enum values (distributor types)
+- Checking data types match interfaces
 
-#### 7. Wei Value Validation
+**Input Sanitization**
+- Preventing negative values where inappropriate
+- Ensuring proper string/number types
+- Validating date formats
 
-- `should accept valid decimal string wei values` - Validates strings like "1000000000000000000000"
-- `should reject numeric wei values (not strings)` - Throws error if number type passed instead of string
-- `should reject wei values in scientific notation` - Rejects "1.23e+21" format with clear error
-- `should reject negative wei values` - Throws error for "-1000" with appropriate message
-- `should reject wei values with decimal points` - Rejects "1000.5" as wei must be integers
-- `should accept zero as valid wei value "0"` - Ensures "0" is valid wei string
-- `should handle maximum uint256 wei values` - Tests with "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+#### 4. Error Handling
 
-#### 8. Block Number Validation
+**File System Errors**
+- Handling missing files gracefully
+- Managing permission issues
+- Dealing with disk space problems
 
-- `should accept positive integer block numbers` - Validates numbers like 12345678
-- `should reject negative block numbers` - Throws error for block number -1
-- `should reject zero as block number` - Throws error as block 0 is genesis (no previous block)
-- `should reject non-integer block numbers` - Throws error for 12345.67
-- `should reject string block numbers` - Ensures block numbers are stored as numbers, not strings
-- `should handle very large block numbers` - Tests with block numbers up to 999999999
+**Data Corruption**
+- Detecting invalid JSON
+- Providing helpful error messages with context
+- Including file paths and line numbers
 
-#### 9. Distributor Type Validation
+**Validation Failures**
+- Showing what failed and why
+- Suggesting fixes
+- Including expected formats
 
-- `should accept valid L2_BASE_FEE distributor type` - Validates enum value properly
-- `should accept valid L2_SURPLUS_FEE distributor type` - Validates enum value properly
-- `should accept valid L1_SURPLUS_FEE distributor type` - Validates enum value properly
-- `should reject invalid distributor type "UNKNOWN"` - Throws error with list of valid types
-- `should reject lowercase distributor types` - Ensures exact enum match (case sensitive)
-- `should provide helpful error listing all valid types` - Error message includes all valid options
+#### 5. File System Management
 
-#### 10. Directory Creation
+**Directory Operations**
+- Creating directories as needed
+- Setting proper permissions (0755 for dirs, 0644 for files)
+- Handling concurrent operations
 
-- `should create store directory if it does not exist` - Tests ensureStoreDirectory() creates base directory
-- `should create nested distributor directory on first write` - Creates store/distributors/0xABC.../ path
-- `should handle concurrent directory creation gracefully` - Multiple writes don't cause race condition errors
-- `should not error if directory already exists` - Idempotent directory creation
-- `should create directories with 0755 permissions` - Verifies correct directory permissions
-- `should create files with 0644 permissions` - Verifies correct file permissions
+**Atomic Operations**
+- Preventing partial writes
+- Maintaining data consistency
+- Not corrupting existing files on failure
 
-#### 11. Error Messages
-
-- `should include file path in file system errors` - Error shows exact path that failed
-- `should include field name and value in validation errors` - Shows what field failed and why
-- `should suggest fixes for common errors` - Includes actionable next steps
-- `should differentiate between corruption and missing files` - Clear different messages for each case
-- `should include line and column for JSON parse errors` - Points to exact location of syntax error
-- `should show expected format for validation failures` - Shows example of correct format
-
-#### 12. Atomic Write Operations
-
-- `should not leave partial files on write failure` - File doesn't exist if write fails midway
-- `should not corrupt existing file if update fails` - Original file unchanged on failed update
-- `should write complete file in single operation` - No incremental writing that could fail partially
-- `should handle disk full errors gracefully` - Appropriate error without partial data
-- `should handle permission denied errors clearly` - Specific error about permissions
-
-#### 13. JSON Formatting
-
-- `should write JSON with 2-space indentation` - Human readable formatting verified
-- `should write each object property on new line` - No minified JSON output
-- `should write arrays with proper indentation` - Array elements properly indented
-- `should not include trailing commas` - Valid JSON without trailing commas
-- `should use consistent property ordering` - Metadata always before data sections
-
-#### 14. Integration Tests
-
-- `should handle full lifecycle of new distributor` - Discovery, balance fetch, outflow recording, all files created
-- `should support incremental daily updates` - Add new dates to existing files without losing data
-- `should maintain consistency across all files` - Same distributor appears correctly in all relevant files
-- `should handle 1000+ distributors without performance issues` - Tests scalability of file operations
-- `should work with actual mainnet data examples` - Tests with real addresses and values from Arbitrum
+**JSON Formatting**
+- Using 2-space indentation
+- Maintaining human readability
+- Consistent property ordering
 
 
 
