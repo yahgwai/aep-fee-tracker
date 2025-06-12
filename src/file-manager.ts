@@ -323,59 +323,13 @@ export class FileManager implements FileManagerInterface {
     date: string,
     address: Address,
   ): void {
-    // Check if it's a string
-    if (typeof value !== "string") {
-      throw new Error(
-        `Invalid balance value in balances.json\n` +
-          `  Date: ${date}\n` +
-          `  Value: ${value}\n` +
-          `  Expected: String value\n` +
-          `  File: store/distributors/${address}/balances.json`,
-      );
-    }
-
-    // Check for scientific notation
-    if (value.includes("e") || value.includes("E")) {
-      throw new Error(
-        `Invalid numeric format in balances.json\n` +
-          `  Date: ${date}\n` +
-          `  Value: ${value}\n` +
-          `  Expected: Decimal string (e.g., "1230000000000000000000")\n` +
-          `  File: store/distributors/${address}/balances.json`,
-      );
-    }
-
-    // Check for decimal point
-    if (value.includes(".")) {
-      throw new Error(
-        `Invalid balance value in balances.json\n` +
-          `  Date: ${date}\n` +
-          `  Value: ${value}\n` +
-          `  Expected: Integer string (no decimal points)\n` +
-          `  File: store/distributors/${address}/balances.json`,
-      );
-    }
-
-    // Check if it's a valid decimal string (only digits)
-    if (!/^\d+$/.test(value)) {
-      // Check for negative values
-      if (value.startsWith("-")) {
-        throw new Error(
-          `Invalid balance value in balances.json\n` +
-            `  Date: ${date}\n` +
-            `  Value: ${value}\n` +
-            `  Expected: Non-negative decimal string\n` +
-            `  File: store/distributors/${address}/balances.json`,
-        );
-      }
-      throw new Error(
-        `Invalid balance value in balances.json\n` +
-          `  Date: ${date}\n` +
-          `  Value: ${value}\n` +
-          `  Expected: Decimal string containing only digits\n` +
-          `  File: store/distributors/${address}/balances.json`,
-      );
-    }
+    this.validateWeiValueInternal(
+      value,
+      date,
+      address,
+      "balance",
+      BALANCES_FILE,
+    );
   }
 
   private validateOutflowData(address: Address, data: OutflowData): void {
@@ -426,36 +380,52 @@ export class FileManager implements FileManagerInterface {
     date: string,
     address: Address,
   ): void {
+    this.validateWeiValueInternal(
+      value,
+      date,
+      address,
+      "outflow",
+      OUTFLOWS_FILE,
+    );
+  }
+
+  private validateWeiValueInternal(
+    value: string,
+    date: string,
+    address: Address,
+    valueType: string,
+    fileName: string,
+  ): void {
     // Check if it's a string
     if (typeof value !== "string") {
       throw new Error(
-        `Invalid outflow value in outflows.json\n` +
+        `Invalid ${valueType} value in ${fileName}\n` +
           `  Date: ${date}\n` +
           `  Value: ${value}\n` +
           `  Expected: String value\n` +
-          `  File: store/distributors/${address}/outflows.json`,
+          `  File: store/distributors/${address}/${fileName}`,
       );
     }
 
     // Check for scientific notation
     if (value.includes("e") || value.includes("E")) {
       throw new Error(
-        `Invalid numeric format in outflows.json\n` +
+        `Invalid numeric format in ${fileName}\n` +
           `  Date: ${date}\n` +
           `  Value: ${value}\n` +
           `  Expected: Decimal string (e.g., "1230000000000000000000")\n` +
-          `  File: store/distributors/${address}/outflows.json`,
+          `  File: store/distributors/${address}/${fileName}`,
       );
     }
 
     // Check for decimal point
     if (value.includes(".")) {
       throw new Error(
-        `Invalid outflow value in outflows.json\n` +
+        `Invalid ${valueType} value in ${fileName}\n` +
           `  Date: ${date}\n` +
           `  Value: ${value}\n` +
           `  Expected: Integer string (no decimal points)\n` +
-          `  File: store/distributors/${address}/outflows.json`,
+          `  File: store/distributors/${address}/${fileName}`,
       );
     }
 
@@ -464,19 +434,19 @@ export class FileManager implements FileManagerInterface {
       // Check for negative values
       if (value.startsWith("-")) {
         throw new Error(
-          `Invalid outflow value in outflows.json\n` +
+          `Invalid ${valueType} value in ${fileName}\n` +
             `  Date: ${date}\n` +
             `  Value: ${value}\n` +
             `  Expected: Non-negative decimal string\n` +
-            `  File: store/distributors/${address}/outflows.json`,
+            `  File: store/distributors/${address}/${fileName}`,
         );
       }
       throw new Error(
-        `Invalid outflow value in outflows.json\n` +
+        `Invalid ${valueType} value in ${fileName}\n` +
           `  Date: ${date}\n` +
           `  Value: ${value}\n` +
           `  Expected: Decimal string containing only digits\n` +
-          `  File: store/distributors/${address}/outflows.json`,
+          `  File: store/distributors/${address}/${fileName}`,
       );
     }
   }
