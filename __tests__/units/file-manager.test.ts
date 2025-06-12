@@ -1818,4 +1818,217 @@ describe("FileManager - Core Structure", () => {
     });
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  describe("enhanced validation in existing methods", () => {
+    beforeEach(async () => {
+      fileManager = new FileManager();
+    });
+
+    describe("writeBlockNumbers()", () => {
+      it("should use validateDateFormat for date validation with context", async () => {
+        const invalidDate = "2024-13-45"; // Invalid month and day
+        const testData: BlockNumberData = {
+          metadata: {
+            chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          },
+          blocks: {
+            [invalidDate]: 12345678,
+          },
+        };
+
+        await expect(fileManager.writeBlockNumbers(testData)).rejects.toThrow(
+          "Invalid date format: 2024-13-45. Expected YYYY-MM-DD",
+        );
+      });
+
+      it("should use validateBlockNumber for block validation with context", async () => {
+        const testData: BlockNumberData = {
+          metadata: {
+            chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          },
+          blocks: {
+            "2024-01-15": -100, // Negative block number
+          },
+        };
+
+        await expect(fileManager.writeBlockNumbers(testData)).rejects.toThrow(
+          "Block number must be a positive integer: -100",
+        );
+      });
+
+      it("should validate calendar dates not just format", async () => {
+        const testData: BlockNumberData = {
+          metadata: {
+            chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          },
+          blocks: {
+            "2024-02-30": 12345678, // February 30th doesn't exist
+          },
+        };
+
+        await expect(fileManager.writeBlockNumbers(testData)).rejects.toThrow(
+          "Invalid calendar date: 2024-02-30",
+        );
+      });
+
+      it("should validate block numbers are within reasonable range", async () => {
+        const testData: BlockNumberData = {
+          metadata: {
+            chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          },
+          blocks: {
+            "2024-01-15": 2000000000, // Exceeds 1 billion blocks
+          },
+        };
+
+        await expect(fileManager.writeBlockNumbers(testData)).rejects.toThrow(
+          "Block number exceeds reasonable maximum: 2000000000 (max: 1000000000)",
+        );
+      });
+    });
+
+    describe("writeDistributors()", () => {
+      it("should use validateEnumValue for distributor type validation", async () => {
+        const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+        const testData: DistributorsData = {
+          metadata: {
+            chain_id: CHAIN_IDS.ARBITRUM_ONE,
+            arbowner_address: "0x0000000000000000000000000000000000000001",
+          },
+          distributors: {
+            [address]: {
+              address: address,
+              // @ts-expect-error Testing invalid type
+              type: "INVALID_TYPE",
+              display_name: "Test Distributor",
+            },
+          },
+        };
+
+        await expect(fileManager.writeDistributors(testData)).rejects.toThrow(
+          "Invalid DistributorType value: INVALID_TYPE. Valid values are: L2_BASE_FEE, L2_SURPLUS_FEE",
+        );
+      });
+    });
+
+    describe("writeDistributorBalances()", () => {
+      it("should use validateWeiValue with proper context for balance validation", async () => {
+        const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+        const testData: BalanceData = {
+          metadata: {
+            chain_id: CHAIN_IDS.ARBITRUM_ONE,
+            reward_distributor: address,
+          },
+          balances: {
+            "2024-01-15": {
+              block_number: 12345678,
+              balance_wei: "1.23e21", // Scientific notation
+            },
+          },
+        };
+
+        await expect(
+          fileManager.writeDistributorBalances(address, testData),
+        ).rejects.toThrow(
+          `Invalid numeric format\n` +
+            `  Field: balance_wei\n` +
+            `  Date: 2024-01-15\n` +
+            `  Value: 1.23e21\n` +
+            `  Expected: Decimal string (e.g., "1230000000000000000000")\n`,
+        );
+      });
+    });
+
+    describe("writeDistributorOutflows()", () => {
+      it("should use validateWeiValue with context for total_outflow_wei", async () => {
+        const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+        const testData: OutflowData = {
+          metadata: {
+            chain_id: CHAIN_IDS.ARBITRUM_ONE,
+            reward_distributor: address,
+          },
+          outflows: {
+            "2024-01-15": {
+              block_number: 12345678,
+              total_outflow_wei: "1e18", // Scientific notation
+              events: [],
+            },
+          },
+        };
+
+        await expect(
+          fileManager.writeDistributorOutflows(address, testData),
+        ).rejects.toThrow(
+          `Invalid numeric format\n` +
+            `  Field: total_outflow_wei\n` +
+            `  Date: 2024-01-15\n` +
+            `  Value: 1e18\n` +
+            `  Expected: Decimal string (e.g., "1230000000000000000000")\n`,
+        );
+      });
+
+      it("should use validateWeiValue with context for event value_wei", async () => {
+        const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+        const testData: OutflowData = {
+          metadata: {
+            chain_id: CHAIN_IDS.ARBITRUM_ONE,
+            reward_distributor: address,
+          },
+          outflows: {
+            "2024-01-15": {
+              block_number: 12345678,
+              total_outflow_wei: "1000000000000000000",
+              events: [
+                {
+                  recipient: "0xAaa1234567890123456789012345678901234567",
+                  value_wei: "1.0e18", // Scientific notation
+                  tx_hash:
+                    "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                },
+              ],
+            },
+          },
+        };
+
+        await expect(
+          fileManager.writeDistributorOutflows(address, testData),
+        ).rejects.toThrow(
+          `Invalid numeric format\n` +
+            `  Field: event.value_wei\n` +
+            `  Date: 2024-01-15\n` +
+            `  Value: 1.0e18\n` +
+            `  Expected: Decimal string (e.g., "1230000000000000000000")\n`,
+        );
+      });
+
+      it("should use validateTransactionHash for tx_hash validation", async () => {
+        const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+        const testData: OutflowData = {
+          metadata: {
+            chain_id: CHAIN_IDS.ARBITRUM_ONE,
+            reward_distributor: address,
+          },
+          outflows: {
+            "2024-01-15": {
+              block_number: 12345678,
+              total_outflow_wei: "1000000000000000000",
+              events: [
+                {
+                  recipient: "0xAaa1234567890123456789012345678901234567",
+                  value_wei: "1000000000000000000",
+                  tx_hash: "0xinvalidhash", // Invalid tx hash
+                },
+              ],
+            },
+          },
+        };
+
+        await expect(
+          fileManager.writeDistributorOutflows(address, testData),
+        ).rejects.toThrow(
+          "Invalid transaction hash format: 0xinvalidhash. Expected 0x followed by 64 hexadecimal characters",
+        );
+      });
+    });
+  });
 });
