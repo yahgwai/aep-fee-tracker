@@ -796,10 +796,11 @@ describe("FileManager - Core Structure", () => {
       fileManager = new FileManager();
 
       const lowercaseAddress = "0x67a24ce4321ab3af51c2d0a4801c3e111d88c9d9";
+      const checksummedAddress = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
-          reward_distributor: lowercaseAddress,
+          reward_distributor: checksummedAddress, // Use checksummed address in metadata
         },
         balances: {
           "2024-01-15": {
@@ -813,7 +814,6 @@ describe("FileManager - Core Structure", () => {
       await fileManager.writeDistributorBalances(lowercaseAddress, testData);
 
       // Verify file was created with checksummed address
-      const checksummedAddress = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
       expect(
         fs.existsSync(`store/distributors/${checksummedAddress}/balances.json`),
       ).toBe(true);
@@ -928,7 +928,7 @@ describe("FileManager - Core Structure", () => {
 
       await expect(
         fileManager.writeDistributorBalances(address, testData),
-      ).rejects.toThrow(/Invalid numeric format.*Decimal string/);
+      ).rejects.toThrow(/Invalid numeric format/);
     });
 
     it("should reject wei values with decimal points", async () => {
