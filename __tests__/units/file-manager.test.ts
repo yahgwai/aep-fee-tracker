@@ -427,4 +427,197 @@ describe("FileManager - Core Structure", () => {
       expect(result).toEqual(testData);
     });
   });
+
+  describe("writeDistributors()", () => {
+    it("should validate all distributor addresses are checksummed", async () => {
+      fileManager = new FileManager();
+
+      const invalidData: DistributorsData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          arbowner_address: CONTRACTS.ARB_OWNER,
+        },
+        distributors: {
+          "0x67a24ce4321ab3af51c2d0a4801c3e111d88c9d9": {
+            type: DistributorType.L2_BASE_FEE,
+            discovered_block: 12345678,
+            discovered_date: "2024-01-15",
+            tx_hash:
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+            method: "0xee95a824",
+            owner: CONTRACTS.ARB_OWNER,
+            event_data:
+              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+          },
+        },
+      };
+
+      await expect(fileManager.writeDistributors(invalidData)).rejects.toThrow(
+        /address.*checksum/i,
+      );
+    });
+
+    it("should validate distributor types match the DistributorType enum", async () => {
+      fileManager = new FileManager();
+
+      const invalidData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          arbowner_address: CONTRACTS.ARB_OWNER,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            type: "INVALID_TYPE",
+            discovered_block: 12345678,
+            discovered_date: "2024-01-15",
+            tx_hash:
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+            method: "0xee95a824",
+            owner: CONTRACTS.ARB_OWNER,
+            event_data:
+              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributors(
+          invalidData as unknown as DistributorsData,
+        ),
+      ).rejects.toThrow(/Invalid distributor type/);
+    });
+
+    it("should ensure all required fields are present", async () => {
+      fileManager = new FileManager();
+
+      const missingFieldData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          arbowner_address: CONTRACTS.ARB_OWNER,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            type: DistributorType.L2_BASE_FEE,
+            discovered_block: 12345678,
+            // missing discovered_date
+            tx_hash:
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+            method: "0xee95a824",
+            owner: CONTRACTS.ARB_OWNER,
+            event_data:
+              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributors(
+          missingFieldData as unknown as DistributorsData,
+        ),
+      ).rejects.toThrow(/Missing required field.*discovered_date/);
+    });
+
+    it("should validate date formats", async () => {
+      fileManager = new FileManager();
+
+      const invalidDateData: DistributorsData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          arbowner_address: CONTRACTS.ARB_OWNER,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            type: DistributorType.L2_BASE_FEE,
+            discovered_block: 12345678,
+            discovered_date: "01/15/2024",
+            tx_hash:
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+            method: "0xee95a824",
+            owner: CONTRACTS.ARB_OWNER,
+            event_data:
+              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributors(invalidDateData),
+      ).rejects.toThrow(/Invalid date format/);
+    });
+
+    it("should validate transaction hashes", async () => {
+      fileManager = new FileManager();
+
+      const invalidTxHashData: DistributorsData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          arbowner_address: CONTRACTS.ARB_OWNER,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            type: DistributorType.L2_BASE_FEE,
+            discovered_block: 12345678,
+            discovered_date: "2024-01-15",
+            tx_hash: "0xinvalid",
+            method: "0xee95a824",
+            owner: CONTRACTS.ARB_OWNER,
+            event_data:
+              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributors(invalidTxHashData),
+      ).rejects.toThrow(/Invalid transaction hash/);
+    });
+
+    it("should format JSON with 2-space indentation", async () => {
+      fileManager = new FileManager();
+
+      const testData: DistributorsData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          arbowner_address: CONTRACTS.ARB_OWNER,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            type: DistributorType.L2_BASE_FEE,
+            discovered_block: 12345678,
+            discovered_date: "2024-01-15",
+            tx_hash:
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+            method: "0xee95a824",
+            owner: CONTRACTS.ARB_OWNER,
+            event_data:
+              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+          },
+        },
+      };
+
+      await fileManager.writeDistributors(testData);
+
+      const fileContent = fs.readFileSync("store/distributors.json", "utf-8");
+      expect(fileContent).toBe(JSON.stringify(testData, null, 2));
+    });
+
+    it("should create store directory if it does not exist", async () => {
+      fileManager = new FileManager();
+
+      expect(fs.existsSync("store")).toBe(false);
+
+      const testData: DistributorsData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          arbowner_address: CONTRACTS.ARB_OWNER,
+        },
+        distributors: {},
+      };
+
+      await fileManager.writeDistributors(testData);
+
+      expect(fs.existsSync("store")).toBe(true);
+      expect(fs.existsSync("store/distributors.json")).toBe(true);
+    });
+  });
 });
