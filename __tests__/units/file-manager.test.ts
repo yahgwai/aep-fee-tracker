@@ -7,6 +7,7 @@ import {
   FileManager as FileManagerInterface,
   BlockNumberData,
   DistributorsData,
+  DistributorType,
   CHAIN_IDS,
   CONTRACTS,
 } from "../../src/types";
@@ -373,6 +374,57 @@ describe("FileManager - Core Structure", () => {
         },
         distributors: {},
       });
+    });
+
+    it("should write and read back DistributorsData with multiple distributors", async () => {
+      fileManager = new FileManager();
+
+      const testData: DistributorsData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          arbowner_address: CONTRACTS.ARB_OWNER,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            type: DistributorType.L2_BASE_FEE,
+            discovered_block: 12345678,
+            discovered_date: "2024-01-15",
+            tx_hash:
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+            method: "0xee95a824",
+            owner: CONTRACTS.ARB_OWNER,
+            event_data:
+              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+          },
+          "0x1234567890123456789012345678901234567890": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            discovered_block: 15678901,
+            discovered_date: "2024-06-01",
+            tx_hash:
+              "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
+            method: "0x2d9125e9",
+            owner: CONTRACTS.ARB_OWNER,
+            event_data:
+              "0x0000000000000000000000001234567890123456789012345678901234567890",
+          },
+          "0xABCDEF1234567890ABCDEF1234567890ABCDEF12": {
+            type: DistributorType.L1_SURPLUS_FEE,
+            discovered_block: 18901234,
+            discovered_date: "2024-09-15",
+            tx_hash:
+              "0x7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678",
+            method: "0x934be07d",
+            owner: CONTRACTS.ARB_OWNER,
+            event_data:
+              "0x000000000000000000000000abcdef1234567890abcdef1234567890abcdef12",
+          },
+        },
+      };
+
+      await fileManager.writeDistributors(testData);
+      const result = await fileManager.readDistributors();
+
+      expect(result).toEqual(testData);
     });
   });
 });
