@@ -678,10 +678,9 @@ describe("FileManager - Core Structure", () => {
       };
 
       // Add 365 days of balance data
-      const startDate = new Date("2024-01-01");
+      const startDate = new Date("2024-01-01T00:00:00.000Z");
       for (let i = 0; i < 365; i++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + i);
+        const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
         const dateStr = fileManager.formatDate(date);
         testData.balances[dateStr] = {
           block_number: 12345678 + i * 1000,

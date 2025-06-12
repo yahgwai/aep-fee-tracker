@@ -11,6 +11,7 @@ import {
   BalanceData,
   OutflowData,
   STORE_DIR,
+  DISTRIBUTORS_DIR,
   CHAIN_IDS,
   CONTRACTS,
   isValidDistributorType,
@@ -26,6 +27,7 @@ const ADDRESS_PREFIX = "0x";
 const ISO_DATE_SEPARATOR = "T";
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
+const BALANCES_FILE = "balances.json";
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const JSON_INDENT_SIZE = 2;
@@ -74,17 +76,38 @@ export class FileManager implements FileManagerInterface {
   }
 
   async readDistributorBalances(address: Address): Promise<BalanceData> {
-    void address;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const validatedAddress = this.validateAddress(address);
+    const filePath = path.join(
+      STORE_DIR,
+      DISTRIBUTORS_DIR,
+      validatedAddress,
+      BALANCES_FILE,
+    );
+
+    if (!fs.existsSync(filePath)) {
+      return this.createEmptyBalanceData(validatedAddress);
+    }
+
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(fileContent) as BalanceData;
   }
 
   async writeDistributorBalances(
     address: Address,
     data: BalanceData,
   ): Promise<void> {
-    void address;
-    void data;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const validatedAddress = this.validateAddress(address);
+
+    await this.ensureDistributorDirectory(validatedAddress);
+
+    const filePath = path.join(
+      STORE_DIR,
+      DISTRIBUTORS_DIR,
+      validatedAddress,
+      BALANCES_FILE,
+    );
+
+    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
   }
 
   async readDistributorOutflows(address: Address): Promise<OutflowData> {
@@ -146,6 +169,23 @@ export class FileManager implements FileManagerInterface {
       },
       distributors: {},
     };
+  }
+
+  private createEmptyBalanceData(address: Address): BalanceData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        reward_distributor: address,
+      },
+      balances: {},
+    };
+  }
+
+  private async ensureDistributorDirectory(address: Address): Promise<void> {
+    const dirPath = path.join(STORE_DIR, DISTRIBUTORS_DIR, address);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
   }
 
   private validateBlockNumberData(data: BlockNumberData): void {
