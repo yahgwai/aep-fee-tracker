@@ -18,7 +18,6 @@ import {
 } from "./types";
 
 // Error messages
-const ERROR_NOT_IMPLEMENTED = "Not implemented";
 const ERROR_INVALID_ADDRESS = "Invalid address";
 const ERROR_BAD_CHECKSUM = "bad address checksum";
 
@@ -28,6 +27,7 @@ const ISO_DATE_SEPARATOR = "T";
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
 const BALANCES_FILE = "balances.json";
+const OUTFLOWS_FILE = "outflows.json";
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const JSON_INDENT_SIZE = 2;
@@ -112,17 +112,39 @@ export class FileManager implements FileManagerInterface {
   }
 
   async readDistributorOutflows(address: Address): Promise<OutflowData> {
-    void address;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const validatedAddress = this.validateAddress(address);
+    const filePath = path.join(
+      STORE_DIR,
+      DISTRIBUTORS_DIR,
+      validatedAddress,
+      OUTFLOWS_FILE,
+    );
+
+    if (!fs.existsSync(filePath)) {
+      return this.createEmptyOutflowData(validatedAddress);
+    }
+
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(fileContent) as OutflowData;
   }
 
   async writeDistributorOutflows(
     address: Address,
     data: OutflowData,
   ): Promise<void> {
-    void address;
-    void data;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const validatedAddress = this.validateAddress(address);
+    this.validateOutflowData(validatedAddress, data);
+
+    await this.ensureDistributorDirectory(validatedAddress);
+
+    const filePath = path.join(
+      STORE_DIR,
+      DISTRIBUTORS_DIR,
+      validatedAddress,
+      OUTFLOWS_FILE,
+    );
+
+    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
   }
 
   async ensureStoreDirectory(): Promise<void> {
@@ -179,6 +201,16 @@ export class FileManager implements FileManagerInterface {
         reward_distributor: address,
       },
       balances: {},
+    };
+  }
+
+  private createEmptyOutflowData(address: Address): OutflowData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        reward_distributor: address,
+      },
+      outflows: {},
     };
   }
 
@@ -291,36 +323,109 @@ export class FileManager implements FileManagerInterface {
     date: string,
     address: Address,
   ): void {
+    this.validateWeiValueInternal(
+      value,
+      date,
+      address,
+      "balance",
+      BALANCES_FILE,
+    );
+  }
+
+  private validateOutflowData(address: Address, data: OutflowData): void {
+    // Validate metadata
+    if (data.metadata.reward_distributor !== address) {
+      throw new Error(
+        `Reward distributor address mismatch: expected ${address}, got ${data.metadata.reward_distributor}`,
+      );
+    }
+
+    // Validate outflows
+    for (const [date, outflow] of Object.entries(data.outflows)) {
+      this.validateDateFormat(date);
+      this.validateBlockNumber(outflow.block_number);
+      this.validateOutflowWeiValue(outflow.total_outflow_wei, date, address);
+
+      // Validate events
+      let totalEventWei = BigInt(0);
+      for (const event of outflow.events) {
+        // Validate recipient address is checksummed
+        if (event.recipient !== this.validateAddress(event.recipient)) {
+          throw new Error(
+            `Recipient address must be checksummed: ${event.recipient}`,
+          );
+        }
+
+        // Validate event value
+        this.validateOutflowWeiValue(event.value_wei, date, address);
+
+        // Validate transaction hash
+        this.validateTransactionHash(event.tx_hash);
+
+        // Add to total
+        totalEventWei += BigInt(event.value_wei);
+      }
+
+      // Validate that total matches sum of events
+      if (totalEventWei.toString() !== outflow.total_outflow_wei) {
+        throw new Error(
+          `Total outflow mismatch for ${date}: expected ${totalEventWei.toString()}, got ${outflow.total_outflow_wei}`,
+        );
+      }
+    }
+  }
+
+  private validateOutflowWeiValue(
+    value: string,
+    date: string,
+    address: Address,
+  ): void {
+    this.validateWeiValueInternal(
+      value,
+      date,
+      address,
+      "outflow",
+      OUTFLOWS_FILE,
+    );
+  }
+
+  private validateWeiValueInternal(
+    value: string,
+    date: string,
+    address: Address,
+    valueType: string,
+    fileName: string,
+  ): void {
     // Check if it's a string
     if (typeof value !== "string") {
       throw new Error(
-        `Invalid balance value in balances.json\n` +
+        `Invalid ${valueType} value in ${fileName}\n` +
           `  Date: ${date}\n` +
           `  Value: ${value}\n` +
           `  Expected: String value\n` +
-          `  File: store/distributors/${address}/balances.json`,
+          `  File: store/distributors/${address}/${fileName}`,
       );
     }
 
     // Check for scientific notation
     if (value.includes("e") || value.includes("E")) {
       throw new Error(
-        `Invalid numeric format in balances.json\n` +
+        `Invalid numeric format in ${fileName}\n` +
           `  Date: ${date}\n` +
           `  Value: ${value}\n` +
           `  Expected: Decimal string (e.g., "1230000000000000000000")\n` +
-          `  File: store/distributors/${address}/balances.json`,
+          `  File: store/distributors/${address}/${fileName}`,
       );
     }
 
     // Check for decimal point
     if (value.includes(".")) {
       throw new Error(
-        `Invalid balance value in balances.json\n` +
+        `Invalid ${valueType} value in ${fileName}\n` +
           `  Date: ${date}\n` +
           `  Value: ${value}\n` +
           `  Expected: Integer string (no decimal points)\n` +
-          `  File: store/distributors/${address}/balances.json`,
+          `  File: store/distributors/${address}/${fileName}`,
       );
     }
 
@@ -329,20 +434,26 @@ export class FileManager implements FileManagerInterface {
       // Check for negative values
       if (value.startsWith("-")) {
         throw new Error(
-          `Invalid balance value in balances.json\n` +
+          `Invalid ${valueType} value in ${fileName}\n` +
             `  Date: ${date}\n` +
             `  Value: ${value}\n` +
             `  Expected: Non-negative decimal string\n` +
-            `  File: store/distributors/${address}/balances.json`,
+            `  File: store/distributors/${address}/${fileName}`,
         );
       }
       throw new Error(
-        `Invalid balance value in balances.json\n` +
+        `Invalid ${valueType} value in ${fileName}\n` +
           `  Date: ${date}\n` +
           `  Value: ${value}\n` +
           `  Expected: Decimal string containing only digits\n` +
-          `  File: store/distributors/${address}/balances.json`,
+          `  File: store/distributors/${address}/${fileName}`,
       );
+    }
+  }
+
+  private validateTransactionHash(txHash: string): void {
+    if (!TX_HASH_REGEX.test(txHash)) {
+      throw new Error(`Invalid transaction hash: ${txHash}`);
     }
   }
 }
