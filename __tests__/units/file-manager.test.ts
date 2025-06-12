@@ -8,6 +8,7 @@ import {
   BlockNumberData,
   DistributorsData,
   DistributorType,
+  BalanceData,
   CHAIN_IDS,
   CONTRACTS,
 } from "../../src/types";
@@ -618,6 +619,389 @@ describe("FileManager - Core Structure", () => {
 
       expect(fs.existsSync("store")).toBe(true);
       expect(fs.existsSync("store/distributors.json")).toBe(true);
+    });
+  });
+
+  describe("readDistributorBalances()", () => {
+    it("should return empty BalanceData when balances.json does not exist", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const result = await fileManager.readDistributorBalances(address);
+
+      expect(result).toEqual({
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {},
+      });
+    });
+
+    it("should create distributor directory when writing balances for new address", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "1000000000000000000000",
+          },
+        },
+      };
+
+      expect(fs.existsSync(`store/distributors/${address}`)).toBe(false);
+
+      await fileManager.writeDistributorBalances(address, testData);
+
+      expect(fs.existsSync(`store/distributors/${address}`)).toBe(true);
+      expect(fs.existsSync(`store/distributors/${address}/balances.json`)).toBe(
+        true,
+      );
+    });
+
+    it("should write and read back BalanceData with many dates", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {},
+      };
+
+      // Add 365 days of balance data
+      const startDate = new Date("2024-01-01T00:00:00.000Z");
+      for (let i = 0; i < 365; i++) {
+        const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+        const dateStr = fileManager.formatDate(date);
+        testData.balances[dateStr] = {
+          block_number: 12345678 + i * 1000,
+          balance_wei: `${1000 + i}000000000000000000000`,
+        };
+      }
+
+      await fileManager.writeDistributorBalances(address, testData);
+      const result = await fileManager.readDistributorBalances(address);
+
+      expect(result).toEqual(testData);
+      expect(Object.keys(result.balances).length).toBe(365);
+    });
+
+    it("should preserve wei values as strings without modification", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const exactWeiValue = "1234567890123456789012345678901234567890";
+
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: exactWeiValue,
+          },
+        },
+      };
+
+      await fileManager.writeDistributorBalances(address, testData);
+      const result = await fileManager.readDistributorBalances(address);
+
+      expect(result.balances["2024-01-15"]?.balance_wei).toBe(exactWeiValue);
+      expect(typeof result.balances["2024-01-15"]?.balance_wei).toBe("string");
+    });
+
+    it("should handle balance of 0 correctly", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "0",
+          },
+        },
+      };
+
+      await fileManager.writeDistributorBalances(address, testData);
+      const result = await fileManager.readDistributorBalances(address);
+
+      expect(result.balances["2024-01-15"]?.balance_wei).toBe("0");
+    });
+
+    it("should update existing balance file with new dates", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+
+      // Write initial data
+      const initialData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "1000000000000000000000",
+          },
+        },
+      };
+
+      await fileManager.writeDistributorBalances(address, initialData);
+
+      // Update with additional dates
+      const updatedData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "1000000000000000000000",
+          },
+          "2024-01-16": {
+            block_number: 12356789,
+            balance_wei: "2000000000000000000000",
+          },
+        },
+      };
+
+      await fileManager.writeDistributorBalances(address, updatedData);
+      const result = await fileManager.readDistributorBalances(address);
+
+      expect(result).toEqual(updatedData);
+      expect(Object.keys(result.balances).length).toBe(2);
+    });
+  });
+
+  describe("writeDistributorBalances()", () => {
+    it("should validate address is checksummed", async () => {
+      fileManager = new FileManager();
+
+      const lowercaseAddress = "0x67a24ce4321ab3af51c2d0a4801c3e111d88c9d9";
+      const checksummedAddress = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: checksummedAddress, // Use checksummed address in metadata
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "1000000000000000000000",
+          },
+        },
+      };
+
+      // Should automatically checksum the address
+      await fileManager.writeDistributorBalances(lowercaseAddress, testData);
+
+      // Verify file was created with checksummed address
+      expect(
+        fs.existsSync(`store/distributors/${checksummedAddress}/balances.json`),
+      ).toBe(true);
+    });
+
+    it("should validate reward_distributor matches the address parameter", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const differentAddress = "0x1234567890123456789012345678901234567890";
+
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: differentAddress,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "1000000000000000000000",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributorBalances(address, testData),
+      ).rejects.toThrow(/address mismatch/);
+    });
+
+    it("should validate date formats in balances", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "01/15/2024": {
+            block_number: 12345678,
+            balance_wei: "1000000000000000000000",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributorBalances(address, testData),
+      ).rejects.toThrow(/Invalid date format/);
+    });
+
+    it("should validate block numbers are positive", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: -1,
+            balance_wei: "1000000000000000000000",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributorBalances(address, testData),
+      ).rejects.toThrow(/positive integer/);
+    });
+
+    it("should reject negative wei values", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "-1000",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributorBalances(address, testData),
+      ).rejects.toThrow(/Non-negative decimal string/);
+    });
+
+    it("should reject wei values in scientific notation", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "1.23e+21",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributorBalances(address, testData),
+      ).rejects.toThrow(/Invalid numeric format/);
+    });
+
+    it("should reject wei values with decimal points", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "1000.5",
+          },
+        },
+      };
+
+      await expect(
+        fileManager.writeDistributorBalances(address, testData),
+      ).rejects.toThrow(/no decimal points/);
+    });
+
+    it("should handle maximum uint256 wei values", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const maxUint256 =
+        "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: maxUint256,
+          },
+        },
+      };
+
+      await fileManager.writeDistributorBalances(address, testData);
+      const result = await fileManager.readDistributorBalances(address);
+
+      expect(result.balances["2024-01-15"]?.balance_wei).toBe(maxUint256);
+    });
+
+    it("should format JSON with 2-space indentation", async () => {
+      fileManager = new FileManager();
+
+      const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
+      const testData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          reward_distributor: address,
+        },
+        balances: {
+          "2024-01-15": {
+            block_number: 12345678,
+            balance_wei: "1000000000000000000000",
+          },
+        },
+      };
+
+      await fileManager.writeDistributorBalances(address, testData);
+
+      const filePath = `store/distributors/${address}/balances.json`;
+      const fileContent = fs.readFileSync(filePath, "utf-8");
+
+      expect(fileContent).toBe(JSON.stringify(testData, null, 2));
     });
   });
 });

@@ -11,6 +11,7 @@ import {
   BalanceData,
   OutflowData,
   STORE_DIR,
+  DISTRIBUTORS_DIR,
   CHAIN_IDS,
   CONTRACTS,
   isValidDistributorType,
@@ -26,6 +27,7 @@ const ADDRESS_PREFIX = "0x";
 const ISO_DATE_SEPARATOR = "T";
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
+const BALANCES_FILE = "balances.json";
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const JSON_INDENT_SIZE = 2;
@@ -74,17 +76,39 @@ export class FileManager implements FileManagerInterface {
   }
 
   async readDistributorBalances(address: Address): Promise<BalanceData> {
-    void address;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const validatedAddress = this.validateAddress(address);
+    const filePath = path.join(
+      STORE_DIR,
+      DISTRIBUTORS_DIR,
+      validatedAddress,
+      BALANCES_FILE,
+    );
+
+    if (!fs.existsSync(filePath)) {
+      return this.createEmptyBalanceData(validatedAddress);
+    }
+
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(fileContent) as BalanceData;
   }
 
   async writeDistributorBalances(
     address: Address,
     data: BalanceData,
   ): Promise<void> {
-    void address;
-    void data;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const validatedAddress = this.validateAddress(address);
+    this.validateBalanceData(validatedAddress, data);
+
+    await this.ensureDistributorDirectory(validatedAddress);
+
+    const filePath = path.join(
+      STORE_DIR,
+      DISTRIBUTORS_DIR,
+      validatedAddress,
+      BALANCES_FILE,
+    );
+
+    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
   }
 
   async readDistributorOutflows(address: Address): Promise<OutflowData> {
@@ -146,6 +170,23 @@ export class FileManager implements FileManagerInterface {
       },
       distributors: {},
     };
+  }
+
+  private createEmptyBalanceData(address: Address): BalanceData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        reward_distributor: address,
+      },
+      balances: {},
+    };
+  }
+
+  private async ensureDistributorDirectory(address: Address): Promise<void> {
+    const dirPath = path.join(STORE_DIR, DISTRIBUTORS_DIR, address);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
   }
 
   private validateBlockNumberData(data: BlockNumberData): void {
@@ -227,5 +268,81 @@ export class FileManager implements FileManagerInterface {
 
     // Validate owner address
     this.validateAddress(info.owner);
+  }
+
+  private validateBalanceData(address: Address, data: BalanceData): void {
+    // Validate metadata
+    if (data.metadata.reward_distributor !== address) {
+      throw new Error(
+        `Reward distributor address mismatch: expected ${address}, got ${data.metadata.reward_distributor}`,
+      );
+    }
+
+    // Validate balances
+    for (const [date, balance] of Object.entries(data.balances)) {
+      this.validateDateFormat(date);
+      this.validateBlockNumber(balance.block_number);
+      this.validateWeiValue(balance.balance_wei, date, address);
+    }
+  }
+
+  private validateWeiValue(
+    value: string,
+    date: string,
+    address: Address,
+  ): void {
+    // Check if it's a string
+    if (typeof value !== "string") {
+      throw new Error(
+        `Invalid balance value in balances.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: String value\n` +
+          `  File: store/distributors/${address}/balances.json`,
+      );
+    }
+
+    // Check for scientific notation
+    if (value.includes("e") || value.includes("E")) {
+      throw new Error(
+        `Invalid numeric format in balances.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: Decimal string (e.g., "1230000000000000000000")\n` +
+          `  File: store/distributors/${address}/balances.json`,
+      );
+    }
+
+    // Check for decimal point
+    if (value.includes(".")) {
+      throw new Error(
+        `Invalid balance value in balances.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: Integer string (no decimal points)\n` +
+          `  File: store/distributors/${address}/balances.json`,
+      );
+    }
+
+    // Check if it's a valid decimal string (only digits)
+    if (!/^\d+$/.test(value)) {
+      // Check for negative values
+      if (value.startsWith("-")) {
+        throw new Error(
+          `Invalid balance value in balances.json\n` +
+            `  Date: ${date}\n` +
+            `  Value: ${value}\n` +
+            `  Expected: Non-negative decimal string\n` +
+            `  File: store/distributors/${address}/balances.json`,
+        );
+      }
+      throw new Error(
+        `Invalid balance value in balances.json\n` +
+          `  Date: ${date}\n` +
+          `  Value: ${value}\n` +
+          `  Expected: Decimal string containing only digits\n` +
+          `  File: store/distributors/${address}/balances.json`,
+      );
+    }
   }
 }
