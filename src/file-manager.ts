@@ -22,6 +22,8 @@ const ERROR_BAD_CHECKSUM = "bad address checksum";
 const ADDRESS_PREFIX = "0x";
 const ISO_DATE_SEPARATOR = "T";
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
+const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const JSON_INDENT_SIZE = 2;
 
 export class FileManager implements FileManagerInterface {
   constructor() {}
@@ -30,12 +32,7 @@ export class FileManager implements FileManagerInterface {
     const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
 
     if (!fs.existsSync(filePath)) {
-      return {
-        metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
-        },
-        blocks: {},
-      };
+      return this.createEmptyBlockNumberData();
     }
 
     const fileContent = fs.readFileSync(filePath, "utf-8");
@@ -43,25 +40,12 @@ export class FileManager implements FileManagerInterface {
   }
 
   async writeBlockNumbers(data: BlockNumberData): Promise<void> {
-    // Validate dates and block numbers
-    for (const [date, blockNumber] of Object.entries(data.blocks)) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
-      }
+    this.validateBlockNumberData(data);
 
-      if (!Number.isInteger(blockNumber) || blockNumber <= 0) {
-        throw new Error(
-          `Block number must be a positive integer, got: ${blockNumber}`,
-        );
-      }
-    }
-
-    // Ensure store directory exists
     await this.ensureStoreDirectory();
 
-    // Write file with 2-space indentation
     const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
   }
 
   async readDistributors(): Promise<DistributorsData> {
@@ -127,5 +111,35 @@ export class FileManager implements FileManagerInterface {
 
   formatDate(date: Date): DateString {
     return date.toISOString().split(ISO_DATE_SEPARATOR)[0] as DateString;
+  }
+
+  private createEmptyBlockNumberData(): BlockNumberData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+      },
+      blocks: {},
+    };
+  }
+
+  private validateBlockNumberData(data: BlockNumberData): void {
+    for (const [date, blockNumber] of Object.entries(data.blocks)) {
+      this.validateDateFormat(date);
+      this.validateBlockNumber(blockNumber);
+    }
+  }
+
+  private validateDateFormat(date: string): void {
+    if (!DATE_FORMAT_REGEX.test(date)) {
+      throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
+    }
+  }
+
+  private validateBlockNumber(blockNumber: number): void {
+    if (!Number.isInteger(blockNumber) || blockNumber <= 0) {
+      throw new Error(
+        `Block number must be a positive integer, got: ${blockNumber}`,
+      );
+    }
   }
 }
