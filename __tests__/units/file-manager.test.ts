@@ -6,7 +6,9 @@ import { FileManager } from "../../src/file-manager";
 import {
   FileManager as FileManagerInterface,
   BlockNumberData,
+  DistributorsData,
   CHAIN_IDS,
+  CONTRACTS,
 } from "../../src/types";
 
 describe("FileManager - Core Structure", () => {
@@ -355,6 +357,22 @@ describe("FileManager - Core Structure", () => {
 
       expect(fs.existsSync("store")).toBe(true);
       expect(fs.existsSync("store/block_numbers.json")).toBe(true);
+    });
+  });
+
+  describe("readDistributors()", () => {
+    it("should return empty DistributorsData when distributors.json does not exist", async () => {
+      fileManager = new FileManager();
+
+      const result: DistributorsData = await fileManager.readDistributors();
+
+      expect(result).toEqual({
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          arbowner_address: CONTRACTS.ARB_OWNER,
+        },
+        distributors: {},
+      });
     });
   });
 });
