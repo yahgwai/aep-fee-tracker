@@ -114,12 +114,7 @@ export interface FileManager {
   formatDate(date: Date): DateString;
   validateDateFormat(date: string): void;
   validateBlockNumber(blockNumber: number): void;
-  validateWeiValue(
-    value: string,
-    field?: string,
-    date?: string,
-    address?: string,
-  ): void;
+  validateWeiValue(value: string, field?: string, date?: string): void;
   validateTransactionHash(txHash: string): void;
   validateEnumValue(
     value: string,

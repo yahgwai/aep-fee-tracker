@@ -487,7 +487,7 @@ describe("FileManager - Core Structure", () => {
         fileManager.writeDistributors(
           invalidData as unknown as DistributorsData,
         ),
-      ).rejects.toThrow(/Invalid distributor type/);
+      ).rejects.toThrow(/Invalid DistributorType value/);
     });
 
     it("should ensure all required fields are present", async () => {
@@ -1632,7 +1632,7 @@ describe("FileManager - Core Structure", () => {
         ).toThrow("Invalid calendar date: 2024-02-30");
         expect(() =>
           (fileManager as any).validateDateFormat("2024-13-01"),
-        ).toThrow("Invalid calendar date: 2024-13-01");
+        ).toThrow("Invalid date format: 2024-13-01. Expected YYYY-MM-DD");
         expect(() =>
           (fileManager as any).validateDateFormat("2023-02-29"),
         ).toThrow("Invalid calendar date: 2023-02-29");
@@ -1646,7 +1646,7 @@ describe("FileManager - Core Structure", () => {
           (fileManager as any).validateBlockNumber(12345678),
         ).not.toThrow();
         expect(() =>
-          (fileManager as any).validateBlockNumber(Number.MAX_SAFE_INTEGER),
+          (fileManager as any).validateBlockNumber(999999999),
         ).not.toThrow();
       });
 
@@ -1671,7 +1671,9 @@ describe("FileManager - Core Structure", () => {
       it("should reject numbers outside reasonable range", () => {
         expect(() =>
           (fileManager as any).validateBlockNumber(999999999999),
-        ).toThrow("Block number outside reasonable range: 999999999999");
+        ).toThrow(
+          "Block number exceeds reasonable maximum: 999999999999 (max: 1000000000)",
+        );
       });
     });
 
@@ -1736,7 +1738,6 @@ describe("FileManager - Core Structure", () => {
             expect(error.message).toContain("Date: 2024-01-15");
             expect(error.message).toContain("Value: 1.23e+21");
             expect(error.message).toContain("Expected: Decimal string");
-            expect(error.message).toContain("Address: 0x123...456");
           }
         }
       });
@@ -1760,21 +1761,21 @@ describe("FileManager - Core Structure", () => {
         expect(() =>
           (fileManager as any).validateTransactionHash("0x123"),
         ).toThrow(
-          "Invalid transaction hash: 0x123. Expected 0x followed by 64 hex characters",
+          "Invalid transaction hash format: 0x123. Expected 0x followed by 64 hexadecimal characters",
         );
         expect(() =>
           (fileManager as any).validateTransactionHash(
             "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
           ),
         ).toThrow(
-          "Invalid transaction hash: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef. Expected 0x followed by 64 hex characters",
+          "Invalid transaction hash format: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef. Expected 0x followed by 64 hexadecimal characters",
         );
         expect(() =>
           (fileManager as any).validateTransactionHash(
             "0xgggg567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
           ),
         ).toThrow(
-          "Invalid transaction hash: 0xgggg567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef. Expected 0x followed by 64 hex characters",
+          "Invalid transaction hash format: 0xgggg567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef. Expected 0x followed by 64 hexadecimal characters",
         );
       });
     });
@@ -1852,7 +1853,7 @@ describe("FileManager - Core Structure", () => {
         };
 
         await expect(fileManager.writeBlockNumbers(testData)).rejects.toThrow(
-          "Block number must be a positive integer: -100",
+          "Block number must be a positive integer, got: -100",
         );
       });
 
@@ -1901,6 +1902,13 @@ describe("FileManager - Core Structure", () => {
               // @ts-expect-error Testing invalid type
               type: "INVALID_TYPE",
               display_name: "Test Distributor",
+              discovered_block: 12345678,
+              discovered_date: "2024-01-15",
+              tx_hash:
+                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+              method: "create",
+              owner: "0x0000000000000000000000000000000000000001",
+              event_data: "{}",
             },
           },
         };

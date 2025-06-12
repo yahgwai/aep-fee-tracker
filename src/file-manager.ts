@@ -8,13 +8,13 @@ import {
   BlockNumberData,
   DistributorsData,
   DistributorInfo,
+  DistributorType,
   BalanceData,
   OutflowData,
   STORE_DIR,
   DISTRIBUTORS_DIR,
   CHAIN_IDS,
   CONTRACTS,
-  isValidDistributorType,
 } from "./types";
 
 // Error messages
@@ -28,7 +28,7 @@ const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
 const BALANCES_FILE = "balances.json";
 const OUTFLOWS_FILE = "outflows.json";
-const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_FORMAT_REGEX = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const TX_HASH_LENGTH = 64;
 const JSON_INDENT_SIZE = 2;
@@ -264,49 +264,58 @@ export class FileManager implements FileManagerInterface {
 
     // Check reasonable range
     if (blockNumber > MAX_REASONABLE_BLOCK) {
-      throw new Error(`Block number outside reasonable range: ${blockNumber}`);
+      throw new Error(
+        `Block number exceeds reasonable maximum: ${blockNumber} (max: ${MAX_REASONABLE_BLOCK})`,
+      );
     }
   }
 
-  validateWeiValue(
-    value: string,
-    field?: string,
-    date?: string,
-    address?: string,
-  ): void {
+  validateWeiValue(value: string, field?: string, date?: string): void {
     // Check if it's a string
     if (typeof value !== "string") {
+      if (field) {
+        throw new Error(
+          `Invalid wei value\n` +
+            `  Field: ${field}\n` +
+            (date ? `  Date: ${date}\n` : "") +
+            `  Value: ${value}\n` +
+            `  Expected: String value\n`,
+        );
+      }
       throw new Error(
-        `Invalid wei value\n` +
-          (field ? `  Field: ${field}\n` : "") +
-          (date ? `  Date: ${date}\n` : "") +
-          `  Value: ${value}\n` +
-          `  Expected: String value\n` +
-          (address ? `  Address: ${address}` : ""),
+        `Invalid wei value. Value: ${value}. Expected: String value`,
       );
     }
 
     // Check for scientific notation
     if (value.includes("e") || value.includes("E")) {
+      if (field) {
+        throw new Error(
+          `Invalid numeric format\n` +
+            `  Field: ${field}\n` +
+            (date ? `  Date: ${date}\n` : "") +
+            `  Value: ${value}\n` +
+            `  Expected: Decimal string (e.g., "1230000000000000000000")\n`,
+        );
+      }
       throw new Error(
-        `Invalid numeric format\n` +
-          (field ? `  Field: ${field}\n` : "") +
-          (date ? `  Date: ${date}\n` : "") +
-          `  Value: ${value}\n` +
-          `  Expected: Decimal string (e.g., "1230000000000000000000")\n` +
-          (address ? `  Address: ${address}` : ""),
+        `Invalid numeric format. Value: ${value}. Expected: Decimal string (e.g., "1230000000000000000000")`,
       );
     }
 
     // Check for decimal point
     if (value.includes(".")) {
+      if (field) {
+        throw new Error(
+          `Invalid wei value\n` +
+            `  Field: ${field}\n` +
+            (date ? `  Date: ${date}\n` : "") +
+            `  Value: ${value}\n` +
+            `  Expected: Integer string (no decimal points)\n`,
+        );
+      }
       throw new Error(
-        `Invalid wei value\n` +
-          (field ? `  Field: ${field}\n` : "") +
-          (date ? `  Date: ${date}\n` : "") +
-          `  Value: ${value}\n` +
-          `  Expected: Integer string (no decimal points)\n` +
-          (address ? `  Address: ${address}` : ""),
+        `Invalid wei value. Value: ${value}. Expected: Integer string (no decimal points)`,
       );
     }
 
@@ -314,22 +323,30 @@ export class FileManager implements FileManagerInterface {
     if (!/^\d+$/.test(value)) {
       // Check for negative values
       if (value.startsWith("-")) {
+        if (field) {
+          throw new Error(
+            `Invalid wei value\n` +
+              `  Field: ${field}\n` +
+              (date ? `  Date: ${date}\n` : "") +
+              `  Value: ${value}\n` +
+              `  Expected: Non-negative decimal string\n`,
+          );
+        }
+        throw new Error(
+          `Invalid wei value. Value: ${value}. Expected: Non-negative decimal string`,
+        );
+      }
+      if (field) {
         throw new Error(
           `Invalid wei value\n` +
-            (field ? `  Field: ${field}\n` : "") +
+            `  Field: ${field}\n` +
             (date ? `  Date: ${date}\n` : "") +
             `  Value: ${value}\n` +
-            `  Expected: Non-negative decimal string\n` +
-            (address ? `  Address: ${address}` : ""),
+            `  Expected: Decimal string containing only digits\n`,
         );
       }
       throw new Error(
-        `Invalid wei value\n` +
-          (field ? `  Field: ${field}\n` : "") +
-          (date ? `  Date: ${date}\n` : "") +
-          `  Value: ${value}\n` +
-          `  Expected: Decimal string containing only digits\n` +
-          (address ? `  Address: ${address}` : ""),
+        `Invalid wei value. Value: ${value}. Expected: Decimal string containing only digits`,
       );
     }
   }
@@ -371,21 +388,17 @@ export class FileManager implements FileManagerInterface {
     }
 
     // Validate distributor type
-    if (!isValidDistributorType(info.type)) {
-      throw new Error(
-        `Invalid distributor type '${info.type}' for distributor ${address}`,
-      );
-    }
+    this.validateEnumValue(
+      info.type,
+      "DistributorType",
+      Object.values(DistributorType),
+    );
 
     // Validate date format
     this.validateDateFormat(info.discovered_date);
 
     // Validate transaction hash
-    if (!TX_HASH_REGEX.test(info.tx_hash)) {
-      throw new Error(
-        `Invalid transaction hash '${info.tx_hash}' for distributor ${address}`,
-      );
-    }
+    this.validateTransactionHash(info.tx_hash);
 
     // Validate block number
     this.validateBlockNumber(info.discovered_block);
@@ -406,22 +419,12 @@ export class FileManager implements FileManagerInterface {
     for (const [date, balance] of Object.entries(data.balances)) {
       this.validateDateFormat(date);
       this.validateBlockNumber(balance.block_number);
-      this.validateWeiValueForBalance(balance.balance_wei, date, address);
+      this.validateWeiValueForBalance(balance.balance_wei, date);
     }
   }
 
-  private validateWeiValueForBalance(
-    value: string,
-    date: string,
-    address: Address,
-  ): void {
-    this.validateWeiValueInternal(
-      value,
-      date,
-      address,
-      "balance",
-      BALANCES_FILE,
-    );
+  private validateWeiValueForBalance(value: string, date: string): void {
+    this.validateWeiValue(value, "balance_wei", date);
   }
 
   private validateOutflowData(address: Address, data: OutflowData): void {
@@ -436,7 +439,11 @@ export class FileManager implements FileManagerInterface {
     for (const [date, outflow] of Object.entries(data.outflows)) {
       this.validateDateFormat(date);
       this.validateBlockNumber(outflow.block_number);
-      this.validateOutflowWeiValue(outflow.total_outflow_wei, date, address);
+      this.validateWeiValue(
+        outflow.total_outflow_wei,
+        "total_outflow_wei",
+        date,
+      );
 
       // Validate events
       let totalEventWei = BigInt(0);
@@ -449,7 +456,7 @@ export class FileManager implements FileManagerInterface {
         }
 
         // Validate event value
-        this.validateOutflowWeiValue(event.value_wei, date, address);
+        this.validateWeiValue(event.value_wei, "event.value_wei", date);
 
         // Validate transaction hash
         this.validateTransactionHash(event.tx_hash);
@@ -467,54 +474,10 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
-  private validateOutflowWeiValue(
-    value: string,
-    date: string,
-    address: Address,
-  ): void {
-    this.validateWeiValueInternal(
-      value,
-      date,
-      address,
-      "outflow",
-      OUTFLOWS_FILE,
-    );
-  }
-
-  private validateWeiValueInternal(
-    value: string,
-    date: string,
-    address: Address,
-    valueType: string,
-    fileName: string,
-  ): void {
-    try {
-      this.validateWeiValue(value, valueType, date, address);
-    } catch (error) {
-      if (error instanceof Error) {
-        // Re-throw with file-specific context
-        const message = error.message
-          .replace(
-            /Invalid wei value/,
-            `Invalid ${valueType} value in ${fileName}`,
-          )
-          .replace(
-            /Invalid numeric format/,
-            `Invalid numeric format in ${fileName}`,
-          );
-
-        throw new Error(
-          message + `\n  File: store/distributors/${address}/${fileName}`,
-        );
-      }
-      throw error;
-    }
-  }
-
   validateTransactionHash(txHash: string): void {
     if (!TX_HASH_REGEX.test(txHash)) {
       throw new Error(
-        `Invalid transaction hash: ${txHash}. Expected 0x followed by ${TX_HASH_LENGTH} hex characters`,
+        `Invalid transaction hash format: ${txHash}. Expected 0x followed by ${TX_HASH_LENGTH} hexadecimal characters`,
       );
     }
   }
