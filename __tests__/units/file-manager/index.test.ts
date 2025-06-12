@@ -4,6 +4,6 @@
 import "./core-structure.test";
 import "./block-numbers.test";
 import "./distributors.test";
-import "./distributor-balances.test";
-import "./distributor-outflows.test";
+import "./distributor-balances/index.test";
+import "./distributor-outflows/index.test";
 import "./validation-helpers.test";
