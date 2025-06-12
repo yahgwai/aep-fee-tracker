@@ -390,7 +390,7 @@ describe("FileManager - Core Structure", () => {
             discovered_block: 12345678,
             discovered_date: "2024-01-15",
             tx_hash:
-              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
             method: "0xee95a824",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
@@ -401,18 +401,18 @@ describe("FileManager - Core Structure", () => {
             discovered_block: 15678901,
             discovered_date: "2024-06-01",
             tx_hash:
-              "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
+              "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
             method: "0x2d9125e9",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
               "0x0000000000000000000000001234567890123456789012345678901234567890",
           },
-          "0xABCDEF1234567890ABCDEF1234567890ABCDEF12": {
+          "0x2234567890123456789012345678901234567890": {
             type: DistributorType.L1_SURPLUS_FEE,
             discovered_block: 18901234,
             discovered_date: "2024-09-15",
             tx_hash:
-              "0x7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678",
+              "0x7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef123456",
             method: "0x934be07d",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
@@ -443,7 +443,7 @@ describe("FileManager - Core Structure", () => {
             discovered_block: 12345678,
             discovered_date: "2024-01-15",
             tx_hash:
-              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
             method: "0xee95a824",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
@@ -471,7 +471,7 @@ describe("FileManager - Core Structure", () => {
             discovered_block: 12345678,
             discovered_date: "2024-01-15",
             tx_hash:
-              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
             method: "0xee95a824",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
@@ -501,7 +501,7 @@ describe("FileManager - Core Structure", () => {
             discovered_block: 12345678,
             // missing discovered_date
             tx_hash:
-              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
             method: "0xee95a824",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
@@ -531,7 +531,7 @@ describe("FileManager - Core Structure", () => {
             discovered_block: 12345678,
             discovered_date: "01/15/2024",
             tx_hash:
-              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
             method: "0xee95a824",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
@@ -586,7 +586,7 @@ describe("FileManager - Core Structure", () => {
             discovered_block: 12345678,
             discovered_date: "2024-01-15",
             tx_hash:
-              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
             method: "0xee95a824",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
