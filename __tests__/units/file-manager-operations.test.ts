@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { FileManager } from '../../src/file-manager';
+import { FileManager, ValidationError } from '../../src/file-manager';
 import { BlockNumberData, DistributorsData, BalanceData, OutflowData, DistributorType, FileManagerError } from '../../src/types';
 import { randomBytes } from 'crypto';
 
@@ -112,7 +112,7 @@ describe('FileManager - Operations Tests', () => {
 
       try {
         await fileManager.readBlockNumbers();
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(FileManagerError);
         const err = error as FileManagerError;
@@ -124,7 +124,7 @@ describe('FileManager - Operations Tests', () => {
     it('should include field name and value in validation errors', async () => {
       try {
         fileManager.validateAddress("invalid-address");
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         const err = error as ValidationError;
         expect(err.field).toBe('address');
@@ -137,7 +137,7 @@ describe('FileManager - Operations Tests', () => {
     it('should suggest fixes for common errors', async () => {
       try {
         fileManager.validateWeiValue("1.23e+21");
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         const err = error as ValidationError;
         expect(err.message).toContain('scientific notation');
@@ -157,7 +157,7 @@ describe('FileManager - Operations Tests', () => {
 
       try {
         await fileManager.readBlockNumbers();
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(FileManagerError);
         const err = error as FileManagerError;
@@ -172,7 +172,7 @@ describe('FileManager - Operations Tests', () => {
 
       try {
         await fileManager.readBlockNumbers();
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(FileManagerError);
         const err = error as FileManagerError;
@@ -183,7 +183,7 @@ describe('FileManager - Operations Tests', () => {
     it('should show expected format for validation failures', async () => {
       try {
         fileManager.validateDateString("01/15/2024");
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         const err = error as ValidationError;
         expect(err.expected).toBe('YYYY-MM-DD');
@@ -205,7 +205,7 @@ describe('FileManager - Operations Tests', () => {
 
       try {
         await fileManager.writeBlockNumbers(testData);
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(FileManagerError);
       }
@@ -236,7 +236,7 @@ describe('FileManager - Operations Tests', () => {
 
       try {
         await fileManager.writeBlockNumbers(updatedData);
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(FileManagerError);
       }
@@ -275,7 +275,7 @@ describe('FileManager - Operations Tests', () => {
 
       try {
         await fileManager.writeBlockNumbers(testData);
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(FileManagerError);
         const err = error as FileManagerError;
@@ -300,7 +300,7 @@ describe('FileManager - Operations Tests', () => {
 
       try {
         await fileManager.writeBlockNumbers(testData);
-        fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(FileManagerError);
         const err = error as FileManagerError;

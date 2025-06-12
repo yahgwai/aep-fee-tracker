@@ -9,7 +9,7 @@ NC='\033[0m' # No Color
 COMMIT_MSG_FILE=$1
 
 # Check for Claude Code references
-if grep -i "claude code\|claude.ai/code\|Generated with.*Claude" "$COMMIT_MSG_FILE" > /dev/null 2>&1; then
+if grep -iE "Generated with.*Claude|claude\.ai/code|🤖 Generated with" "$COMMIT_MSG_FILE" > /dev/null 2>&1; then
     echo "${RED}Error: Commit message contains Claude Code references${NC}"
     echo "Please remove any Claude Code or claude.ai references from your commit message"
     exit 1
