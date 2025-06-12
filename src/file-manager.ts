@@ -18,7 +18,6 @@ import {
 } from "./types";
 
 // Error messages
-const ERROR_NOT_IMPLEMENTED = "Not implemented";
 const ERROR_INVALID_ADDRESS = "Invalid address";
 const ERROR_BAD_CHECKSUM = "bad address checksum";
 
@@ -112,17 +111,38 @@ export class FileManager implements FileManagerInterface {
   }
 
   async readDistributorOutflows(address: Address): Promise<OutflowData> {
-    void address;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const validatedAddress = this.validateAddress(address);
+    const filePath = path.join(
+      STORE_DIR,
+      DISTRIBUTORS_DIR,
+      validatedAddress,
+      "outflows.json",
+    );
+
+    if (!fs.existsSync(filePath)) {
+      return this.createEmptyOutflowData(validatedAddress);
+    }
+
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(fileContent) as OutflowData;
   }
 
   async writeDistributorOutflows(
     address: Address,
     data: OutflowData,
   ): Promise<void> {
-    void address;
-    void data;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const validatedAddress = this.validateAddress(address);
+
+    await this.ensureDistributorDirectory(validatedAddress);
+
+    const filePath = path.join(
+      STORE_DIR,
+      DISTRIBUTORS_DIR,
+      validatedAddress,
+      "outflows.json",
+    );
+
+    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
   }
 
   async ensureStoreDirectory(): Promise<void> {
@@ -179,6 +199,16 @@ export class FileManager implements FileManagerInterface {
         reward_distributor: address,
       },
       balances: {},
+    };
+  }
+
+  private createEmptyOutflowData(address: Address): OutflowData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        reward_distributor: address,
+      },
+      outflows: {},
     };
   }
 
