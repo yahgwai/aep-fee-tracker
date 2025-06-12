@@ -112,6 +112,15 @@ export interface FileManager {
   ensureStoreDirectory(): Promise<void>;
   validateAddress(address: string): Address;
   formatDate(date: Date): DateString;
+  validateDateFormat(date: string): void;
+  validateBlockNumber(blockNumber: number): void;
+  validateWeiValue(value: string, field?: string, date?: string): void;
+  validateTransactionHash(txHash: string): void;
+  validateEnumValue(
+    value: string,
+    enumName: string,
+    validValues: string[],
+  ): void;
 }
 
 // Error Types
