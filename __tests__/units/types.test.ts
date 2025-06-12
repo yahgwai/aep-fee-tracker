@@ -271,6 +271,11 @@ describe("Core Types", () => {
         validateAddress: (address: string) => address as Address,
         formatDate: (date: Date) =>
           date.toISOString().split("T")[0] as DateString,
+        validateDateFormat: () => {},
+        validateBlockNumber: () => {},
+        validateWeiValue: () => {},
+        validateTransactionHash: () => {},
+        validateEnumValue: () => {},
       };
       expect(mockFileManager).toBeDefined();
     });

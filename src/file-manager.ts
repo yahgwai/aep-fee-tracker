@@ -172,7 +172,7 @@ export class FileManager implements FileManagerInterface {
   }
 
   formatDate(date: Date): DateString {
-    return date.toISOString().split(ISO_DATE_SEPARATOR)[0] as DateString;
+    return date.toISOString().split(ISO_DATE_SEPARATOR)[0]!;
   }
 
   private createEmptyBlockNumberData(): BlockNumberData {
@@ -228,16 +228,107 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
-  private validateDateFormat(date: string): void {
+  validateDateFormat(date: string): void {
     if (!DATE_FORMAT_REGEX.test(date)) {
       throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
     }
+
+    // Validate actual calendar date
+    const parts = date.split("-");
+    if (parts.length !== 3) {
+      throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
+    }
+
+    const year = parseInt(parts[0]!, 10);
+    const month = parseInt(parts[1]!, 10);
+    const day = parseInt(parts[2]!, 10);
+    const dateObj = new Date(year, month - 1, day);
+
+    if (
+      dateObj.getFullYear() !== year ||
+      dateObj.getMonth() !== month - 1 ||
+      dateObj.getDate() !== day
+    ) {
+      throw new Error(`Invalid calendar date: ${date}`);
+    }
   }
 
-  private validateBlockNumber(blockNumber: number): void {
+  validateBlockNumber(blockNumber: number): void {
     if (!Number.isInteger(blockNumber) || blockNumber <= 0) {
       throw new Error(
         `Block number must be a positive integer, got: ${blockNumber}`,
+      );
+    }
+
+    // Check reasonable range (Arbitrum mainnet started at block ~0 in 2021)
+    const MAX_REASONABLE_BLOCK = 1000000000; // 1 billion blocks
+    if (blockNumber > MAX_REASONABLE_BLOCK) {
+      throw new Error(`Block number outside reasonable range: ${blockNumber}`);
+    }
+  }
+
+  validateWeiValue(
+    value: string,
+    field?: string,
+    date?: string,
+    address?: string,
+  ): void {
+    // Check if it's a string
+    if (typeof value !== "string") {
+      throw new Error(
+        `Invalid wei value\n` +
+          (field ? `  Field: ${field}\n` : "") +
+          (date ? `  Date: ${date}\n` : "") +
+          `  Value: ${value}\n` +
+          `  Expected: String value\n` +
+          (address ? `  Address: ${address}` : ""),
+      );
+    }
+
+    // Check for scientific notation
+    if (value.includes("e") || value.includes("E")) {
+      throw new Error(
+        `Invalid numeric format\n` +
+          (field ? `  Field: ${field}\n` : "") +
+          (date ? `  Date: ${date}\n` : "") +
+          `  Value: ${value}\n` +
+          `  Expected: Decimal string (e.g., "1230000000000000000000")\n` +
+          (address ? `  Address: ${address}` : ""),
+      );
+    }
+
+    // Check for decimal point
+    if (value.includes(".")) {
+      throw new Error(
+        `Invalid wei value\n` +
+          (field ? `  Field: ${field}\n` : "") +
+          (date ? `  Date: ${date}\n` : "") +
+          `  Value: ${value}\n` +
+          `  Expected: Integer string (no decimal points)\n` +
+          (address ? `  Address: ${address}` : ""),
+      );
+    }
+
+    // Check if it's a valid decimal string (only digits)
+    if (!/^\d+$/.test(value)) {
+      // Check for negative values
+      if (value.startsWith("-")) {
+        throw new Error(
+          `Invalid wei value\n` +
+            (field ? `  Field: ${field}\n` : "") +
+            (date ? `  Date: ${date}\n` : "") +
+            `  Value: ${value}\n` +
+            `  Expected: Non-negative decimal string\n` +
+            (address ? `  Address: ${address}` : ""),
+        );
+      }
+      throw new Error(
+        `Invalid wei value\n` +
+          (field ? `  Field: ${field}\n` : "") +
+          (date ? `  Date: ${date}\n` : "") +
+          `  Value: ${value}\n` +
+          `  Expected: Decimal string containing only digits\n` +
+          (address ? `  Address: ${address}` : ""),
       );
     }
   }
@@ -314,11 +405,11 @@ export class FileManager implements FileManagerInterface {
     for (const [date, balance] of Object.entries(data.balances)) {
       this.validateDateFormat(date);
       this.validateBlockNumber(balance.block_number);
-      this.validateWeiValue(balance.balance_wei, date, address);
+      this.validateWeiValueForBalance(balance.balance_wei, date, address);
     }
   }
 
-  private validateWeiValue(
+  private validateWeiValueForBalance(
     value: string,
     date: string,
     address: Address,
@@ -451,9 +542,23 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
-  private validateTransactionHash(txHash: string): void {
+  validateTransactionHash(txHash: string): void {
     if (!TX_HASH_REGEX.test(txHash)) {
-      throw new Error(`Invalid transaction hash: ${txHash}`);
+      throw new Error(
+        `Invalid transaction hash: ${txHash}. Expected 0x followed by 64 hex characters`,
+      );
+    }
+  }
+
+  validateEnumValue(
+    value: string,
+    enumName: string,
+    validValues: string[],
+  ): void {
+    if (!validValues.includes(value)) {
+      throw new Error(
+        `Invalid ${enumName} value: ${value}. Valid values are: ${validValues.join(", ")}`,
+      );
     }
   }
 }
