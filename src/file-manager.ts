@@ -11,6 +11,7 @@ import {
   OutflowData,
   STORE_DIR,
   CHAIN_IDS,
+  CONTRACTS,
 } from "./types";
 
 // Error messages
@@ -22,6 +23,7 @@ const ERROR_BAD_CHECKSUM = "bad address checksum";
 const ADDRESS_PREFIX = "0x";
 const ISO_DATE_SEPARATOR = "T";
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
+const DISTRIBUTORS_FILE = "distributors.json";
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const JSON_INDENT_SIZE = 2;
 
@@ -49,7 +51,14 @@ export class FileManager implements FileManagerInterface {
   }
 
   async readDistributors(): Promise<DistributorsData> {
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+    const filePath = path.join(STORE_DIR, DISTRIBUTORS_FILE);
+
+    if (!fs.existsSync(filePath)) {
+      return this.createEmptyDistributorsData();
+    }
+
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(fileContent) as DistributorsData;
   }
 
   async writeDistributors(data: DistributorsData): Promise<void> {
@@ -119,6 +128,16 @@ export class FileManager implements FileManagerInterface {
         chain_id: CHAIN_IDS.ARBITRUM_ONE,
       },
       blocks: {},
+    };
+  }
+
+  private createEmptyDistributorsData(): DistributorsData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        arbowner_address: CONTRACTS.ARB_OWNER,
+      },
+      distributors: {},
     };
   }
 
