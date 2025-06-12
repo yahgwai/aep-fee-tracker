@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { FileManager } from '../../src/file-manager';
-import { BlockNumberData, DistributorsData, BalanceData, OutflowData, DistributorType, FileManagerError } from '../../src/types';
+import { BlockNumberData, DistributorsData, BalanceData, OutflowData, DistributorType, FileManagerError, ValidationError } from '../../src/types';
 import { randomBytes } from 'crypto';
 
 describe('FileManager - Operations Tests', () => {
