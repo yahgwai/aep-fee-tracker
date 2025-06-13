@@ -209,7 +209,8 @@ export function getSearchBounds(
   const estimatedBlocks = daysSinceLastBlock * BLOCKS_PER_DAY;
   const upperBound = Math.min(lowerBound + estimatedBlocks, safeCurrentBlock);
 
-  return [lowerBound, upperBound];
+  // Ensure lower bound is at least 1 (block 0 is invalid)
+  return [Math.max(1, lowerBound), upperBound];
 }
 
 function isValidDate(date: unknown): date is Date {
