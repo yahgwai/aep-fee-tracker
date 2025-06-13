@@ -155,6 +155,7 @@ function getDistributorType(methodSig: string): DistributorType | null;
    - Read current distributors and last_scanned_block from `distributors.json`
    - If no last_scanned_block exists, start from block 0
    - Read block number for the end date from `block_numbers.json`
+   - If existing data has chain_id, verify it matches `(await provider.getNetwork()).chainId`
 
 2. **Determine scan range**
 
@@ -179,7 +180,7 @@ function getDistributorType(methodSig: string): DistributorType | null;
    - Add new distributors (skip if already known)
    - Update last_scanned_block to the end block
    - Preserve all existing distributor data
-   - Save updated registry atomically
+   - Save updated registry atomically with chain_id from `(await provider.getNetwork()).chainId`
 
 ### Event Filtering
 
@@ -228,7 +229,7 @@ Updates the `distributors.json` file with discovered distributors:
 ```json
 {
   "metadata": {
-    "chain_id": 42161,
+    "chain_id": 42161, // Retrieved from provider.getNetwork().chainId
     "arbowner_address": "0x0000000000000000000000000000000000000070",
     "last_scanned_block": 12356789
   },
@@ -263,6 +264,7 @@ Updates the `distributors.json` file with discovered distributors:
    - Invalid event structure
    - Malformed addresses
    - Unknown method signatures
+   - Chain ID mismatch between provider and stored data
 
 3. **File System Errors**
    - Unable to read input files
@@ -288,6 +290,13 @@ Error: Invalid distributor address in event
   Block: 12345678
   Data field: 0x1234... (invalid length)
   Expected: 32-byte padded address
+```
+
+```
+Error: Chain ID mismatch
+  Provider chain ID: 42170
+  Stored chain ID: 42161
+  Suggestion: Ensure you're connected to the same network as the stored data
 ```
 
 ## Implementation Requirements
@@ -338,19 +347,25 @@ async function queryWithRetry(
 
 ### Validation Requirements
 
-1. **Address Validation**
+1. **Chain ID Validation**
+
+   - Fetch chain ID from provider using `(await provider.getNetwork()).chainId`
+   - Verify chain ID matches stored metadata if data exists
+   - Ensure we're on a supported Arbitrum chain (42161 or 42170)
+
+2. **Address Validation**
 
    - All addresses must be checksummed using ethers.js
    - Reject zero address or invalid formats
    - Ensure addresses are 20 bytes
 
-2. **Event Validation**
+3. **Event Validation**
 
    - Verify event comes from ArbOwner precompile
    - Check method signature is recognized
    - Validate data field length and format
 
-3. **Data Consistency**
+4. **Data Consistency**
    - Never overwrite existing distributor data
    - Ensure discovered_date matches actual block date
    - Verify block numbers are within scanned range

@@ -12,6 +12,8 @@ No tests exist for the block finder functionality.
 
 - Integration tests verify block finder works with real Arbitrum RPC endpoint
 - Tests verify correct interaction with FileManager for reading and writing block numbers
+- Tests verify chain ID is fetched from provider and stored correctly
+- Tests verify chain ID mismatch detection when switching networks
 - Tests verify incremental processing works correctly (resume after interruption)
 - Tests verify proper handling of date ranges including edge cases
 - Tests verify reorg protection by checking safe block calculations
