@@ -87,7 +87,24 @@ The following method signatures indicate distributor creation:
 
 ## Public API
 
-### Main Function
+### Class Constructor
+
+```typescript
+/**
+ * Creates a new DistributorDetector instance with the specified dependencies.
+ *
+ * @param fileManager - File manager instance for data persistence
+ * @param provider - Ethereum provider for RPC calls
+ */
+class DistributorDetector {
+  constructor(
+    private readonly fileManager: FileManager,
+    private readonly provider: ethers.Provider,
+  ) {}
+}
+```
+
+### Main Method
 
 ```typescript
 /**
@@ -96,19 +113,13 @@ The following method signatures indicate distributor creation:
  * Tracks its own progress to support incremental scanning.
  *
  * @param endDate - Scan up to this date (YYYY-MM-DD format)
- * @param provider - Ethereum provider for RPC calls
- * @param fileManager - File manager instance for data persistence
  * @returns Updated distributor registry data
  * @throws Error if unable to query events or write data
  */
-async function detectDistributors(
-  endDate: string,
-  provider: ethers.Provider,
-  fileManager: FileManager,
-): Promise<DistributorsData>;
+async detectDistributors(endDate: string): Promise<DistributorsData>;
 ```
 
-### Helper Functions
+### Private Methods
 
 ```typescript
 /**
@@ -117,14 +128,12 @@ async function detectDistributors(
  *
  * @param fromBlock - Starting block (inclusive)
  * @param toBlock - Ending block (inclusive)
- * @param provider - Ethereum provider for RPC calls
  * @returns Array of discovered distributor info
  * @throws Error if RPC query fails
  */
-async function scanBlockRange(
+private async scanBlockRange(
   fromBlock: number,
   toBlock: number,
-  provider: ethers.Provider,
 ): Promise<DistributorInfo[]>;
 
 /**
@@ -134,7 +143,7 @@ async function scanBlockRange(
  * @param log - Raw log entry from eth_getLogs
  * @returns Parsed distributor info or null if not a creation event
  */
-function parseDistributorCreation(log: ethers.Log): DistributorInfo | null;
+private parseDistributorCreation(log: ethers.Log): DistributorInfo | null;
 
 /**
  * Determines distributor type from method signature.
@@ -143,7 +152,7 @@ function parseDistributorCreation(log: ethers.Log): DistributorInfo | null;
  * @param methodSig - 4-byte method signature
  * @returns Distributor type or null if unknown
  */
-function getDistributorType(methodSig: string): DistributorType | null;
+private getDistributorType(methodSig: string): DistributorType | null;
 ```
 
 ## Algorithm Details
@@ -460,17 +469,31 @@ import { ethers } from "ethers";
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const fileManager = new FileManager("./store");
 
+// Create DistributorDetector instance
+const distributorDetector = new DistributorDetector(fileManager, provider);
+
 // Detect distributors up to end of January 2024
-const distributors = await DistributorDetector.detectDistributors(
-  "2024-01-31",
-  provider,
-  fileManager,
-);
+const distributors = await distributorDetector.detectDistributors("2024-01-31");
 
 console.log(
   `Found ${Object.keys(distributors.distributors).length} distributors`,
 );
 console.log(`Scanned up to block ${distributors.metadata.last_scanned_block}`);
+```
+
+## Backward Compatibility
+
+For backward compatibility, the module may also export a standalone function that creates a DistributorDetector instance internally:
+
+```typescript
+import { detectDistributors } from "./distributor-detector";
+
+// This function maintains the original API but uses the DistributorDetector class internally
+const distributors = await detectDistributors(
+  "2024-01-31",
+  provider,
+  fileManager,
+);
 ```
 
 ## Future Enhancements
