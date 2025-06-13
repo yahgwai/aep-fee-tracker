@@ -8,100 +8,101 @@ import {
   BlockNumberData,
   DistributorsData,
   DistributorInfo,
+  DistributorType,
   BalanceData,
   OutflowData,
   STORE_DIR,
+  DISTRIBUTORS_DIR,
   CHAIN_IDS,
   CONTRACTS,
-  isValidDistributorType,
 } from "./types";
 
 // Error messages
-const ERROR_NOT_IMPLEMENTED = "Not implemented";
 const ERROR_INVALID_ADDRESS = "Invalid address";
 const ERROR_BAD_CHECKSUM = "bad address checksum";
 
-// Constants
-const ADDRESS_PREFIX = "0x";
-const ISO_DATE_SEPARATOR = "T";
+// File system constants
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
-const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
+const BALANCES_FILE = "balances.json";
+const OUTFLOWS_FILE = "outflows.json";
 const JSON_INDENT_SIZE = 2;
 
+// Ethereum constants
+const ADDRESS_PREFIX = "0x";
+const TX_HASH_LENGTH = 64;
+const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
+
+// Date and time constants
+const DATE_FORMAT_REGEX = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+
+// Validation constants
+const MAX_REASONABLE_BLOCK = 1000000000; // 1 billion blocks - Arbitrum mainnet started at block ~0 in 2021
+const EXAMPLE_WEI_VALUE = "1230000000000000000000";
+const WEI_DECIMAL_REGEX = /^\d+$/;
+
 export class FileManager implements FileManagerInterface {
-  constructor() {}
-
-  async readBlockNumbers(): Promise<BlockNumberData> {
-    const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyBlockNumberData();
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as BlockNumberData;
+  readBlockNumbers(): BlockNumberData {
+    return this.readJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), () =>
+      this.createEmptyBlockNumberData(),
+    );
   }
 
-  async writeBlockNumbers(data: BlockNumberData): Promise<void> {
+  writeBlockNumbers(data: BlockNumberData): void {
     this.validateBlockNumberData(data);
-
-    await this.ensureStoreDirectory();
-
-    const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
+    this.ensureStoreDirectory();
+    this.writeJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), data);
   }
 
-  async readDistributors(): Promise<DistributorsData> {
-    const filePath = path.join(STORE_DIR, DISTRIBUTORS_FILE);
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyDistributorsData();
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as DistributorsData;
+  readDistributors(): DistributorsData {
+    return this.readJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), () =>
+      this.createEmptyDistributorsData(),
+    );
   }
 
-  async writeDistributors(data: DistributorsData): Promise<void> {
+  writeDistributors(data: DistributorsData): void {
     this.validateDistributorsData(data);
-
-    await this.ensureStoreDirectory();
-
-    const filePath = path.join(STORE_DIR, DISTRIBUTORS_FILE);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
+    this.ensureStoreDirectory();
+    this.writeJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), data);
   }
 
-  async readDistributorBalances(address: Address): Promise<BalanceData> {
-    void address;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+  readDistributorBalances(address: Address): BalanceData {
+    const validatedAddress = this.validateAddress(address);
+    return this.readJsonFile(
+      this.getDistributorFilePath(validatedAddress, BALANCES_FILE),
+      () => this.createEmptyBalanceData(validatedAddress),
+    );
   }
 
-  async writeDistributorBalances(
-    address: Address,
-    data: BalanceData,
-  ): Promise<void> {
-    void address;
-    void data;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+  writeDistributorBalances(address: Address, data: BalanceData): void {
+    const validatedAddress = this.validateAddress(address);
+    this.validateBalanceData(validatedAddress, data);
+    this.ensureDistributorDirectory(validatedAddress);
+    this.writeJsonFile(
+      this.getDistributorFilePath(validatedAddress, BALANCES_FILE),
+      data,
+    );
   }
 
-  async readDistributorOutflows(address: Address): Promise<OutflowData> {
-    void address;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+  readDistributorOutflows(address: Address): OutflowData {
+    const validatedAddress = this.validateAddress(address);
+    return this.readJsonFile(
+      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
+      () => this.createEmptyOutflowData(validatedAddress),
+    );
   }
 
-  async writeDistributorOutflows(
-    address: Address,
-    data: OutflowData,
-  ): Promise<void> {
-    void address;
-    void data;
-    throw new Error(ERROR_NOT_IMPLEMENTED);
+  writeDistributorOutflows(address: Address, data: OutflowData): void {
+    const validatedAddress = this.validateAddress(address);
+    this.validateOutflowData(validatedAddress, data);
+    this.ensureDistributorDirectory(validatedAddress);
+    this.writeJsonFile(
+      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
+      data,
+    );
   }
 
-  async ensureStoreDirectory(): Promise<void> {
+  ensureStoreDirectory(): void {
     if (!fs.existsSync(STORE_DIR)) {
       fs.mkdirSync(STORE_DIR, { recursive: true });
     }
@@ -126,7 +127,7 @@ export class FileManager implements FileManagerInterface {
   }
 
   formatDate(date: Date): DateString {
-    return date.toISOString().split(ISO_DATE_SEPARATOR)[0] as DateString;
+    return date.toISOString().split("T")[0]!;
   }
 
   private createEmptyBlockNumberData(): BlockNumberData {
@@ -148,6 +149,50 @@ export class FileManager implements FileManagerInterface {
     };
   }
 
+  private createEmptyBalanceData(address: Address): BalanceData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        reward_distributor: address,
+      },
+      balances: {},
+    };
+  }
+
+  private createEmptyOutflowData(address: Address): OutflowData {
+    return {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_ONE,
+        reward_distributor: address,
+      },
+      outflows: {},
+    };
+  }
+
+  private ensureDistributorDirectory(address: Address): void {
+    const dirPath = path.join(STORE_DIR, DISTRIBUTORS_DIR, address);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+  }
+
+  private getDistributorFilePath(address: Address, fileName: string): string {
+    return path.join(STORE_DIR, DISTRIBUTORS_DIR, address, fileName);
+  }
+
+  private readJsonFile<T>(filePath: string, defaultFactory: () => T): T {
+    if (!fs.existsSync(filePath)) {
+      return defaultFactory();
+    }
+    return JSON.parse(fs.readFileSync(filePath, "utf-8")) as T;
+  }
+
+  private writeJsonFile(filePath: string, data: unknown): void {
+    const tempPath = `${filePath}.tmp`;
+    fs.writeFileSync(tempPath, JSON.stringify(data, null, JSON_INDENT_SIZE));
+    fs.renameSync(tempPath, filePath);
+  }
+
   private validateBlockNumberData(data: BlockNumberData): void {
     for (const [date, blockNumber] of Object.entries(data.blocks)) {
       this.validateDateFormat(date);
@@ -155,17 +200,86 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
-  private validateDateFormat(date: string): void {
+  /**
+   * Validates that a date string is in YYYY-MM-DD format and represents a valid calendar date
+   * @throws {Error} If the date format is invalid or the date doesn't exist
+   */
+  validateDateFormat(date: string): void {
     if (!DATE_FORMAT_REGEX.test(date)) {
       throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
     }
+
+    // Validate it's an actual calendar date by parsing and checking roundtrip
+    const parsed = new Date(date + "T00:00:00Z");
+    const roundtrip = parsed.toISOString().split("T")[0];
+    if (roundtrip !== date) {
+      throw new Error(`Invalid calendar date: ${date}`);
+    }
   }
 
-  private validateBlockNumber(blockNumber: number): void {
+  /**
+   * Validates that a block number is a positive integer within reasonable bounds
+   * @throws {Error} If the block number is invalid
+   */
+  validateBlockNumber(blockNumber: number): void {
     if (!Number.isInteger(blockNumber) || blockNumber <= 0) {
       throw new Error(
         `Block number must be a positive integer, got: ${blockNumber}`,
       );
+    }
+
+    // Check reasonable range
+    if (blockNumber > MAX_REASONABLE_BLOCK) {
+      throw new Error(
+        `Block number exceeds reasonable maximum: ${blockNumber} (max: ${MAX_REASONABLE_BLOCK})`,
+      );
+    }
+  }
+
+  /**
+   * Validates that a value is a valid wei amount (non-negative integer string)
+   * @param value The value to validate
+   * @param field Optional field name for error context
+   * @param date Optional date for error context
+   * @throws {Error} If the value is not a valid wei amount
+   */
+  validateWeiValue(value: string, field?: string, date?: string): void {
+    const formatError = (message: string, expected: string) => {
+      if (!field) {
+        return new Error(`${message}. Value: ${value}. Expected: ${expected}`);
+      }
+      return new Error(
+        `${message}\n` +
+          `  Field: ${field}\n` +
+          (date ? `  Date: ${date}\n` : "") +
+          `  Value: ${value}\n` +
+          `  Expected: ${expected}\n`,
+      );
+    };
+
+    if (typeof value !== "string") {
+      throw formatError("Invalid wei value", "String value");
+    }
+
+    if (value.includes("e") || value.includes("E")) {
+      throw formatError(
+        "Invalid numeric format",
+        `Decimal string (e.g., "${EXAMPLE_WEI_VALUE}")`,
+      );
+    }
+
+    if (value.includes(".")) {
+      throw formatError(
+        "Invalid wei value",
+        "Integer string (no decimal points)",
+      );
+    }
+
+    if (!WEI_DECIMAL_REGEX.test(value)) {
+      const expected = value.startsWith("-")
+        ? "Non-negative decimal string"
+        : "Decimal string containing only digits";
+      throw formatError("Invalid wei value", expected);
     }
   }
 
@@ -177,7 +291,6 @@ export class FileManager implements FileManagerInterface {
       if (address !== this.validateAddress(address)) {
         throw new Error(`Distributor address must be checksummed: ${address}`);
       }
-
       this.validateDistributorInfo(address, distributorInfo);
     }
   }
@@ -205,27 +318,104 @@ export class FileManager implements FileManagerInterface {
       }
     }
 
-    // Validate distributor type
-    if (!isValidDistributorType(info.type)) {
-      throw new Error(
-        `Invalid distributor type '${info.type}' for distributor ${address}`,
-      );
-    }
-
-    // Validate date format
+    // Validate field values
+    this.validateEnumValue(
+      info.type,
+      "DistributorType",
+      Object.values(DistributorType),
+    );
     this.validateDateFormat(info.discovered_date);
+    this.validateTransactionHash(info.tx_hash);
+    this.validateBlockNumber(info.discovered_block);
+    this.validateAddress(info.owner);
+  }
 
-    // Validate transaction hash
-    if (!TX_HASH_REGEX.test(info.tx_hash)) {
+  private validateBalanceData(address: Address, data: BalanceData): void {
+    // Validate metadata
+    if (data.metadata.reward_distributor !== address) {
       throw new Error(
-        `Invalid transaction hash '${info.tx_hash}' for distributor ${address}`,
+        `Reward distributor address mismatch: expected ${address}, got ${data.metadata.reward_distributor}`,
       );
     }
 
-    // Validate block number
-    this.validateBlockNumber(info.discovered_block);
+    // Validate balances
+    for (const [date, balance] of Object.entries(data.balances)) {
+      this.validateDateFormat(date);
+      this.validateBlockNumber(balance.block_number);
+      this.validateWeiValue(balance.balance_wei, "balance_wei", date);
+    }
+  }
 
-    // Validate owner address
-    this.validateAddress(info.owner);
+  private validateOutflowData(address: Address, data: OutflowData): void {
+    // Validate metadata
+    if (data.metadata.reward_distributor !== address) {
+      throw new Error(
+        `Reward distributor address mismatch: expected ${address}, got ${data.metadata.reward_distributor}`,
+      );
+    }
+
+    // Validate outflows
+    for (const [date, outflow] of Object.entries(data.outflows)) {
+      this.validateDateFormat(date);
+      this.validateBlockNumber(outflow.block_number);
+      this.validateWeiValue(
+        outflow.total_outflow_wei,
+        "total_outflow_wei",
+        date,
+      );
+
+      // Validate events and sum values
+      let totalEventWei = BigInt(0);
+      for (const event of outflow.events) {
+        // Validate recipient address is checksummed
+        if (event.recipient !== this.validateAddress(event.recipient)) {
+          throw new Error(
+            `Recipient address must be checksummed: ${event.recipient}`,
+          );
+        }
+
+        this.validateWeiValue(event.value_wei, "event.value_wei", date);
+        this.validateTransactionHash(event.tx_hash);
+        totalEventWei += BigInt(event.value_wei);
+      }
+
+      // Validate total matches sum of events
+      if (totalEventWei.toString() !== outflow.total_outflow_wei) {
+        throw new Error(
+          `Total outflow mismatch for ${date}: expected ${totalEventWei.toString()}, got ${outflow.total_outflow_wei}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Validates that a transaction hash is in the correct format (0x followed by 64 hex characters)
+   * @throws {Error} If the transaction hash format is invalid
+   */
+  validateTransactionHash(txHash: string): void {
+    if (!TX_HASH_REGEX.test(txHash)) {
+      throw new Error(
+        `Invalid transaction hash format: ${txHash}. Expected 0x followed by ${TX_HASH_LENGTH} hexadecimal characters`,
+      );
+    }
+  }
+
+  /**
+   * Validates that a value is one of the allowed enum values
+   * @param value The value to validate
+   * @param enumName The name of the enum for error messages
+   * @param validValues Array of valid values
+   * @throws {Error} If the value is not in the list of valid values
+   */
+  validateEnumValue(
+    value: string,
+    enumName: string,
+    validValues: string[],
+  ): void {
+    if (!validValues.includes(value)) {
+      throw new Error(
+        `Invalid ${enumName} value: ${value}. Valid values are: ${validValues.join(", ")}`,
+      );
+    }
   }
 }

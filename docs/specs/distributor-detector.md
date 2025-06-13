@@ -70,10 +70,12 @@ This event is emitted whenever the ArbOwner performs an administrative action. T
 The following method signatures indicate distributor creation:
 
 1. **L2 Base Fee Distributor** - `0xee95a824`
+
    - Method: `setL2BaseFeeRewardRecipient`
    - Data: 32-byte address of the new distributor
 
 2. **L2 Surplus Fee Distributor** - `0x2d9125e9`
+
    - Method: `setL2SurplusFeeRewardRecipient`
    - Data: 32-byte address of the new distributor
 
@@ -92,7 +94,7 @@ The following method signatures indicate distributor creation:
  * Discovers all reward distributors created up to the specified end date.
  * Scans OwnerActs events from the last scanned block to find new distributors.
  * Tracks its own progress to support incremental scanning.
- * 
+ *
  * @param endDate - Scan up to this date (YYYY-MM-DD format)
  * @param provider - Ethereum provider for RPC calls
  * @param fileManager - File manager instance for data persistence
@@ -102,8 +104,8 @@ The following method signatures indicate distributor creation:
 async function detectDistributors(
   endDate: string,
   provider: ethers.Provider,
-  fileManager: FileManager
-): Promise<DistributorsData>
+  fileManager: FileManager,
+): Promise<DistributorsData>;
 ```
 
 ### Helper Functions
@@ -112,7 +114,7 @@ async function detectDistributors(
 /**
  * Scans a specific block range for distributor creation events.
  * Queries OwnerActs events and filters for known method signatures.
- * 
+ *
  * @param fromBlock - Starting block (inclusive)
  * @param toBlock - Ending block (inclusive)
  * @param provider - Ethereum provider for RPC calls
@@ -122,26 +124,26 @@ async function detectDistributors(
 async function scanBlockRange(
   fromBlock: number,
   toBlock: number,
-  provider: ethers.Provider
-): Promise<DistributorInfo[]>
+  provider: ethers.Provider,
+): Promise<DistributorInfo[]>;
 
 /**
  * Parses OwnerActs event data to extract distributor information.
  * Validates event structure and extracts address from data field.
- * 
+ *
  * @param log - Raw log entry from eth_getLogs
  * @returns Parsed distributor info or null if not a creation event
  */
-function parseDistributorCreation(log: ethers.Log): DistributorInfo | null
+function parseDistributorCreation(log: ethers.Log): DistributorInfo | null;
 
 /**
  * Determines distributor type from method signature.
  * Maps known method signatures to distributor types.
- * 
+ *
  * @param methodSig - 4-byte method signature
  * @returns Distributor type or null if unknown
  */
-function getDistributorType(methodSig: string): DistributorType | null
+function getDistributorType(methodSig: string): DistributorType | null;
 ```
 
 ## Algorithm Details
@@ -149,21 +151,25 @@ function getDistributorType(methodSig: string): DistributorType | null
 ### Event Scanning Process
 
 1. **Load existing data**
+
    - Read current distributors and last_scanned_block from `distributors.json`
    - If no last_scanned_block exists, start from block 0
    - Read block number for the end date from `block_numbers.json`
 
 2. **Determine scan range**
+
    - From: last_scanned_block + 1 (or 0 if first run)
    - To: block number for the specified end date
    - If from > to, no scanning needed (already up to date)
 
 3. **Query events**
+
    - Query `OwnerActs` events from ArbOwner precompile
    - Filter by method signatures in topics
    - Process in batches to handle RPC limits
 
 4. **Process events**
+
    - Validate event structure
    - Extract distributor address from data field
    - Determine distributor type from method
@@ -184,15 +190,16 @@ const filter = {
   address: "0x0000000000000000000000000000000000000070",
   topics: [
     null, // Event signature (OwnerActs)
-    [     // Method signatures (OR filter)
+    [
+      // Method signatures (OR filter)
       "0xee95a824", // L2 Base Fee
       "0x2d9125e9", // L2 Surplus Fee
-      "0x934be07d"  // L1 Surplus Fee
-    ]
+      "0x934be07d", // L1 Surplus Fee
+    ],
   ],
   fromBlock,
-  toBlock
-}
+  toBlock,
+};
 ```
 
 ### Address Extraction
@@ -244,12 +251,14 @@ Updates the `distributors.json` file with discovered distributors:
 ### Error Types
 
 1. **RPC Errors**
+
    - Connection failures
    - Rate limiting
    - Invalid responses
    - Missing historical data
 
 2. **Data Errors**
+
    - Missing block numbers
    - Invalid event structure
    - Malformed addresses
@@ -286,11 +295,13 @@ Error: Invalid distributor address in event
 ### Performance Optimization
 
 1. **Batch Processing**
+
    - Query multiple dates in single RPC call where possible
    - Use reasonable block range sizes (e.g., 10,000 blocks)
    - Implement pagination for large result sets
 
 2. **Efficient Filtering**
+
    - Use topic filters to reduce data transfer
    - Only query specific method signatures
    - Skip processing if no new dates
@@ -310,7 +321,7 @@ const MAX_BLOCK_RANGE = 10000; // Prevent overwhelming RPC
 async function queryWithRetry(
   provider: ethers.Provider,
   filter: ethers.Filter,
-  retries: number = MAX_RETRIES
+  retries: number = MAX_RETRIES,
 ): Promise<ethers.Log[]> {
   try {
     return await provider.getLogs(filter);
@@ -328,11 +339,13 @@ async function queryWithRetry(
 ### Validation Requirements
 
 1. **Address Validation**
+
    - All addresses must be checksummed using ethers.js
    - Reject zero address or invalid formats
    - Ensure addresses are 20 bytes
 
 2. **Event Validation**
+
    - Verify event comes from ArbOwner precompile
    - Check method signature is recognized
    - Validate data field length and format
@@ -347,11 +360,13 @@ async function queryWithRetry(
 ### Unit Tests
 
 1. **Event Parsing**
+
    - Test parsing of valid OwnerActs events
    - Test rejection of malformed events
    - Test all distributor types
 
 2. **Address Extraction**
+
    - Test extraction from properly padded data
    - Test checksum validation
    - Test invalid address formats
@@ -364,6 +379,7 @@ async function queryWithRetry(
 ### Integration Tests
 
 1. **RPC Integration**
+
    - Test with real Arbitrum RPC endpoint
    - Verify known historical distributors
    - Test retry logic with rate limits
@@ -376,16 +392,19 @@ async function queryWithRetry(
 ### Test Scenarios
 
 1. **New Distributor Discovery**
+
    - Scan range with known new distributor
    - Verify correct extraction and storage
    - Check all metadata fields
 
 2. **Incremental Updates**
+
    - Run detector multiple times
    - Verify it resumes from last_scanned_block
    - Ensure no duplicates or missed blocks
 
 3. **Multiple Distributors**
+
    - Scan range with multiple creation events
    - Verify all are discovered
    - Check correct type assignment
@@ -399,11 +418,13 @@ async function queryWithRetry(
 ## Security Considerations
 
 1. **Input Validation**
+
    - Validate all dates before processing
    - Ensure provider is connected
    - Check file permissions before writing
 
 2. **Address Security**
+
    - Always use checksummed addresses
    - Validate against zero address
    - Ensure addresses are properly formatted
@@ -416,36 +437,41 @@ async function queryWithRetry(
 ## Usage Example
 
 ```typescript
-import { DistributorDetector } from './distributor-detector';
-import { FileManager } from './file-manager';
-import { ethers } from 'ethers';
+import { DistributorDetector } from "./distributor-detector";
+import { FileManager } from "./file-manager";
+import { ethers } from "ethers";
 
 // Initialize dependencies
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-const fileManager = new FileManager('./store');
+const fileManager = new FileManager("./store");
 
 // Detect distributors up to end of January 2024
 const distributors = await DistributorDetector.detectDistributors(
-  '2024-01-31',
+  "2024-01-31",
   provider,
-  fileManager
+  fileManager,
 );
 
-console.log(`Found ${Object.keys(distributors.distributors).length} distributors`);
+console.log(
+  `Found ${Object.keys(distributors.distributors).length} distributors`,
+);
 console.log(`Scanned up to block ${distributors.metadata.last_scanned_block}`);
 ```
 
 ## Future Enhancements
 
 1. **L1 Base Fee Detection**
+
    - Add support when method signature is determined
    - Update filtering and type mapping
 
 2. **Parallel Processing**
+
    - Query multiple date ranges concurrently
    - Implement proper synchronization
 
 3. **Event Caching**
+
    - Cache raw events for debugging
    - Support event replay without RPC calls
 
