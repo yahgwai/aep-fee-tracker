@@ -165,21 +165,16 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const startDate = new Date("2024-01-15");
       const endDate = new Date("2024-01-17");
 
-      // Pre-seed with actual known values to provide tighter bounds
-      // This reduces the search space for the binary search
+      // Pre-seed surrounding dates to provide tighter bounds for binary search
+      // This reduces the search space when finding the missing middle date
       const existingData: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
         blocks: {
           "2024-01-15": 40000000,
-          "2024-01-16": 40345600, // Pre-calculate expected approximate value
           "2024-01-17": 40691200,
         },
       };
 
-      testContext.fileManager.writeBlockNumbers(existingData);
-
-      // Remove middle date to test finding logic
-      delete existingData.blocks["2024-01-16"];
       testContext.fileManager.writeBlockNumbers(existingData);
 
       const result = await findBlocksForDateRange(
