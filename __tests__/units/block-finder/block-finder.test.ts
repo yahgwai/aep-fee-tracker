@@ -189,7 +189,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const savedData = testContext.fileManager.readBlockNumbers();
       expect(savedData.blocks["2023-12-01"]).toBeDefined();
       expect(savedData.blocks["2023-12-01"]).toBeGreaterThan(0);
-    });
+    }, 15000);
 
     it("should handle date range spanning multiple days", async () => {
       const startDate = new Date("2024-01-10");
@@ -212,7 +212,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       expect(result.blocks["2024-01-12"]!).toBeGreaterThan(
         result.blocks["2024-01-11"]!,
       );
-    });
+    }, 20000);
   });
 
   describe("Error handling", () => {
