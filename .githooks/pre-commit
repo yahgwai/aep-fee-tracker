@@ -20,7 +20,7 @@ fi
 # Check if we're in a Node.js project
 if [ -f "package.json" ]; then
     # Check if npm is available
-    if ! command -v npm &> /dev/null; then
+    if ! command -v npm > /dev/null 2>&1; then
         echo "${YELLOW}Warning: npm not found, skipping Node.js checks${NC}"
     else
         # Run TypeScript type checking
