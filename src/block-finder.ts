@@ -5,6 +5,9 @@ const BLOCKS_PER_SECOND = 4;
 const SECONDS_PER_DAY = 86400;
 const BLOCKS_PER_DAY = BLOCKS_PER_SECOND * SECONDS_PER_DAY;
 const FINALITY_BLOCKS = 1000;
+const MILLISECONDS_PER_SECOND = 1000;
+const DEFAULT_DAYS_TO_SEARCH = 365;
+const MINIMUM_VALID_BLOCK = 1;
 
 export async function findBlocksForDateRange(
   startDate: Date,
@@ -12,7 +15,23 @@ export async function findBlocksForDateRange(
   provider: ethers.Provider,
   fileManager: FileManager,
 ): Promise<BlockNumberData> {
-  // Input validation
+  validateDateRange(startDate, endDate);
+
+  const result = initializeResult(fileManager);
+  const safeCurrentBlock = await getSafeCurrentBlock(provider);
+
+  if (startDate.getTime() === endDate.getTime()) {
+    return result;
+  }
+
+  for (const date of datesBetween(startDate, endDate)) {
+    await processDate(date, result, provider, fileManager, safeCurrentBlock);
+  }
+
+  return result;
+}
+
+function validateDateRange(startDate: Date, endDate: Date): void {
   if (!isValidDate(startDate) || !isValidDate(endDate)) {
     throw new Error("Invalid Date object");
   }
@@ -20,76 +39,61 @@ export async function findBlocksForDateRange(
   if (startDate > endDate) {
     throw new Error("Start date must not be after end date");
   }
+}
 
-  // Read existing block numbers
-  const existingData = fileManager.readBlockNumbers();
-  const result: BlockNumberData = {
+function initializeResult(fileManager: FileManager): BlockNumberData {
+  const { blocks } = fileManager.readBlockNumbers();
+  return {
     metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
-    blocks: { ...existingData.blocks },
+    blocks: { ...blocks },
   };
+}
 
-  // Get safe current block
-  const safeCurrentBlock = await getSafeCurrentBlock(provider);
+async function processDate(
+  date: Date,
+  result: BlockNumberData,
+  provider: ethers.Provider,
+  fileManager: FileManager,
+  safeCurrentBlock: number,
+): Promise<void> {
+  const dateStr = formatDateString(date);
 
-  // Handle empty date range
-  if (startDate.getTime() === endDate.getTime()) {
-    return result;
+  if (result.blocks[dateStr]) {
+    return;
   }
 
-  // Process each date in range
-  const currentDate = new Date(startDate);
-  while (currentDate <= endDate) {
-    const dateStr = formatDateString(currentDate);
+  const [lowerBound, upperBound] = getSearchBounds(
+    date,
+    result,
+    safeCurrentBlock,
+  );
 
-    // Skip if we already have this date
-    if (result.blocks[dateStr]) {
-      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-      continue;
-    }
+  if (upperBound > safeCurrentBlock) {
+    return;
+  }
 
-    // Skip if date is too recent
-    const nextMidnight = new Date(currentDate);
-    nextMidnight.setUTCDate(nextMidnight.getUTCDate() + 1);
-    nextMidnight.setUTCHours(0, 0, 0, 0);
-
-    const [lowerBound, upperBound] = getSearchBounds(
-      currentDate,
-      result,
-      safeCurrentBlock,
+  try {
+    const blockNumber = await findEndOfDayBlock(
+      date,
+      provider,
+      lowerBound,
+      upperBound,
     );
-
-    // If upper bound is less than safe current block, the date is too recent
-    if (upperBound > safeCurrentBlock) {
-      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-      continue;
-    }
-
-    try {
-      // Find the end-of-day block
-      const blockNumber = await findEndOfDayBlock(
-        currentDate,
-        provider,
-        lowerBound,
-        upperBound,
-      );
-      result.blocks[dateStr] = blockNumber;
-
-      // Save after each successful find
-      fileManager.writeBlockNumbers(result);
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes("Unable to find block")
-      ) {
-        throw error;
-      }
-      throw new Error(`Failed to find block for ${dateStr}: ${error}`);
-    }
-
-    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    result.blocks[dateStr] = blockNumber;
+    fileManager.writeBlockNumbers(result);
+  } catch (error) {
+    handleBlockFindingError(error, dateStr);
   }
+}
 
-  return result;
+function handleBlockFindingError(error: unknown, dateStr: string): never {
+  if (
+    error instanceof Error &&
+    error.message.includes("Unable to find block")
+  ) {
+    throw error;
+  }
+  throw new Error(`Failed to find block for ${dateStr}: ${error}`);
 }
 
 export async function findEndOfDayBlock(
@@ -104,50 +108,51 @@ export async function findEndOfDayBlock(
     );
   }
 
-  const targetMidnight = new Date(date);
-  targetMidnight.setUTCDate(targetMidnight.getUTCDate() + 1);
-  targetMidnight.setUTCHours(0, 0, 0, 0);
-  const targetTimestamp = Math.floor(targetMidnight.getTime() / 1000);
+  const targetTimestamp = toUnixTimestamp(getNextMidnight(date));
+  const dateStartTimestamp = toUnixTimestamp(getMidnight(date));
 
-  let low = lowerBound;
-  let high = upperBound;
+  const [lowerBlock, upperBlock] = await Promise.all([
+    provider.getBlock(lowerBound),
+    provider.getBlock(upperBound),
+  ]);
+
+  if (!lowerBlock) throw new Error(`Block ${lowerBound} not found`);
+  if (!upperBlock) throw new Error(`Block ${upperBound} not found`);
+
+  validateBlockRange(
+    date,
+    lowerBlock,
+    upperBlock,
+    lowerBound,
+    upperBound,
+    targetTimestamp,
+    dateStartTimestamp,
+  );
+
+  const lastValidBlock = await binarySearchForBlock(
+    provider,
+    lowerBound,
+    upperBound,
+    targetTimestamp,
+  );
+
+  if (lastValidBlock === -1) {
+    throw new Error(
+      `Unable to find block before midnight for ${date.toISOString().split("T")[0]}`,
+    );
+  }
+
+  return lastValidBlock;
+}
+
+async function binarySearchForBlock(
+  provider: ethers.Provider,
+  low: number,
+  high: number,
+  targetTimestamp: number,
+): Promise<number> {
   let lastValidBlock = -1;
 
-  // Check bounds first
-  const lowerBlock = await provider.getBlock(low);
-  if (!lowerBlock) {
-    throw new Error(`Block ${low} not found`);
-  }
-
-  const upperBlock = await provider.getBlock(high);
-  if (!upperBlock) {
-    throw new Error(`Block ${high} not found`);
-  }
-
-  if (lowerBlock.timestamp >= targetTimestamp) {
-    throw new Error(
-      `All blocks in range are after midnight\n` +
-        `  Date: ${date.toISOString().split("T")[0]}\n` +
-        `  Target: Before ${targetMidnight.toISOString()}\n` +
-        `  Search bounds: ${lowerBound} to ${upperBound}\n` +
-        `  Lower block ${low} timestamp: ${new Date(lowerBlock.timestamp * 1000).toISOString()}`,
-    );
-  }
-
-  const dateStart = new Date(date);
-  dateStart.setUTCHours(0, 0, 0, 0);
-  const dateStartTimestamp = Math.floor(dateStart.getTime() / 1000);
-
-  if (upperBlock.timestamp < dateStartTimestamp) {
-    throw new Error(
-      `All blocks in range are before the target date\n` +
-        `  Date: ${date.toISOString().split("T")[0]}\n` +
-        `  Search bounds: ${lowerBound} to ${upperBound}\n` +
-        `  Upper block ${high} timestamp: ${new Date(upperBlock.timestamp * 1000).toISOString()}`,
-    );
-  }
-
-  // Binary search
   while (low <= high) {
     const mid = Math.floor((low + high) / 2);
     const block = await provider.getBlock(mid);
@@ -162,12 +167,6 @@ export async function findEndOfDayBlock(
     } else {
       high = mid - 1;
     }
-  }
-
-  if (lastValidBlock === -1) {
-    throw new Error(
-      `Unable to find block before midnight for ${date.toISOString().split("T")[0]}`,
-    );
   }
 
   return lastValidBlock;
@@ -194,22 +193,10 @@ export function getSearchBounds(
   safeCurrentBlock: number,
 ): [number, number] {
   const dateStr = formatDateString(date);
-  const dates = Object.keys(existingBlocks.blocks).sort();
+  const lowerBound = findMostRecentBlock(dateStr, existingBlocks);
+  const upperBound = estimateUpperBound(lowerBound, safeCurrentBlock);
 
-  // Find the most recent block before this date
-  let lowerBound = 0;
-  for (const existingDate of dates) {
-    if (existingDate < dateStr) {
-      lowerBound = existingBlocks.blocks[existingDate]!;
-    }
-  }
-
-  // Estimate upper bound
-  const daysSinceLastBlock = lowerBound === 0 ? 365 : 1; // If no previous block, assume up to a year
-  const estimatedBlocks = daysSinceLastBlock * BLOCKS_PER_DAY;
-  const upperBound = Math.min(lowerBound + estimatedBlocks, safeCurrentBlock);
-
-  return [lowerBound, upperBound];
+  return [Math.max(MINIMUM_VALID_BLOCK, lowerBound), upperBound];
 }
 
 function isValidDate(date: unknown): date is Date {
@@ -218,4 +205,86 @@ function isValidDate(date: unknown): date is Date {
 
 function formatDateString(date: Date): DateString {
   return date.toISOString().split("T")[0]!;
+}
+
+function getNextMidnight(date: Date): Date {
+  const midnight = new Date(date);
+  midnight.setUTCDate(midnight.getUTCDate() + 1);
+  midnight.setUTCHours(0, 0, 0, 0);
+  return midnight;
+}
+
+function getMidnight(date: Date): Date {
+  const midnight = new Date(date);
+  midnight.setUTCHours(0, 0, 0, 0);
+  return midnight;
+}
+
+function toUnixTimestamp(date: Date): number {
+  return Math.floor(date.getTime() / MILLISECONDS_PER_SECOND);
+}
+
+function fromUnixTimestamp(timestamp: number): Date {
+  return new Date(timestamp * MILLISECONDS_PER_SECOND);
+}
+
+function* datesBetween(start: Date, end: Date): Generator<Date> {
+  const current = new Date(start);
+  while (current <= end) {
+    yield new Date(current);
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+}
+
+function validateBlockRange(
+  date: Date,
+  lowerBlock: ethers.Block,
+  upperBlock: ethers.Block,
+  lowerBound: number,
+  upperBound: number,
+  targetTimestamp: number,
+  dateStartTimestamp: number,
+): void {
+  if (lowerBlock.timestamp >= targetTimestamp) {
+    throw new Error(
+      `All blocks in range are after midnight\n` +
+        `  Date: ${formatDateString(date)}\n` +
+        `  Target: Before ${fromUnixTimestamp(targetTimestamp).toISOString()}\n` +
+        `  Search bounds: ${lowerBound} to ${upperBound}\n` +
+        `  Lower block ${lowerBound} timestamp: ${fromUnixTimestamp(lowerBlock.timestamp).toISOString()}`,
+    );
+  }
+
+  if (upperBlock.timestamp < dateStartTimestamp) {
+    throw new Error(
+      `All blocks in range are before the target date\n` +
+        `  Date: ${formatDateString(date)}\n` +
+        `  Search bounds: ${lowerBound} to ${upperBound}\n` +
+        `  Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}`,
+    );
+  }
+}
+
+function findMostRecentBlock(
+  targetDate: string,
+  existingBlocks: BlockNumberData,
+): number {
+  const dates = Object.keys(existingBlocks.blocks).sort();
+  let mostRecent = 0;
+
+  for (const date of dates) {
+    if (date >= targetDate) break;
+    mostRecent = existingBlocks.blocks[date]!;
+  }
+
+  return mostRecent;
+}
+
+function estimateUpperBound(
+  lowerBound: number,
+  safeCurrentBlock: number,
+): number {
+  const daysToSearch = lowerBound === 0 ? DEFAULT_DAYS_TO_SEARCH : 1;
+  const estimatedBlocks = daysToSearch * BLOCKS_PER_DAY;
+  return Math.min(lowerBound + estimatedBlocks, safeCurrentBlock);
 }

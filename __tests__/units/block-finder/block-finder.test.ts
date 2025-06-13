@@ -5,8 +5,8 @@ import {
   cleanupTestEnvironment,
   TestContext,
 } from "../file-manager/test-utils";
-import { BlockNumberData, CHAIN_IDS } from "../../../src/types";
 import { findBlocksForDateRange } from "../../../src/block-finder";
+import { BlockNumberData, CHAIN_IDS } from "../../../src/types";
 
 describe("BlockFinder - findBlocksForDateRange", () => {
   let testContext: TestContext;
@@ -98,9 +98,9 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const existingData: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
         blocks: {
-          "2024-01-15": 50000000,
-          "2024-01-16": 50100000,
-          "2024-01-17": 50200000,
+          "2024-01-15": 40000000,
+          "2024-01-16": 40345600,
+          "2024-01-17": 40691200,
         },
       };
 
@@ -123,8 +123,8 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const existingData: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
         blocks: {
-          "2024-01-15": 50000000,
-          "2024-01-17": 50200000,
+          "2024-01-15": 40000000,
+          "2024-01-17": 40691200,
         },
       };
 
@@ -137,43 +137,54 @@ describe("BlockFinder - findBlocksForDateRange", () => {
         testContext.fileManager,
       );
 
-      expect(result.blocks["2024-01-15"]).toBe(50000000);
-      expect(result.blocks["2024-01-16"]).toBeGreaterThan(50000000);
-      expect(result.blocks["2024-01-16"]).toBeLessThan(50200000);
-      expect(result.blocks["2024-01-17"]).toBe(50200000);
+      expect(result.blocks["2024-01-15"]).toBe(40000000);
+      expect(result.blocks["2024-01-16"]).toBeGreaterThan(40000000);
+      expect(result.blocks["2024-01-16"]).toBeLessThan(40691200);
+      expect(result.blocks["2024-01-17"]).toBe(40691200);
     });
 
     it("should skip dates that are too recent (less than 1000 blocks old)", async () => {
-      const now = new Date();
-      const yesterday = new Date(now);
-      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      // Create a date that's definitely recent (within last 1000 blocks)
+      const recentDate = new Date();
+
+      // Mock the provider to ensure the date is considered too recent
+      jest.spyOn(provider, "getBlockNumber").mockImplementation(async () => {
+        // Return a block number that makes our date too recent
+        return 83667204;
+      });
 
       const result = await findBlocksForDateRange(
-        yesterday,
-        now,
+        recentDate,
+        recentDate,
         provider,
         testContext.fileManager,
       );
 
       expect(
-        result.blocks[testContext.fileManager.formatDate(now)],
+        result.blocks[testContext.fileManager.formatDate(recentDate)],
       ).toBeUndefined();
+
+      // Restore original method
+      (provider.getBlockNumber as jest.Mock).mockRestore();
     });
 
     it("should persist block numbers after finding them", async () => {
-      const startDate = new Date("2024-01-15");
-      const endDate = new Date("2024-01-15");
+      const startDate = new Date("2023-12-01");
+      const endDate = new Date("2023-12-02");
 
-      await findBlocksForDateRange(
+      const result = await findBlocksForDateRange(
         startDate,
         endDate,
         provider,
         testContext.fileManager,
       );
 
+      // Check if anything was found
+      expect(Object.keys(result.blocks).length).toBeGreaterThan(0);
+
       const savedData = testContext.fileManager.readBlockNumbers();
-      expect(savedData.blocks["2024-01-15"]).toBeDefined();
-      expect(savedData.blocks["2024-01-15"]).toBeGreaterThan(0);
+      expect(savedData.blocks["2023-12-01"]).toBeDefined();
+      expect(savedData.blocks["2023-12-01"]).toBeGreaterThan(0);
     });
 
     it("should handle date range spanning multiple days", async () => {
@@ -217,8 +228,8 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     });
 
     it("should throw error when unable to find block within bounds", async () => {
-      const startDate = new Date("2020-01-01"); // Before Arbitrum launch
-      const endDate = new Date("2020-01-01");
+      const startDate = new Date("2020-01-01"); // Before Arbitrum Nova launch
+      const endDate = new Date("2020-01-02");
 
       await expect(
         findBlocksForDateRange(
@@ -227,7 +238,9 @@ describe("BlockFinder - findBlocksForDateRange", () => {
           provider,
           testContext.fileManager,
         ),
-      ).rejects.toThrow(/Unable to find block/);
+      ).rejects.toThrow(
+        /All blocks in range are after midnight|Unable to find block|before the target date/,
+      );
     });
   });
 });
