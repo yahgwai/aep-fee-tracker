@@ -5,8 +5,8 @@ import {
   cleanupTestEnvironment,
   TestContext,
 } from "../file-manager/test-utils";
-import { BlockNumberData, CHAIN_IDS } from "../../../src/types";
 import { findBlocksForDateRange } from "../../../src/block-finder";
+import { BlockNumberData, CHAIN_IDS } from "../../../src/types";
 
 describe("BlockFinder - findBlocksForDateRange", () => {
   let testContext: TestContext;
