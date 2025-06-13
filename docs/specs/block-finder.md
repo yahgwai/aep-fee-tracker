@@ -120,10 +120,11 @@ function getSearchBounds(
 1. Parse start and end dates
 2. Generate all dates in range
 3. Load existing block numbers
-4. Filter out dates that already have blocks
-5. Filter out dates too recent to be finalized
-6. Process remaining dates in order
-7. Save after each successful block found
+4. If existing data has chain_id, verify it matches `(await provider.getNetwork()).chainId`
+5. Filter out dates that already have blocks
+6. Filter out dates too recent to be finalized
+7. Process remaining dates in order
+8. Save after each successful block found with chain_id from provider
 
 ### Reorg Protection
 
@@ -147,7 +148,11 @@ function getSearchBounds(
    - Timestamp inconsistencies
    - Invalid date ranges
 
-3. **File System Errors**
+3. **Data Errors**
+
+   - Chain ID mismatch between provider and stored data
+
+4. **File System Errors**
    - Unable to read existing data
    - Unable to write updates
 

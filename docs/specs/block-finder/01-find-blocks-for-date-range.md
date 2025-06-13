@@ -12,9 +12,11 @@ No implementation exists. The system cannot determine which blocks correspond to
 
 - User can request block numbers for a date range by providing start and end dates as Date objects
 - System reads existing block numbers from storage
+- System validates chain ID from provider matches stored data (if data exists)
 - System identifies which dates in the range are missing block numbers
 - System skips dates that are too recent (less than 1000 blocks old) to ensure finality
 - System finds and stores the end-of-day block for each missing date
+- System saves block numbers with chain ID from `(await provider.getNetwork()).chainId`
 - System returns complete mapping of all dates to their end-of-day blocks
 - Date validation ensures start date is not after end date and dates are valid Date objects
 

@@ -11,8 +11,10 @@ No implementation exists. System would reprocess all dates on every run.
 ## Expected Behavior
 
 - System loads existing block numbers from storage before processing
+- System validates chain ID from provider matches stored data (if data exists)
 - System filters the requested date range to only include missing dates
 - System saves block numbers after finding each date's block (not batch saving)
+- Each save includes chain ID from `(await provider.getNetwork()).chainId`
 - User can interrupt the process and resume later without losing progress
 - System maintains consistency by processing dates in chronological order
 
