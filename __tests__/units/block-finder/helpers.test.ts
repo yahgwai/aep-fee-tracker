@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { ethers } from "ethers";
 import { BlockNumberData, CHAIN_IDS } from "../../../src/types";
 import {
@@ -13,6 +13,13 @@ describe("BlockFinder - Helper Functions", () => {
   beforeEach(() => {
     const rpcUrl = process.env["RPC_URL"] || "https://nova.arbitrum.io/rpc";
     provider = new ethers.JsonRpcProvider(rpcUrl);
+  });
+
+  afterEach(async () => {
+    // Destroy the provider to clean up network connections
+    if (provider) {
+      await provider.destroy();
+    }
   });
 
   describe("findEndOfDayBlock", () => {
@@ -95,6 +102,9 @@ describe("BlockFinder - Helper Functions", () => {
       await expect(getSafeCurrentBlock(badProvider)).rejects.toThrow(
         /Failed to get current block/,
       );
+
+      // Clean up the bad provider
+      await badProvider.destroy();
     });
 
     it("should always return a positive number", async () => {

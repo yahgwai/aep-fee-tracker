@@ -17,8 +17,12 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     provider = new ethers.JsonRpcProvider("https://nova.arbitrum.io/rpc");
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanupTestEnvironment(testContext.tempDir);
+    // Destroy the provider to clean up network connections
+    if (provider) {
+      await provider.destroy();
+    }
   });
 
   describe("Input validation", () => {
@@ -225,6 +229,9 @@ describe("BlockFinder - findBlocksForDateRange", () => {
           testContext.fileManager,
         ),
       ).rejects.toThrow(/Failed to get current block/);
+
+      // Clean up the bad provider
+      await badProvider.destroy();
     });
 
     it("should throw error when unable to find block within bounds", async () => {
