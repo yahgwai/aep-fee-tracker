@@ -94,6 +94,7 @@ case "$1" in
     "pr")
         if [[ "$2" == "create" ]]; then
             # Check for --title and --body flags
+            pr_body=""
             for ((i=3; i<=$#; i++)); do
                 if [[ "${!i}" == "--title" ]]; then
                     ((i++))
@@ -101,10 +102,25 @@ case "$1" in
                     context="PR title"
                 elif [[ "${!i}" == "--body" ]]; then
                     ((i++))
+                    pr_body="${!i}"
                     content_to_check+=" ${!i}"
                     context="PR body"
                 fi
             done
+            
+            # Check if PR body contains issue reference or explicit "no issue"
+            if [[ -n "$pr_body" ]]; then
+                # Check for issue references: #123, fixes #123, closes #123, resolves #123, etc.
+                if ! echo "$pr_body" | grep -iE "(close[sd]?|fix(es|ed)?|resolve[sd]?)\s+#[0-9]+|#[0-9]+|no[- ]issue" > /dev/null 2>&1; then
+                    echo -e "${RED}Error: PR description must contain either an issue reference (e.g., 'fixes #123', 'closes #456') or explicitly state 'no-issue'${NC}"
+                    echo "Examples:"
+                    echo "  - 'This PR fixes #123'"
+                    echo "  - 'Closes #456'"
+                    echo "  - 'no-issue: this is a minor documentation update'"
+                    echo "  - 'no issue: refactoring without a specific issue'"
+                    exit 1
+                fi
+            fi
         elif [[ "$2" == "comment" ]]; then
             # Check for --body flag
             for ((i=3; i<=$#; i++)); do
@@ -157,6 +173,19 @@ fi
 if [[ -n "$GH_BODY" ]]; then
     if ! check_prohibited_content "$GH_BODY" "GH_BODY environment variable"; then
         exit 1
+    fi
+    
+    # For PR creation, also check if GH_BODY contains issue reference
+    if [[ "$1" == "pr" && "$2" == "create" ]]; then
+        if ! echo "$GH_BODY" | grep -iE "(close[sd]?|fix(es|ed)?|resolve[sd]?)\s+#[0-9]+|#[0-9]+|no[- ]issue" > /dev/null 2>&1; then
+            echo -e "${RED}Error: PR description must contain either an issue reference (e.g., 'fixes #123', 'closes #456') or explicitly state 'no-issue'${NC}"
+            echo "Examples:"
+            echo "  - 'This PR fixes #123'"
+            echo "  - 'Closes #456'"
+            echo "  - 'no-issue: this is a minor documentation update'"
+            echo "  - 'no issue: refactoring without a specific issue'"
+            exit 1
+        fi
     fi
 fi
 
