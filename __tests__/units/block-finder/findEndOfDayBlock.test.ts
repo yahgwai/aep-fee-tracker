@@ -63,4 +63,27 @@ describe("findEndOfDayBlock - Binary Search Implementation", () => {
       expect(result).toBe(lowerBound - 1);
     });
   });
+
+  describe("Edge case: all blocks before midnight", () => {
+    it("should return upperBound when all blocks are before midnight", async () => {
+      // Using a range where all blocks are before the target midnight
+      const targetMidnight = new Date("2024-01-20T00:00:00Z");
+      const lowerBound = 170000000;
+      const upperBound = 170500000;
+
+      const result = await findEndOfDayBlock(
+        targetMidnight,
+        lowerBound,
+        upperBound,
+      );
+
+      expect(result).toBe(upperBound);
+
+      // Verify that all blocks in the range are indeed before midnight
+      const upperBlock = await provider.getBlock(upperBound);
+      expect(upperBlock).not.toBeNull();
+      const upperBlockTimestamp = upperBlock!.timestamp * 1000;
+      expect(upperBlockTimestamp).toBeLessThan(targetMidnight.getTime());
+    });
+  });
 });
