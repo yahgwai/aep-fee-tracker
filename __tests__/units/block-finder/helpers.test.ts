@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { ethers } from "ethers";
 import { BlockNumberData, CHAIN_IDS } from "../../../src/types";
 import {
@@ -12,7 +12,21 @@ describe("BlockFinder - Helper Functions", () => {
 
   beforeEach(() => {
     const rpcUrl = process.env["RPC_URL"] || "https://nova.arbitrum.io/rpc";
-    provider = new ethers.JsonRpcProvider(rpcUrl);
+    // Create provider with static network to prevent auto-detection retry loop
+    const network = ethers.Network.from({
+      chainId: 42170,
+      name: "arbitrum-nova",
+    });
+    provider = new ethers.JsonRpcProvider(rpcUrl, network, {
+      staticNetwork: network,
+    });
+  });
+
+  afterEach(async () => {
+    // Destroy the provider to clean up network connections
+    if (provider) {
+      await provider.destroy();
+    }
   });
 
   describe("findEndOfDayBlock", () => {
@@ -90,11 +104,25 @@ describe("BlockFinder - Helper Functions", () => {
     });
 
     it("should throw error when unable to get current block", async () => {
-      const badProvider = new ethers.JsonRpcProvider("http://localhost:9999");
-
-      await expect(getSafeCurrentBlock(badProvider)).rejects.toThrow(
-        /Failed to get current block/,
+      // Create provider with explicit network to prevent retry loop
+      const network = ethers.Network.from({
+        chainId: 42170,
+        name: "arbitrum-nova",
+      });
+      const badProvider = new ethers.JsonRpcProvider(
+        "http://localhost:9999",
+        network,
+        { staticNetwork: network },
       );
+
+      try {
+        await expect(getSafeCurrentBlock(badProvider)).rejects.toThrow(
+          /Failed to get current block/,
+        );
+      } finally {
+        // Ensure cleanup even if test fails
+        await badProvider.destroy();
+      }
     });
 
     it("should always return a positive number", async () => {
