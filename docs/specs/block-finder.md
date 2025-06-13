@@ -272,7 +272,7 @@ const blocks = await findBlocksForDateRange(
 
 ## Testing Notes
 
-For integration and end-to-end tests, use the public Arbitrum One RPC endpoint: `https://arb1.arbitrum.io/rpc`
+For integration and end-to-end tests, use the public Arbitrum Nova RPC endpoint: `https://nova.arbitrum.io/rpc`
 
 This provides access to real historical data without requiring a private archive node during development.
 

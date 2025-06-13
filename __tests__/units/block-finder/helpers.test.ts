@@ -136,7 +136,7 @@ describe("BlockFinder - Helper Functions", () => {
     it("should use previous day's block as lower bound when available", () => {
       const date = new Date("2024-01-16");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40000000,
         },
@@ -156,7 +156,7 @@ describe("BlockFinder - Helper Functions", () => {
     it("should use 1 as lower bound for first date", () => {
       const date = new Date("2024-01-15");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {},
       };
       const safeCurrentBlock = 45000000;
@@ -169,7 +169,7 @@ describe("BlockFinder - Helper Functions", () => {
     it("should estimate upper bound based on blocks per day", () => {
       const date = new Date("2024-01-16");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40000000,
         },
@@ -188,7 +188,7 @@ describe("BlockFinder - Helper Functions", () => {
     it("should cap upper bound at safe current block", () => {
       const date = new Date("2024-01-16");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 44999000, // Very close to safe current block
         },
@@ -203,7 +203,7 @@ describe("BlockFinder - Helper Functions", () => {
     it("should handle dates with missing previous days", () => {
       const date = new Date("2024-01-17");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40000000, // Missing 2024-01-16
         },

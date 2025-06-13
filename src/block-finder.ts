@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { BlockNumberData, DateString, FileManager, CHAIN_IDS } from "./types";
+import { BlockNumberData, DateString, FileManager } from "./types";
 
 const BLOCKS_PER_SECOND = 4;
 const SECONDS_PER_DAY = 86400;
@@ -21,7 +21,7 @@ export class BlockFinder {
   ): Promise<BlockNumberData> {
     validateDateRange(startDate, endDate);
 
-    const result = this.initializeResult();
+    const result = await this.initializeResult();
     const safeCurrentBlock = await this.getSafeCurrentBlock();
 
     if (startDate.getTime() === endDate.getTime()) {
@@ -35,10 +35,11 @@ export class BlockFinder {
     return result;
   }
 
-  private initializeResult(): BlockNumberData {
+  private async initializeResult(): Promise<BlockNumberData> {
     const { blocks } = this.fileManager.readBlockNumbers();
+    const network = await this.provider.getNetwork();
     return {
-      metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+      metadata: { chain_id: Number(network.chainId) },
       blocks: { ...blocks },
     };
   }

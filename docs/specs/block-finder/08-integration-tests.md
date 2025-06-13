@@ -17,7 +17,7 @@ No tests exist for the block finder functionality.
 - Tests verify incremental processing works correctly (resume after interruption)
 - Tests verify proper handling of date ranges including edge cases
 - Tests verify reorg protection by checking safe block calculations
-- Tests use the public Arbitrum One RPC endpoint: `https://arb1.arbitrum.io/rpc`
+- Tests use the public Arbitrum Nova RPC endpoint: `https://nova.arbitrum.io/rpc`
 - Tests verify error scenarios with real RPC errors (invalid blocks, network issues)
 
 ## Required Context

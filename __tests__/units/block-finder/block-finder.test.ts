@@ -131,7 +131,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       );
 
       expect(result).toEqual({
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {},
       });
     });
@@ -141,7 +141,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const endDate = new Date("2024-01-17");
 
       const existingData: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40000000,
           "2024-01-16": 40345600,
@@ -166,7 +166,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const endDate = new Date("2024-01-17");
 
       const existingData: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40000000,
           "2024-01-17": 40691200,
