@@ -97,14 +97,36 @@ describe("BlockFinder - Helper Functions", () => {
     });
 
     it("should throw error when unable to get current block", async () => {
-      const badProvider = new ethers.JsonRpcProvider("http://localhost:9999");
+      // Suppress console logs for this test
+      const originalLog = console.log;
+      const originalError = console.error;
+      console.log = jest.fn();
+      console.error = jest.fn();
 
-      await expect(getSafeCurrentBlock(badProvider)).rejects.toThrow(
-        /Failed to get current block/,
-      );
+      try {
+        // Create provider with explicit network to skip auto-detection
+        const badProvider = new ethers.JsonRpcProvider(
+          "http://localhost:9999",
+          {
+            name: "arbitrum-nova",
+            chainId: 42170,
+          },
+          { staticNetwork: true },
+        );
 
-      // Clean up the bad provider
-      await badProvider.destroy();
+        try {
+          await expect(getSafeCurrentBlock(badProvider)).rejects.toThrow(
+            /Failed to get current block/,
+          );
+        } finally {
+          // Ensure cleanup even if test fails
+          await badProvider.destroy();
+        }
+      } finally {
+        // Restore console methods
+        console.log = originalLog;
+        console.error = originalError;
+      }
     });
 
     it("should always return a positive number", async () => {

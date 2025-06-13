@@ -217,21 +217,43 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
   describe("Error handling", () => {
     it("should throw error with context when RPC provider is not available", async () => {
-      const badProvider = new ethers.JsonRpcProvider("http://localhost:9999");
-      const startDate = new Date("2024-01-15");
-      const endDate = new Date("2024-01-15");
+      // Suppress console logs for this test
+      const originalLog = console.log;
+      const originalError = console.error;
+      console.log = jest.fn();
+      console.error = jest.fn();
 
-      await expect(
-        findBlocksForDateRange(
-          startDate,
-          endDate,
-          badProvider,
-          testContext.fileManager,
-        ),
-      ).rejects.toThrow(/Failed to get current block/);
+      try {
+        // Create provider with explicit network to skip auto-detection
+        const badProvider = new ethers.JsonRpcProvider(
+          "http://localhost:9999",
+          {
+            name: "arbitrum-nova",
+            chainId: 42170,
+          },
+          { staticNetwork: true },
+        );
+        const startDate = new Date("2024-01-15");
+        const endDate = new Date("2024-01-15");
 
-      // Clean up the bad provider
-      await badProvider.destroy();
+        try {
+          await expect(
+            findBlocksForDateRange(
+              startDate,
+              endDate,
+              badProvider,
+              testContext.fileManager,
+            ),
+          ).rejects.toThrow(/Failed to get current block/);
+        } finally {
+          // Ensure cleanup even if test fails
+          await badProvider.destroy();
+        }
+      } finally {
+        // Restore console methods
+        console.log = originalLog;
+        console.error = originalError;
+      }
     });
 
     it("should throw error when unable to find block within bounds", async () => {
