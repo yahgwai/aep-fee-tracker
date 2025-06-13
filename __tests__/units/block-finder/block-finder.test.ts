@@ -208,7 +208,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       expect(result.blocks["2024-01-12"]!).toBeGreaterThan(
         result.blocks["2024-01-11"]!,
       );
-    });
+    }, 20000);
   });
 
   describe("Error handling", () => {

@@ -35,7 +35,24 @@ Output: Complete block number mappings
 
 ## Public API
 
-### Main Function
+### Class Constructor
+
+```typescript
+/**
+ * Creates a new BlockFinder instance with the specified dependencies.
+ *
+ * @param fileManager - File manager instance for data persistence
+ * @param provider - Ethereum provider for RPC calls
+ */
+class BlockFinder {
+  constructor(
+    private readonly fileManager: FileManager,
+    private readonly provider: ethers.Provider,
+  ) {}
+}
+```
+
+### Main Method
 
 ```typescript
 /**
@@ -45,20 +62,16 @@ Output: Complete block number mappings
  *
  * @param startDate - First date to process
  * @param endDate - Last date to process
- * @param provider - Ethereum provider for RPC calls
- * @param fileManager - File manager instance for data persistence
  * @returns Object mapping dates to block numbers
  * @throws Error if unable to find blocks or write data
  */
-async function findBlocks(
+async findBlocksForDateRange(
   startDate: Date,
   endDate: Date,
-  provider: ethers.Provider,
-  fileManager: FileManager,
 ): Promise<BlockNumberData>;
 ```
 
-### Helper Functions
+### Public Methods
 
 ```typescript
 /**
@@ -66,15 +79,13 @@ async function findBlocks(
  * Uses binary search between bounds to minimize RPC calls.
  *
  * @param date - Date to find block for
- * @param provider - Ethereum provider for RPC calls
  * @param lowerBound - Starting block for search (inclusive)
  * @param upperBound - Ending block for search (inclusive)
  * @returns Block number of last block before midnight
  * @throws Error if unable to find block within bounds
  */
-async function findEndOfDayBlock(
+async findEndOfDayBlock(
   date: Date,
-  provider: ethers.Provider,
   lowerBound: number,
   upperBound: number,
 ): Promise<number>;
@@ -83,11 +94,10 @@ async function findEndOfDayBlock(
  * Gets the current block number minus safety margin.
  * Used to ensure we only process finalized blocks.
  *
- * @param provider - Ethereum provider for RPC calls
  * @returns Current block number minus 1000
  * @throws Error if unable to get current block
  */
-async function getSafeCurrentBlock(provider: ethers.Provider): Promise<number>;
+async getSafeCurrentBlock(): Promise<number>;
 
 /**
  * Determines search bounds for a specific date.
@@ -98,7 +108,7 @@ async function getSafeCurrentBlock(provider: ethers.Provider): Promise<number>;
  * @param safeCurrentBlock - Maximum block to consider
  * @returns Tuple of [lowerBound, upperBound]
  */
-function getSearchBounds(
+getSearchBounds(
   date: Date,
   existingBlocks: BlockNumberData,
   safeCurrentBlock: number,
@@ -227,15 +237,37 @@ import { ethers } from "ethers";
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const fileManager = new FileManager("./store");
 
+// Create BlockFinder instance
+const blockFinder = new BlockFinder(fileManager, provider);
+
 // Find blocks for date range
-const blocks = await BlockFinder.findBlocks(
+const blocks = await blockFinder.findBlocksForDateRange(
+  new Date("2024-01-01"),
+  new Date("2024-01-31"),
+);
+
+console.log(`Found blocks for ${Object.keys(blocks).length} dates`);
+```
+
+## Backward Compatibility
+
+For backward compatibility, the module also exports standalone functions that create a BlockFinder instance internally:
+
+```typescript
+import {
+  findBlocksForDateRange,
+  findEndOfDayBlock,
+  getSafeCurrentBlock,
+  getSearchBounds,
+} from "./block-finder";
+
+// These functions maintain the original API but use the BlockFinder class internally
+const blocks = await findBlocksForDateRange(
   new Date("2024-01-01"),
   new Date("2024-01-31"),
   provider,
   fileManager,
 );
-
-console.log(`Found blocks for ${Object.keys(blocks).length} dates`);
 ```
 
 ## Testing Notes
