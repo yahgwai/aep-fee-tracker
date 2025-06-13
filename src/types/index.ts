@@ -20,6 +20,7 @@ export interface DistributorsData {
   metadata: {
     chain_id: number;
     arbowner_address: string;
+    last_scanned_block?: number;
   };
   distributors: {
     [address: string]: DistributorInfo;

@@ -65,7 +65,8 @@ Tracks all discovered distributors with their metadata.
 {
   "metadata": {
     "chain_id": 42161,
-    "arbowner_address": "0x0000000000000000000000000000000000000070"
+    "arbowner_address": "0x0000000000000000000000000000000000000070",
+    "last_scanned_block": 12356789
   },
   "distributors": {
     "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
