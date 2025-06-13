@@ -42,5 +42,10 @@ export async function findEndOfDayBlock(
     }
   }
 
+  // If no valid block was found, all blocks are after midnight
+  if (lastValidBlock === -1) {
+    return lowerBound - 1;
+  }
+
   return lastValidBlock;
 }
