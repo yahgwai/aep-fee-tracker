@@ -14,7 +14,39 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
   beforeEach(() => {
     testContext = setupTestEnvironment();
-    // Create provider with static network to prevent auto-detection retry loop
+
+    /**
+     * IMPORTANT: JsonRpcProvider Network Configuration
+     *
+     * We MUST create the provider with explicit static network configuration to prevent
+     * async leaks in tests. Here's why:
+     *
+     * THE PROBLEM:
+     * When ethers.js JsonRpcProvider is created without network config, it automatically
+     * tries to detect the network by making RPC calls. If these calls fail (network issues,
+     * rate limits, or in error tests with invalid URLs), the provider enters a retry loop
+     * that logs every second:
+     * "JsonRpcProvider failed to detect network and cannot start up; retry in 1s"
+     *
+     * This causes:
+     * 1. "Cannot log after tests are done" errors when retry timers fire after test completion
+     * 2. "A worker process has failed to exit gracefully" messages from Jest
+     * 3. Test output pollution with error messages from previous tests
+     *
+     * WHY destroy() WASN'T ENOUGH:
+     * Even though we call provider.destroy() in afterEach, there's a race condition:
+     * - Network detection starts immediately on provider creation
+     * - If the first call fails, a retry is scheduled via setTimeout
+     * - destroy() might be called before the retry fires
+     * - The retry executes after the test ends, causing the leak
+     *
+     * THE SOLUTION:
+     * By providing static network configuration, we tell the provider to skip network
+     * detection entirely. No detection = no retries = no leaks.
+     *
+     * We still call destroy() in afterEach as a best practice for cleanup, but the
+     * static config is what actually prevents the async leaks.
+     */
     const network = ethers.Network.from({
       chainId: 42170,
       name: "arbitrum-nova",
