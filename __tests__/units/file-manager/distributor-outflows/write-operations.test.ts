@@ -20,7 +20,7 @@ describe("FileManager - Distributor Outflows - Write Operations", () => {
   });
 
   describe("writeDistributorOutflows() - File Operations", () => {
-    it("should create store directory if it does not exist", async () => {
+    it("should create store directory if it does not exist", () => {
       expect(fs.existsSync("store")).toBe(false);
 
       const testData: OutflowData = {
@@ -31,10 +31,7 @@ describe("FileManager - Distributor Outflows - Write Operations", () => {
         outflows: {},
       };
 
-      await testContext.fileManager.writeDistributorOutflows(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorOutflows(VALID_ADDRESS, testData);
 
       expect(fs.existsSync("store")).toBe(true);
       expect(
@@ -42,7 +39,7 @@ describe("FileManager - Distributor Outflows - Write Operations", () => {
       ).toBe(true);
     });
 
-    it("should format JSON with 2-space indentation", async () => {
+    it("should format JSON with 2-space indentation", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -64,10 +61,7 @@ describe("FileManager - Distributor Outflows - Write Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorOutflows(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorOutflows(VALID_ADDRESS, testData);
 
       const filePath = `store/distributors/${VALID_ADDRESS}/outflows.json`;
       const fileContent = fs.readFileSync(filePath, "utf-8");

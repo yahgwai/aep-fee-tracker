@@ -53,13 +53,8 @@ export function createTestDate(offsetDays: number = 0): string {
 
 // Validation test helpers
 export function expectValidationError(
-  fn: () => Promise<void> | void,
+  fn: () => void,
   expectedMessage: string | RegExp,
-): Promise<void> {
-  if (fn.constructor.name === "AsyncFunction") {
-    return expect(fn()).rejects.toThrow(expectedMessage);
-  } else {
-    expect(fn).toThrow(expectedMessage);
-    return Promise.resolve();
-  }
+): void {
+  expect(fn).toThrow(expectedMessage);
 }

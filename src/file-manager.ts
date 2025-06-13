@@ -42,31 +42,31 @@ const EXAMPLE_WEI_VALUE = "1230000000000000000000";
 const WEI_DECIMAL_REGEX = /^\d+$/;
 
 export class FileManager implements FileManagerInterface {
-  async readBlockNumbers(): Promise<BlockNumberData> {
+  readBlockNumbers(): BlockNumberData {
     return this.readJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), () =>
       this.createEmptyBlockNumberData(),
     );
   }
 
-  async writeBlockNumbers(data: BlockNumberData): Promise<void> {
+  writeBlockNumbers(data: BlockNumberData): void {
     this.validateBlockNumberData(data);
     this.ensureStoreDirectory();
     this.writeJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), data);
   }
 
-  async readDistributors(): Promise<DistributorsData> {
+  readDistributors(): DistributorsData {
     return this.readJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), () =>
       this.createEmptyDistributorsData(),
     );
   }
 
-  async writeDistributors(data: DistributorsData): Promise<void> {
+  writeDistributors(data: DistributorsData): void {
     this.validateDistributorsData(data);
     this.ensureStoreDirectory();
     this.writeJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), data);
   }
 
-  async readDistributorBalances(address: Address): Promise<BalanceData> {
+  readDistributorBalances(address: Address): BalanceData {
     const validatedAddress = this.validateAddress(address);
     return this.readJsonFile(
       this.getDistributorFilePath(validatedAddress, BALANCES_FILE),
@@ -74,10 +74,7 @@ export class FileManager implements FileManagerInterface {
     );
   }
 
-  async writeDistributorBalances(
-    address: Address,
-    data: BalanceData,
-  ): Promise<void> {
+  writeDistributorBalances(address: Address, data: BalanceData): void {
     const validatedAddress = this.validateAddress(address);
     this.validateBalanceData(validatedAddress, data);
     this.ensureDistributorDirectory(validatedAddress);
@@ -87,7 +84,7 @@ export class FileManager implements FileManagerInterface {
     );
   }
 
-  async readDistributorOutflows(address: Address): Promise<OutflowData> {
+  readDistributorOutflows(address: Address): OutflowData {
     const validatedAddress = this.validateAddress(address);
     return this.readJsonFile(
       this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
@@ -95,10 +92,7 @@ export class FileManager implements FileManagerInterface {
     );
   }
 
-  async writeDistributorOutflows(
-    address: Address,
-    data: OutflowData,
-  ): Promise<void> {
+  writeDistributorOutflows(address: Address, data: OutflowData): void {
     const validatedAddress = this.validateAddress(address);
     this.validateOutflowData(validatedAddress, data);
     this.ensureDistributorDirectory(validatedAddress);
@@ -108,7 +102,7 @@ export class FileManager implements FileManagerInterface {
     );
   }
 
-  async ensureStoreDirectory(): Promise<void> {
+  ensureStoreDirectory(): void {
     if (!fs.existsSync(STORE_DIR)) {
       fs.mkdirSync(STORE_DIR, { recursive: true });
     }
@@ -175,7 +169,7 @@ export class FileManager implements FileManagerInterface {
     };
   }
 
-  private async ensureDistributorDirectory(address: Address): Promise<void> {
+  private ensureDistributorDirectory(address: Address): void {
     const dirPath = path.join(STORE_DIR, DISTRIBUTORS_DIR, address);
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });

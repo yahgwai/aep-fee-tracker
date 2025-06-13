@@ -151,7 +151,7 @@ Daily distribution events and totals.
 #### readBlockNumbers()
 
 ```typescript
-readBlockNumbers(): Promise<BlockNumberData>
+readBlockNumbers(): BlockNumberData
 ```
 
 - Returns the master block number mappings
@@ -161,7 +161,7 @@ readBlockNumbers(): Promise<BlockNumberData>
 #### writeBlockNumbers(data: BlockNumberData)
 
 ```typescript
-writeBlockNumbers(data: BlockNumberData): Promise<void>
+writeBlockNumbers(data: BlockNumberData): void
 ```
 
 - Updates the master block number file
@@ -171,7 +171,7 @@ writeBlockNumbers(data: BlockNumberData): Promise<void>
 #### readDistributors()
 
 ```typescript
-readDistributors(): Promise<DistributorsData>
+readDistributors(): DistributorsData
 ```
 
 - Returns all discovered distributors with metadata
@@ -181,7 +181,7 @@ readDistributors(): Promise<DistributorsData>
 #### writeDistributors(data: DistributorsData)
 
 ```typescript
-writeDistributors(data: DistributorsData): Promise<void>
+writeDistributors(data: DistributorsData): void
 ```
 
 - Atomically updates the distributors list
@@ -191,7 +191,7 @@ writeDistributors(data: DistributorsData): Promise<void>
 #### readDistributorBalances(address: string)
 
 ```typescript
-readDistributorBalances(address: string): Promise<BalanceData>
+readDistributorBalances(address: string): BalanceData
 ```
 
 - Returns balance history for a specific distributor
@@ -201,7 +201,7 @@ readDistributorBalances(address: string): Promise<BalanceData>
 #### writeDistributorBalances(address: string, data: BalanceData)
 
 ```typescript
-writeDistributorBalances(address: string, data: BalanceData): Promise<void>
+writeDistributorBalances(address: string, data: BalanceData): void
 ```
 
 - Updates balance data for a distributor
@@ -211,7 +211,7 @@ writeDistributorBalances(address: string, data: BalanceData): Promise<void>
 #### readDistributorOutflows(address: string)
 
 ```typescript
-readDistributorOutflows(address: string): Promise<OutflowData>
+readDistributorOutflows(address: string): OutflowData
 ```
 
 - Returns outflow events for a specific distributor
@@ -221,7 +221,7 @@ readDistributorOutflows(address: string): Promise<OutflowData>
 #### writeDistributorOutflows(address: string, data: OutflowData)
 
 ```typescript
-writeDistributorOutflows(address: string, data: OutflowData): Promise<void>
+writeDistributorOutflows(address: string, data: OutflowData): void
 ```
 
 - Updates outflow data for a distributor
@@ -234,7 +234,7 @@ writeDistributorOutflows(address: string, data: OutflowData): Promise<void>
 #### ensureStoreDirectory()
 
 ```typescript
-ensureStoreDirectory(): Promise<void>
+ensureStoreDirectory(): void
 ```
 
 - Creates the store directory if it doesn't exist

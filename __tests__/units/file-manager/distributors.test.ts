@@ -80,12 +80,12 @@ describe("FileManager - Distributors", () => {
   });
 
   describe("readDistributors()", () => {
-    it("should return empty DistributorsData when distributors.json does not exist", async () => {
-      const result = await testContext.fileManager.readDistributors();
+    it("should return empty DistributorsData when distributors.json does not exist", () => {
+      const result = testContext.fileManager.readDistributors();
       expect(result).toEqual(createDistributorsData());
     });
 
-    it("should write and read back DistributorsData with multiple distributors", async () => {
+    it("should write and read back DistributorsData with multiple distributors", () => {
       const testData = createDistributorsData({
         distributors: {
           [VALID_ADDRESS]: createDistributorInfo(),
@@ -112,27 +112,27 @@ describe("FileManager - Distributors", () => {
         },
       });
 
-      await testContext.fileManager.writeDistributors(testData);
-      const result = await testContext.fileManager.readDistributors();
+      testContext.fileManager.writeDistributors(testData);
+      const result = testContext.fileManager.readDistributors();
 
       expect(result).toEqual(testData);
     });
   });
 
   describe("writeDistributors()", () => {
-    it("should validate all distributor addresses are checksummed", async () => {
+    it("should validate all distributor addresses are checksummed", () => {
       const invalidData = createDistributorsData({
         distributors: {
           [VALID_ADDRESS_LOWERCASE]: createDistributorInfo(),
         },
       });
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributors(invalidData),
-      ).rejects.toThrow(/address.*checksum/i);
+      ).toThrow(/address.*checksum/i);
     });
 
-    it("should validate distributor types match the DistributorType enum", async () => {
+    it("should validate distributor types match the DistributorType enum", () => {
       const invalidData = createDistributorsData({
         distributors: {
           [VALID_ADDRESS]: {
@@ -142,12 +142,12 @@ describe("FileManager - Distributors", () => {
         },
       });
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributors(invalidData),
-      ).rejects.toThrow(/Invalid DistributorType value/);
+      ).toThrow(/Invalid DistributorType value/);
     });
 
-    it("should ensure all required fields are present", async () => {
+    it("should ensure all required fields are present", () => {
       const distributorInfo = createDistributorInfo();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { discovered_date, ...incompleteInfo } = distributorInfo;
@@ -157,12 +157,12 @@ describe("FileManager - Distributors", () => {
         },
       });
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributors(missingFieldData),
-      ).rejects.toThrow(/Missing required field.*discovered_date/);
+      ).toThrow(/Missing required field.*discovered_date/);
     });
 
-    it("should validate date formats", async () => {
+    it("should validate date formats", () => {
       const invalidDateData: DistributorsData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -183,12 +183,12 @@ describe("FileManager - Distributors", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributors(invalidDateData),
-      ).rejects.toThrow(/Invalid date format/);
+      ).toThrow(/Invalid date format/);
     });
 
-    it("should validate transaction hashes", async () => {
+    it("should validate transaction hashes", () => {
       const invalidTxHashData: DistributorsData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -208,12 +208,12 @@ describe("FileManager - Distributors", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributors(invalidTxHashData),
-      ).rejects.toThrow(/Invalid transaction hash/);
+      ).toThrow(/Invalid transaction hash/);
     });
 
-    it("should format JSON with 2-space indentation", async () => {
+    it("should format JSON with 2-space indentation", () => {
       const testData: DistributorsData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -234,13 +234,13 @@ describe("FileManager - Distributors", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributors(testData);
+      testContext.fileManager.writeDistributors(testData);
 
       const fileContent = fs.readFileSync("store/distributors.json", "utf-8");
       expect(fileContent).toBe(JSON.stringify(testData, null, 2));
     });
 
-    it("should create store directory if it does not exist", async () => {
+    it("should create store directory if it does not exist", () => {
       expect(fs.existsSync("store")).toBe(false);
 
       const testData: DistributorsData = {
@@ -251,13 +251,13 @@ describe("FileManager - Distributors", () => {
         distributors: {},
       };
 
-      await testContext.fileManager.writeDistributors(testData);
+      testContext.fileManager.writeDistributors(testData);
 
       expect(fs.existsSync("store")).toBe(true);
       expect(fs.existsSync("store/distributors.json")).toBe(true);
     });
 
-    it("should use validateEnumValue for distributor type validation", async () => {
+    it("should use validateEnumValue for distributor type validation", () => {
       const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
       const testData: DistributorsData = {
         metadata: {
@@ -281,9 +281,7 @@ describe("FileManager - Distributors", () => {
         },
       };
 
-      await expect(
-        testContext.fileManager.writeDistributors(testData),
-      ).rejects.toThrow(
+      expect(() => testContext.fileManager.writeDistributors(testData)).toThrow(
         "Invalid DistributorType value: INVALID_TYPE. Valid values are: L2_BASE_FEE, L2_SURPLUS_FEE",
       );
     });

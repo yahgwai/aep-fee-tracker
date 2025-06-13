@@ -21,9 +21,9 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
   });
 
   describe("readDistributorOutflows()", () => {
-    it("should return empty OutflowData when outflows.json does not exist", async () => {
+    it("should return empty OutflowData when outflows.json does not exist", () => {
       const result =
-        await testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
+        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
       expect(result).toEqual({
         metadata: {
@@ -34,7 +34,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
       });
     });
 
-    it("should create distributor directory when writing outflows for new address", async () => {
+    it("should create distributor directory when writing outflows for new address", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -57,10 +57,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
 
       expect(fs.existsSync(`store/distributors/${VALID_ADDRESS}`)).toBe(false);
 
-      await testContext.fileManager.writeDistributorOutflows(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorOutflows(VALID_ADDRESS, testData);
 
       expect(fs.existsSync(`store/distributors/${VALID_ADDRESS}`)).toBe(true);
       expect(
@@ -68,7 +65,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
       ).toBe(true);
     });
 
-    it("should write and read back OutflowData with multiple dates", async () => {
+    it("should write and read back OutflowData with multiple dates", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -107,17 +104,14 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorOutflows(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorOutflows(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
+        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
       expect(result).toEqual(testData);
     });
 
-    it("should handle outflows with no events", async () => {
+    it("should handle outflows with no events", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -132,17 +126,14 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorOutflows(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorOutflows(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
+        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
       expect(result).toEqual(testData);
     });
 
-    it("should handle multiple events on the same day", async () => {
+    it("should handle multiple events on the same day", () => {
       const events: OutflowEvent[] = [];
       let totalWei = BigInt(0);
 
@@ -184,18 +175,15 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorOutflows(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorOutflows(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
+        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
       expect(result).toEqual(testData);
       expect(result.outflows["2024-01-15"]?.events.length).toBe(10);
     });
 
-    it("should preserve wei values as strings without modification", async () => {
+    it("should preserve wei values as strings without modification", () => {
       const exactWeiValue = "1234567890123456789012345678901234567890";
 
       const testData: OutflowData = {
@@ -218,12 +206,9 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorOutflows(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorOutflows(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
+        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
       expect(result.outflows["2024-01-15"]?.total_outflow_wei).toBe(
         exactWeiValue,
@@ -236,7 +221,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
       );
     });
 
-    it("should handle outflow value of 0 correctly", async () => {
+    it("should handle outflow value of 0 correctly", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -251,12 +236,9 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorOutflows(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorOutflows(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
+        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
       expect(result.outflows["2024-01-15"]?.total_outflow_wei).toBe("0");
     });
