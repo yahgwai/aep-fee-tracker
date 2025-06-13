@@ -101,15 +101,15 @@ export const DISTRIBUTORS_DIR = "distributors";
 
 // Component Interfaces
 export interface FileManager {
-  readBlockNumbers(): Promise<BlockNumberData>;
-  writeBlockNumbers(data: BlockNumberData): Promise<void>;
-  readDistributors(): Promise<DistributorsData>;
-  writeDistributors(data: DistributorsData): Promise<void>;
-  readDistributorBalances(address: Address): Promise<BalanceData>;
-  writeDistributorBalances(address: Address, data: BalanceData): Promise<void>;
-  readDistributorOutflows(address: Address): Promise<OutflowData>;
-  writeDistributorOutflows(address: Address, data: OutflowData): Promise<void>;
-  ensureStoreDirectory(): Promise<void>;
+  readBlockNumbers(): BlockNumberData;
+  writeBlockNumbers(data: BlockNumberData): void;
+  readDistributors(): DistributorsData;
+  writeDistributors(data: DistributorsData): void;
+  readDistributorBalances(address: Address): BalanceData;
+  writeDistributorBalances(address: Address, data: BalanceData): void;
+  readDistributorOutflows(address: Address): OutflowData;
+  writeDistributorOutflows(address: Address, data: OutflowData): void;
+  ensureStoreDirectory(): void;
   validateAddress(address: string): Address;
   formatDate(date: Date): DateString;
   validateDateFormat(date: string): void;

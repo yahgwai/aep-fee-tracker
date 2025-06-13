@@ -247,27 +247,27 @@ describe("Core Types", () => {
   describe("FileManager Interface", () => {
     it("should define FileManager interface correctly", () => {
       const mockFileManager: FileManager = {
-        readBlockNumbers: async () => ({
+        readBlockNumbers: () => ({
           metadata: { chain_id: 42161 },
           blocks: {},
         }),
-        writeBlockNumbers: async () => {},
-        readDistributors: async () => ({
+        writeBlockNumbers: () => {},
+        readDistributors: () => ({
           metadata: { chain_id: 42161, arbowner_address: "" },
           distributors: {},
         }),
-        writeDistributors: async () => {},
-        readDistributorBalances: async () => ({
+        writeDistributors: () => {},
+        readDistributorBalances: () => ({
           metadata: { chain_id: 42161, reward_distributor: "" },
           balances: {},
         }),
-        writeDistributorBalances: async () => {},
-        readDistributorOutflows: async () => ({
+        writeDistributorBalances: () => {},
+        readDistributorOutflows: () => ({
           metadata: { chain_id: 42161, reward_distributor: "" },
           outflows: {},
         }),
-        writeDistributorOutflows: async () => {},
-        ensureStoreDirectory: async () => {},
+        writeDistributorOutflows: () => {},
+        ensureStoreDirectory: () => {},
         validateAddress: (address: string) => address as Address,
         formatDate: (date: Date) =>
           date.toISOString().split("T")[0] as DateString,

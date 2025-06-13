@@ -23,7 +23,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
   });
 
   describe("writeDistributorOutflows() - Address Validation", () => {
-    it("should validate address is checksummed", async () => {
+    it("should validate address is checksummed", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -39,7 +39,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
       };
 
       // Should automatically checksum the address
-      await testContext.fileManager.writeDistributorOutflows(
+      testContext.fileManager.writeDistributorOutflows(
         VALID_ADDRESS_LOWERCASE,
         testData,
       );
@@ -51,7 +51,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
       ).toBe(true);
     });
 
-    it("should validate reward_distributor matches the address parameter", async () => {
+    it("should validate reward_distributor matches the address parameter", () => {
       const differentAddress = INVALID_ADDRESS;
 
       const testData: OutflowData = {
@@ -68,15 +68,15 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/address mismatch/);
+      ).toThrow(/address mismatch/);
     });
 
-    it("should validate recipient addresses are checksummed", async () => {
+    it("should validate recipient addresses are checksummed", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -97,17 +97,17 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/address.*checksum/i);
+      ).toThrow(/address.*checksum/i);
     });
   });
 
   describe("writeDistributorOutflows() - Date and Block Validation", () => {
-    it("should validate date formats in outflows", async () => {
+    it("should validate date formats in outflows", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -122,15 +122,15 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/Invalid date format/);
+      ).toThrow(/Invalid date format/);
     });
 
-    it("should validate block numbers are positive", async () => {
+    it("should validate block numbers are positive", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -145,17 +145,17 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/positive integer/);
+      ).toThrow(/positive integer/);
     });
   });
 
   describe("writeDistributorOutflows() - Wei Value Validation", () => {
-    it("should reject negative total_outflow_wei values", async () => {
+    it("should reject negative total_outflow_wei values", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -170,15 +170,15 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/Non-negative decimal string/);
+      ).toThrow(/Non-negative decimal string/);
     });
 
-    it("should reject event value_wei in scientific notation", async () => {
+    it("should reject event value_wei in scientific notation", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -199,15 +199,15 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/Invalid numeric format/);
+      ).toThrow(/Invalid numeric format/);
     });
 
-    it("should use validateWeiValue with context for total_outflow_wei", async () => {
+    it("should use validateWeiValue with context for total_outflow_wei", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -222,12 +222,12 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(
+      ).toThrow(
         `Invalid numeric format\n` +
           `  Field: total_outflow_wei\n` +
           `  Date: 2024-01-15\n` +
@@ -236,7 +236,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
       );
     });
 
-    it("should use validateWeiValue with context for event value_wei", async () => {
+    it("should use validateWeiValue with context for event value_wei", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -257,12 +257,12 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(
+      ).toThrow(
         `Invalid numeric format\n` +
           `  Field: event.value_wei\n` +
           `  Date: 2024-01-15\n` +
@@ -271,7 +271,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
       );
     });
 
-    it("should handle maximum uint256 outflow values", async () => {
+    it("should handle maximum uint256 outflow values", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -292,12 +292,9 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorOutflows(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorOutflows(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
+        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
       expect(result.outflows["2024-01-15"]?.total_outflow_wei).toBe(
         MAX_UINT256,
@@ -309,7 +306,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
   });
 
   describe("writeDistributorOutflows() - Transaction Hash Validation", () => {
-    it("should validate transaction hashes format", async () => {
+    it("should validate transaction hashes format", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -330,15 +327,15 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/Invalid transaction hash/);
+      ).toThrow(/Invalid transaction hash/);
     });
 
-    it("should use validateTransactionHash for tx_hash validation", async () => {
+    it("should use validateTransactionHash for tx_hash validation", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -359,19 +356,19 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(
+      ).toThrow(
         /Invalid transaction hash format.*Expected 0x followed by 64 hexadecimal characters/,
       );
     });
   });
 
   describe("writeDistributorOutflows() - Business Logic Validation", () => {
-    it("should validate total_outflow_wei matches sum of events", async () => {
+    it("should validate total_outflow_wei matches sum of events", () => {
       const testData: OutflowData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -398,12 +395,12 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorOutflows(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/Total outflow mismatch/);
+      ).toThrow(/Total outflow mismatch/);
     });
   });
 });

@@ -29,34 +29,33 @@ describe("FileManager - Core Structure", () => {
   });
 
   describe("ensureStoreDirectory()", () => {
-    it("should create store directory if it does not exist", async () => {
+    it("should create store directory if it does not exist", () => {
       expect(fs.existsSync("store")).toBe(false);
 
-      await testContext.fileManager.ensureStoreDirectory();
+      testContext.fileManager.ensureStoreDirectory();
 
       expect(fs.existsSync("store")).toBe(true);
       const stats = fs.statSync("store");
       expect(stats.isDirectory()).toBe(true);
     });
 
-    it("should not error if directory already exists", async () => {
+    it("should not error if directory already exists", () => {
       fs.mkdirSync("store");
 
-      await expect(
+      expect(() =>
         testContext.fileManager.ensureStoreDirectory(),
-      ).resolves.not.toThrow();
+      ).not.toThrow();
 
       expect(fs.existsSync("store")).toBe(true);
     });
 
-    it("should handle concurrent directory creation gracefully", async () => {
-      const promises = [
-        testContext.fileManager.ensureStoreDirectory(),
-        testContext.fileManager.ensureStoreDirectory(),
-        testContext.fileManager.ensureStoreDirectory(),
-      ];
-
-      await expect(Promise.all(promises)).resolves.not.toThrow();
+    it("should handle concurrent directory creation gracefully", () => {
+      // Since methods are now synchronous, we'll just call them sequentially
+      expect(() => {
+        testContext.fileManager.ensureStoreDirectory();
+        testContext.fileManager.ensureStoreDirectory();
+        testContext.fileManager.ensureStoreDirectory();
+      }).not.toThrow();
 
       expect(fs.existsSync("store")).toBe(true);
     });

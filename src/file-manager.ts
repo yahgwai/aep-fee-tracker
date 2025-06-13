@@ -21,136 +21,88 @@ import {
 const ERROR_INVALID_ADDRESS = "Invalid address";
 const ERROR_BAD_CHECKSUM = "bad address checksum";
 
-// Constants
-const ADDRESS_PREFIX = "0x";
-const ISO_DATE_SEPARATOR = "T";
+// File system constants
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
 const BALANCES_FILE = "balances.json";
 const OUTFLOWS_FILE = "outflows.json";
-const DATE_FORMAT_REGEX = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
-const TX_HASH_LENGTH = 64;
 const JSON_INDENT_SIZE = 2;
+
+// Ethereum constants
+const ADDRESS_PREFIX = "0x";
+const TX_HASH_LENGTH = 64;
+const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
+
+// Date and time constants
+const DATE_FORMAT_REGEX = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+
+// Validation constants
 const MAX_REASONABLE_BLOCK = 1000000000; // 1 billion blocks - Arbitrum mainnet started at block ~0 in 2021
 const EXAMPLE_WEI_VALUE = "1230000000000000000000";
+const WEI_DECIMAL_REGEX = /^\d+$/;
 
 export class FileManager implements FileManagerInterface {
-  constructor() {}
-
-  async readBlockNumbers(): Promise<BlockNumberData> {
-    const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyBlockNumberData();
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as BlockNumberData;
-  }
-
-  async writeBlockNumbers(data: BlockNumberData): Promise<void> {
-    this.validateBlockNumberData(data);
-
-    await this.ensureStoreDirectory();
-
-    const filePath = path.join(STORE_DIR, BLOCK_NUMBERS_FILE);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
-  }
-
-  async readDistributors(): Promise<DistributorsData> {
-    const filePath = path.join(STORE_DIR, DISTRIBUTORS_FILE);
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyDistributorsData();
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as DistributorsData;
-  }
-
-  async writeDistributors(data: DistributorsData): Promise<void> {
-    this.validateDistributorsData(data);
-
-    await this.ensureStoreDirectory();
-
-    const filePath = path.join(STORE_DIR, DISTRIBUTORS_FILE);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
-  }
-
-  async readDistributorBalances(address: Address): Promise<BalanceData> {
-    const validatedAddress = this.validateAddress(address);
-    const filePath = path.join(
-      STORE_DIR,
-      DISTRIBUTORS_DIR,
-      validatedAddress,
-      BALANCES_FILE,
+  readBlockNumbers(): BlockNumberData {
+    return this.readJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), () =>
+      this.createEmptyBlockNumberData(),
     );
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyBalanceData(validatedAddress);
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as BalanceData;
   }
 
-  async writeDistributorBalances(
-    address: Address,
-    data: BalanceData,
-  ): Promise<void> {
+  writeBlockNumbers(data: BlockNumberData): void {
+    this.validateBlockNumberData(data);
+    this.ensureStoreDirectory();
+    this.writeJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), data);
+  }
+
+  readDistributors(): DistributorsData {
+    return this.readJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), () =>
+      this.createEmptyDistributorsData(),
+    );
+  }
+
+  writeDistributors(data: DistributorsData): void {
+    this.validateDistributorsData(data);
+    this.ensureStoreDirectory();
+    this.writeJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), data);
+  }
+
+  readDistributorBalances(address: Address): BalanceData {
+    const validatedAddress = this.validateAddress(address);
+    return this.readJsonFile(
+      this.getDistributorFilePath(validatedAddress, BALANCES_FILE),
+      () => this.createEmptyBalanceData(validatedAddress),
+    );
+  }
+
+  writeDistributorBalances(address: Address, data: BalanceData): void {
     const validatedAddress = this.validateAddress(address);
     this.validateBalanceData(validatedAddress, data);
-
-    await this.ensureDistributorDirectory(validatedAddress);
-
-    const filePath = path.join(
-      STORE_DIR,
-      DISTRIBUTORS_DIR,
-      validatedAddress,
-      BALANCES_FILE,
+    this.ensureDistributorDirectory(validatedAddress);
+    this.writeJsonFile(
+      this.getDistributorFilePath(validatedAddress, BALANCES_FILE),
+      data,
     );
-
-    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
   }
 
-  async readDistributorOutflows(address: Address): Promise<OutflowData> {
+  readDistributorOutflows(address: Address): OutflowData {
     const validatedAddress = this.validateAddress(address);
-    const filePath = path.join(
-      STORE_DIR,
-      DISTRIBUTORS_DIR,
-      validatedAddress,
-      OUTFLOWS_FILE,
+    return this.readJsonFile(
+      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
+      () => this.createEmptyOutflowData(validatedAddress),
     );
-
-    if (!fs.existsSync(filePath)) {
-      return this.createEmptyOutflowData(validatedAddress);
-    }
-
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent) as OutflowData;
   }
 
-  async writeDistributorOutflows(
-    address: Address,
-    data: OutflowData,
-  ): Promise<void> {
+  writeDistributorOutflows(address: Address, data: OutflowData): void {
     const validatedAddress = this.validateAddress(address);
     this.validateOutflowData(validatedAddress, data);
-
-    await this.ensureDistributorDirectory(validatedAddress);
-
-    const filePath = path.join(
-      STORE_DIR,
-      DISTRIBUTORS_DIR,
-      validatedAddress,
-      OUTFLOWS_FILE,
+    this.ensureDistributorDirectory(validatedAddress);
+    this.writeJsonFile(
+      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
+      data,
     );
-
-    fs.writeFileSync(filePath, JSON.stringify(data, null, JSON_INDENT_SIZE));
   }
 
-  async ensureStoreDirectory(): Promise<void> {
+  ensureStoreDirectory(): void {
     if (!fs.existsSync(STORE_DIR)) {
       fs.mkdirSync(STORE_DIR, { recursive: true });
     }
@@ -175,7 +127,7 @@ export class FileManager implements FileManagerInterface {
   }
 
   formatDate(date: Date): DateString {
-    return date.toISOString().split(ISO_DATE_SEPARATOR)[0]!;
+    return date.toISOString().split("T")[0]!;
   }
 
   private createEmptyBlockNumberData(): BlockNumberData {
@@ -217,11 +169,28 @@ export class FileManager implements FileManagerInterface {
     };
   }
 
-  private async ensureDistributorDirectory(address: Address): Promise<void> {
+  private ensureDistributorDirectory(address: Address): void {
     const dirPath = path.join(STORE_DIR, DISTRIBUTORS_DIR, address);
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
+  }
+
+  private getDistributorFilePath(address: Address, fileName: string): string {
+    return path.join(STORE_DIR, DISTRIBUTORS_DIR, address, fileName);
+  }
+
+  private readJsonFile<T>(filePath: string, defaultFactory: () => T): T {
+    if (!fs.existsSync(filePath)) {
+      return defaultFactory();
+    }
+    return JSON.parse(fs.readFileSync(filePath, "utf-8")) as T;
+  }
+
+  private writeJsonFile(filePath: string, data: unknown): void {
+    const tempPath = `${filePath}.tmp`;
+    fs.writeFileSync(tempPath, JSON.stringify(data, null, JSON_INDENT_SIZE));
+    fs.renameSync(tempPath, filePath);
   }
 
   private validateBlockNumberData(data: BlockNumberData): void {
@@ -236,28 +205,14 @@ export class FileManager implements FileManagerInterface {
    * @throws {Error} If the date format is invalid or the date doesn't exist
    */
   validateDateFormat(date: string): void {
-    // First check format: YYYY-MM-DD with valid month/day ranges
     if (!DATE_FORMAT_REGEX.test(date)) {
       throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
     }
 
-    // Then validate it's an actual calendar date
-    const parts = date.split("-");
-    if (parts.length !== 3) {
-      throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
-    }
-
-    const year = parseInt(parts[0]!, 10);
-    const month = parseInt(parts[1]!, 10);
-    const day = parseInt(parts[2]!, 10);
-    const dateObj = new Date(year, month - 1, day);
-
-    // Check if the date components match (catches invalid dates like Feb 30)
-    if (
-      dateObj.getFullYear() !== year ||
-      dateObj.getMonth() !== month - 1 ||
-      dateObj.getDate() !== day
-    ) {
+    // Validate it's an actual calendar date by parsing and checking roundtrip
+    const parsed = new Date(date + "T00:00:00Z");
+    const roundtrip = parsed.toISOString().split("T")[0];
+    if (roundtrip !== date) {
       throw new Error(`Invalid calendar date: ${date}`);
     }
   }
@@ -289,25 +244,23 @@ export class FileManager implements FileManagerInterface {
    * @throws {Error} If the value is not a valid wei amount
    */
   validateWeiValue(value: string, field?: string, date?: string): void {
-    const formatError = (message: string, expected: string): Error => {
-      if (field) {
-        return new Error(
-          `${message}\n` +
-            `  Field: ${field}\n` +
-            (date ? `  Date: ${date}\n` : "") +
-            `  Value: ${value}\n` +
-            `  Expected: ${expected}\n`,
-        );
+    const formatError = (message: string, expected: string) => {
+      if (!field) {
+        return new Error(`${message}. Value: ${value}. Expected: ${expected}`);
       }
-      return new Error(`${message}. Value: ${value}. Expected: ${expected}`);
+      return new Error(
+        `${message}\n` +
+          `  Field: ${field}\n` +
+          (date ? `  Date: ${date}\n` : "") +
+          `  Value: ${value}\n` +
+          `  Expected: ${expected}\n`,
+      );
     };
 
-    // Check if it's a string
     if (typeof value !== "string") {
       throw formatError("Invalid wei value", "String value");
     }
 
-    // Check for scientific notation
     if (value.includes("e") || value.includes("E")) {
       throw formatError(
         "Invalid numeric format",
@@ -315,7 +268,6 @@ export class FileManager implements FileManagerInterface {
       );
     }
 
-    // Check for decimal point
     if (value.includes(".")) {
       throw formatError(
         "Invalid wei value",
@@ -323,16 +275,11 @@ export class FileManager implements FileManagerInterface {
       );
     }
 
-    // Check if it's a valid decimal string (only digits)
-    if (!/^\d+$/.test(value)) {
-      // Check for negative values
-      if (value.startsWith("-")) {
-        throw formatError("Invalid wei value", "Non-negative decimal string");
-      }
-      throw formatError(
-        "Invalid wei value",
-        "Decimal string containing only digits",
-      );
+    if (!WEI_DECIMAL_REGEX.test(value)) {
+      const expected = value.startsWith("-")
+        ? "Non-negative decimal string"
+        : "Decimal string containing only digits";
+      throw formatError("Invalid wei value", expected);
     }
   }
 
@@ -344,7 +291,6 @@ export class FileManager implements FileManagerInterface {
       if (address !== this.validateAddress(address)) {
         throw new Error(`Distributor address must be checksummed: ${address}`);
       }
-
       this.validateDistributorInfo(address, distributorInfo);
     }
   }
@@ -372,23 +318,15 @@ export class FileManager implements FileManagerInterface {
       }
     }
 
-    // Validate distributor type
+    // Validate field values
     this.validateEnumValue(
       info.type,
       "DistributorType",
       Object.values(DistributorType),
     );
-
-    // Validate date format
     this.validateDateFormat(info.discovered_date);
-
-    // Validate transaction hash
     this.validateTransactionHash(info.tx_hash);
-
-    // Validate block number
     this.validateBlockNumber(info.discovered_block);
-
-    // Validate owner address
     this.validateAddress(info.owner);
   }
 
@@ -426,7 +364,7 @@ export class FileManager implements FileManagerInterface {
         date,
       );
 
-      // Validate events
+      // Validate events and sum values
       let totalEventWei = BigInt(0);
       for (const event of outflow.events) {
         // Validate recipient address is checksummed
@@ -436,17 +374,12 @@ export class FileManager implements FileManagerInterface {
           );
         }
 
-        // Validate event value
         this.validateWeiValue(event.value_wei, "event.value_wei", date);
-
-        // Validate transaction hash
         this.validateTransactionHash(event.tx_hash);
-
-        // Add to total
         totalEventWei += BigInt(event.value_wei);
       }
 
-      // Validate that total matches sum of events
+      // Validate total matches sum of events
       if (totalEventWei.toString() !== outflow.total_outflow_wei) {
         throw new Error(
           `Total outflow mismatch for ${date}: expected ${totalEventWei.toString()}, got ${outflow.total_outflow_wei}`,

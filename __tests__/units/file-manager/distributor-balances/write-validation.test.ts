@@ -22,7 +22,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
   });
 
   describe("writeDistributorBalances() - Address Validation", () => {
-    it("should validate address is checksummed", async () => {
+    it("should validate address is checksummed", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -37,7 +37,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
       };
 
       // Should automatically checksum the address
-      await testContext.fileManager.writeDistributorBalances(
+      testContext.fileManager.writeDistributorBalances(
         VALID_ADDRESS_LOWERCASE,
         testData,
       );
@@ -49,7 +49,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
       ).toBe(true);
     });
 
-    it("should validate reward_distributor matches the address parameter", async () => {
+    it("should validate reward_distributor matches the address parameter", () => {
       const differentAddress = INVALID_ADDRESS;
 
       const testData: BalanceData = {
@@ -65,17 +65,17 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorBalances(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/address mismatch/);
+      ).toThrow(/address mismatch/);
     });
   });
 
   describe("writeDistributorBalances() - Date and Block Validation", () => {
-    it("should validate date formats in balances", async () => {
+    it("should validate date formats in balances", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -89,15 +89,15 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorBalances(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/Invalid date format/);
+      ).toThrow(/Invalid date format/);
     });
 
-    it("should validate block numbers are positive", async () => {
+    it("should validate block numbers are positive", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -111,17 +111,17 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorBalances(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/positive integer/);
+      ).toThrow(/positive integer/);
     });
   });
 
   describe("writeDistributorBalances() - Wei Value Validation", () => {
-    it("should reject negative wei values", async () => {
+    it("should reject negative wei values", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -135,15 +135,15 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorBalances(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/Non-negative decimal string/);
+      ).toThrow(/Non-negative decimal string/);
     });
 
-    it("should reject wei values in scientific notation", async () => {
+    it("should reject wei values in scientific notation", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -157,15 +157,15 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorBalances(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/Invalid numeric format/);
+      ).toThrow(/Invalid numeric format/);
     });
 
-    it("should reject wei values with decimal points", async () => {
+    it("should reject wei values with decimal points", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -179,15 +179,15 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorBalances(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(/Integer string \(no decimal points\)/);
+      ).toThrow(/Integer string \(no decimal points\)/);
     });
 
-    it("should handle maximum uint256 wei values", async () => {
+    it("should handle maximum uint256 wei values", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -201,17 +201,14 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorBalances(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorBalances(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
+        testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
       expect(result.balances["2024-01-15"]?.balance_wei).toBe(MAX_UINT256);
     });
 
-    it("should use validateWeiValue with proper context for balance validation", async () => {
+    it("should use validateWeiValue with proper context for balance validation", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -225,12 +222,12 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
         },
       };
 
-      await expect(
+      expect(() =>
         testContext.fileManager.writeDistributorBalances(
           VALID_ADDRESS,
           testData,
         ),
-      ).rejects.toThrow(
+      ).toThrow(
         `Invalid numeric format\n` +
           `  Field: balance_wei\n` +
           `  Date: 2024-01-15\n` +

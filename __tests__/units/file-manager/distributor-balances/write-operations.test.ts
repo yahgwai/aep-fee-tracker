@@ -20,7 +20,7 @@ describe("FileManager - Distributor Balances - Write Operations", () => {
   });
 
   describe("writeDistributorBalances() - File Operations", () => {
-    it("should create store directory if it does not exist", async () => {
+    it("should create store directory if it does not exist", () => {
       expect(fs.existsSync("store")).toBe(false);
 
       const testData: BalanceData = {
@@ -31,10 +31,7 @@ describe("FileManager - Distributor Balances - Write Operations", () => {
         balances: {},
       };
 
-      await testContext.fileManager.writeDistributorBalances(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorBalances(VALID_ADDRESS, testData);
 
       expect(fs.existsSync("store")).toBe(true);
       expect(
@@ -42,7 +39,7 @@ describe("FileManager - Distributor Balances - Write Operations", () => {
       ).toBe(true);
     });
 
-    it("should format JSON with 2-space indentation", async () => {
+    it("should format JSON with 2-space indentation", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -56,10 +53,7 @@ describe("FileManager - Distributor Balances - Write Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorBalances(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorBalances(VALID_ADDRESS, testData);
 
       const filePath = `store/distributors/${VALID_ADDRESS}/balances.json`;
       const fileContent = fs.readFileSync(filePath, "utf-8");

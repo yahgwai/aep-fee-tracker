@@ -20,9 +20,9 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
   });
 
   describe("readDistributorBalances()", () => {
-    it("should return empty BalanceData when balances.json does not exist", async () => {
+    it("should return empty BalanceData when balances.json does not exist", () => {
       const result =
-        await testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
+        testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
       expect(result).toEqual({
         metadata: {
@@ -33,7 +33,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
       });
     });
 
-    it("should create distributor directory when writing balances for new address", async () => {
+    it("should create distributor directory when writing balances for new address", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -49,10 +49,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
 
       expect(fs.existsSync(`store/distributors/${VALID_ADDRESS}`)).toBe(false);
 
-      await testContext.fileManager.writeDistributorBalances(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorBalances(VALID_ADDRESS, testData);
 
       expect(fs.existsSync(`store/distributors/${VALID_ADDRESS}`)).toBe(true);
       expect(
@@ -60,7 +57,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
       ).toBe(true);
     });
 
-    it("should write and read back BalanceData with many dates", async () => {
+    it("should write and read back BalanceData with many dates", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -90,18 +87,15 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorBalances(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorBalances(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
+        testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
       expect(result).toEqual(testData);
       expect(Object.keys(result.balances).length).toBe(5);
     });
 
-    it("should preserve wei values as strings without modification", async () => {
+    it("should preserve wei values as strings without modification", () => {
       const exactWeiValue =
         "123456789012345678901234567890123456789012345678901234567890";
 
@@ -118,18 +112,15 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorBalances(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorBalances(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
+        testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
       expect(result.balances["2024-01-15"]?.balance_wei).toBe(exactWeiValue);
       expect(typeof result.balances["2024-01-15"]?.balance_wei).toBe("string");
     });
 
-    it("should handle balance of 0 correctly", async () => {
+    it("should handle balance of 0 correctly", () => {
       const testData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -143,17 +134,14 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorBalances(
-        VALID_ADDRESS,
-        testData,
-      );
+      testContext.fileManager.writeDistributorBalances(VALID_ADDRESS, testData);
       const result =
-        await testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
+        testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
       expect(result.balances["2024-01-15"]?.balance_wei).toBe("0");
     });
 
-    it("should update existing balance file with new dates", async () => {
+    it("should update existing balance file with new dates", () => {
       const initialData: BalanceData = {
         metadata: {
           chain_id: CHAIN_IDS.ARBITRUM_ONE,
@@ -167,7 +155,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorBalances(
+      testContext.fileManager.writeDistributorBalances(
         VALID_ADDRESS,
         initialData,
       );
@@ -190,12 +178,12 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
         },
       };
 
-      await testContext.fileManager.writeDistributorBalances(
+      testContext.fileManager.writeDistributorBalances(
         VALID_ADDRESS,
         updatedData,
       );
       const result =
-        await testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
+        testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
       expect(Object.keys(result.balances).length).toBe(2);
       expect(result.balances["2024-01-15"]?.balance_wei).toBe(
