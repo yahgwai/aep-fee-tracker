@@ -12,7 +12,14 @@ describe("BlockFinder - Helper Functions", () => {
 
   beforeEach(() => {
     const rpcUrl = process.env["RPC_URL"] || "https://nova.arbitrum.io/rpc";
-    provider = new ethers.JsonRpcProvider(rpcUrl);
+    // Create provider with static network to prevent auto-detection retry loop
+    const network = ethers.Network.from({
+      chainId: 42170,
+      name: "arbitrum-nova",
+    });
+    provider = new ethers.JsonRpcProvider(rpcUrl, network, {
+      staticNetwork: network,
+    });
   });
 
   afterEach(async () => {
@@ -97,35 +104,24 @@ describe("BlockFinder - Helper Functions", () => {
     });
 
     it("should throw error when unable to get current block", async () => {
-      // Suppress console logs for this test
-      const originalLog = console.log;
-      const originalError = console.error;
-      console.log = jest.fn();
-      console.error = jest.fn();
+      // Create provider with explicit network to prevent retry loop
+      const network = ethers.Network.from({
+        chainId: 42170,
+        name: "arbitrum-nova",
+      });
+      const badProvider = new ethers.JsonRpcProvider(
+        "http://localhost:9999",
+        network,
+        { staticNetwork: network },
+      );
 
       try {
-        // Create provider with explicit network to skip auto-detection
-        const badProvider = new ethers.JsonRpcProvider(
-          "http://localhost:9999",
-          {
-            name: "arbitrum-nova",
-            chainId: 42170,
-          },
-          { staticNetwork: true },
+        await expect(getSafeCurrentBlock(badProvider)).rejects.toThrow(
+          /Failed to get current block/,
         );
-
-        try {
-          await expect(getSafeCurrentBlock(badProvider)).rejects.toThrow(
-            /Failed to get current block/,
-          );
-        } finally {
-          // Ensure cleanup even if test fails
-          await badProvider.destroy();
-        }
       } finally {
-        // Restore console methods
-        console.log = originalLog;
-        console.error = originalError;
+        // Ensure cleanup even if test fails
+        await badProvider.destroy();
       }
     });
 

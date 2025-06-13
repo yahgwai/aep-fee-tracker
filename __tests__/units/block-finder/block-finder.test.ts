@@ -14,7 +14,16 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
   beforeEach(() => {
     testContext = setupTestEnvironment();
-    provider = new ethers.JsonRpcProvider("https://nova.arbitrum.io/rpc");
+    // Create provider with static network to prevent auto-detection retry loop
+    const network = ethers.Network.from({
+      chainId: 42170,
+      name: "arbitrum-nova",
+    });
+    provider = new ethers.JsonRpcProvider(
+      "https://nova.arbitrum.io/rpc",
+      network,
+      { staticNetwork: network },
+    );
   });
 
   afterEach(async () => {
@@ -217,42 +226,31 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
   describe("Error handling", () => {
     it("should throw error with context when RPC provider is not available", async () => {
-      // Suppress console logs for this test
-      const originalLog = console.log;
-      const originalError = console.error;
-      console.log = jest.fn();
-      console.error = jest.fn();
+      // Create provider with explicit network to prevent retry loop
+      const network = ethers.Network.from({
+        chainId: 42170,
+        name: "arbitrum-nova",
+      });
+      const badProvider = new ethers.JsonRpcProvider(
+        "http://localhost:9999",
+        network,
+        { staticNetwork: network },
+      );
+      const startDate = new Date("2024-01-15");
+      const endDate = new Date("2024-01-15");
 
       try {
-        // Create provider with explicit network to skip auto-detection
-        const badProvider = new ethers.JsonRpcProvider(
-          "http://localhost:9999",
-          {
-            name: "arbitrum-nova",
-            chainId: 42170,
-          },
-          { staticNetwork: true },
-        );
-        const startDate = new Date("2024-01-15");
-        const endDate = new Date("2024-01-15");
-
-        try {
-          await expect(
-            findBlocksForDateRange(
-              startDate,
-              endDate,
-              badProvider,
-              testContext.fileManager,
-            ),
-          ).rejects.toThrow(/Failed to get current block/);
-        } finally {
-          // Ensure cleanup even if test fails
-          await badProvider.destroy();
-        }
+        await expect(
+          findBlocksForDateRange(
+            startDate,
+            endDate,
+            badProvider,
+            testContext.fileManager,
+          ),
+        ).rejects.toThrow(/Failed to get current block/);
       } finally {
-        // Restore console methods
-        console.log = originalLog;
-        console.error = originalError;
+        // Ensure cleanup even if test fails
+        await badProvider.destroy();
       }
     });
 
