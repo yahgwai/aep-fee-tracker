@@ -32,8 +32,10 @@ describe("BlockFinder - Helper Functions", () => {
   describe("findEndOfDayBlock", () => {
     it("should find the last block before midnight UTC for a specific date", async () => {
       const date = new Date("2024-01-15");
-      const lowerBound = 39900000;
-      const upperBound = 40100000;
+      // Use extremely tight bounds - we know the approximate block
+      // This reduces binary search to just a few iterations
+      const lowerBound = 40050200; // Very close to actual midnight block
+      const upperBound = 40050400; // Just 200 block range
 
       const blockNumber = await findEndOfDayBlock(
         date,

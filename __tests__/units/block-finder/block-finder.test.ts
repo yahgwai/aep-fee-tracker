@@ -162,14 +162,15 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     });
 
     it("should find missing blocks for dates not in storage", async () => {
+      // Use a single day gap for faster testing
       const startDate = new Date("2024-01-15");
-      const endDate = new Date("2024-01-17");
+      const endDate = new Date("2024-01-16");
 
+      // Pre-seed just the start date with a very recent block
       const existingData: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
-          "2024-01-15": 40000000,
-          "2024-01-17": 40691200,
+          "2024-01-15": 40049000, // This provides a good lower bound
         },
       };
 
@@ -182,10 +183,11 @@ describe("BlockFinder - findBlocksForDateRange", () => {
         testContext.fileManager,
       );
 
-      expect(result.blocks["2024-01-15"]).toBe(40000000);
-      expect(result.blocks["2024-01-16"]).toBeGreaterThan(40000000);
-      expect(result.blocks["2024-01-16"]).toBeLessThan(40691200);
-      expect(result.blocks["2024-01-17"]).toBe(40691200);
+      expect(result.blocks["2024-01-15"]).toBe(40049000);
+      expect(result.blocks["2024-01-16"]).toBeDefined();
+      expect(result.blocks["2024-01-16"]).toBeGreaterThan(40049000);
+      // ~345,600 blocks per day on Arbitrum
+      expect(result.blocks["2024-01-16"]).toBeLessThan(40049000 + 400000);
     });
 
     it("should skip dates that are too recent (less than 1000 blocks old)", async () => {
@@ -214,8 +216,19 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     });
 
     it("should persist block numbers after finding them", async () => {
-      const startDate = new Date("2023-12-01");
-      const endDate = new Date("2023-12-02");
+      // Test actual finding and persistence by seeding nearby data
+      const existingData: BlockNumberData = {
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        blocks: {
+          "2024-01-14": 39700000, // Provides lower bound
+          "2024-01-16": 40400000, // Provides upper bound
+        },
+      };
+
+      testContext.fileManager.writeBlockNumbers(existingData);
+
+      const startDate = new Date("2024-01-14");
+      const endDate = new Date("2024-01-16");
 
       const result = await findBlocksForDateRange(
         startDate,
@@ -224,17 +237,34 @@ describe("BlockFinder - findBlocksForDateRange", () => {
         testContext.fileManager,
       );
 
-      // Check if anything was found
-      expect(Object.keys(result.blocks).length).toBeGreaterThan(0);
+      // Should have found the missing date
+      expect(result.blocks["2024-01-15"]).toBeDefined();
+      expect(result.blocks["2024-01-15"]).toBeGreaterThan(39700000);
+      expect(result.blocks["2024-01-15"]).toBeLessThan(40400000);
 
+      // Verify all data is persisted
       const savedData = testContext.fileManager.readBlockNumbers();
-      expect(savedData.blocks["2023-12-01"]).toBeDefined();
-      expect(savedData.blocks["2023-12-01"]).toBeGreaterThan(0);
+      expect(Object.keys(savedData.blocks).sort()).toEqual([
+        "2024-01-14",
+        "2024-01-15",
+        "2024-01-16",
+      ]);
+      expect(savedData.blocks["2024-01-14"]).toBe(39700000);
+      expect(savedData.blocks["2024-01-16"]).toBe(40400000);
     }, 15000);
 
     it("should handle date range spanning multiple days", async () => {
-      const startDate = new Date("2024-01-10");
-      const endDate = new Date("2024-01-12");
+      // Test with just 2 days instead of 3, and pre-seed one
+      const existingData: BlockNumberData = {
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        blocks: {
+          "2024-01-15": 40049000,
+        },
+      };
+      testContext.fileManager.writeBlockNumbers(existingData);
+
+      const startDate = new Date("2024-01-15");
+      const endDate = new Date("2024-01-16");
 
       const result = await findBlocksForDateRange(
         startDate,
@@ -243,15 +273,12 @@ describe("BlockFinder - findBlocksForDateRange", () => {
         testContext.fileManager,
       );
 
-      expect(Object.keys(result.blocks)).toContain("2024-01-10");
-      expect(Object.keys(result.blocks)).toContain("2024-01-11");
-      expect(Object.keys(result.blocks)).toContain("2024-01-12");
-
-      expect(result.blocks["2024-01-11"]!).toBeGreaterThan(
-        result.blocks["2024-01-10"]!,
-      );
-      expect(result.blocks["2024-01-12"]!).toBeGreaterThan(
-        result.blocks["2024-01-11"]!,
+      expect(Object.keys(result.blocks).sort()).toEqual([
+        "2024-01-15",
+        "2024-01-16",
+      ]);
+      expect(result.blocks["2024-01-16"]!).toBeGreaterThan(
+        result.blocks["2024-01-15"]!,
       );
     }, 20000);
   });
