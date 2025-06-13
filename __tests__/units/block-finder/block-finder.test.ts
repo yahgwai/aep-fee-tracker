@@ -218,7 +218,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     it("should persist block numbers after finding them", async () => {
       // Test actual finding and persistence by seeding nearby data
       const existingData: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-14": 39700000, // Provides lower bound
           "2024-01-16": 40400000, // Provides upper bound
@@ -256,7 +256,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     it("should handle date range spanning multiple days", async () => {
       // Test with just 2 days instead of 3, and pre-seed one
       const existingData: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40049000,
         },
