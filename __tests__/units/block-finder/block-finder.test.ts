@@ -168,12 +168,17 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const existingData: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
         blocks: {
-          "2024-01-15": 40000000,
-          "2024-01-17": 40691200,
+          "2024-01-15": 40268500,
+          "2024-01-17": 40959700,
         },
       };
 
       testContext.fileManager.writeBlockNumbers(existingData);
+
+      // Mock getBlockNumber to ensure bounds calculation works correctly
+      jest.spyOn(provider, "getBlockNumber").mockImplementation(async () => {
+        return 42000000; // High enough to not cap our bounds
+      });
 
       const result = await findBlocksForDateRange(
         startDate,
@@ -182,10 +187,13 @@ describe("BlockFinder - findBlocksForDateRange", () => {
         testContext.fileManager,
       );
 
-      expect(result.blocks["2024-01-15"]).toBe(40000000);
-      expect(result.blocks["2024-01-16"]).toBeGreaterThan(40000000);
-      expect(result.blocks["2024-01-16"]).toBeLessThan(40691200);
-      expect(result.blocks["2024-01-17"]).toBe(40691200);
+      expect(result.blocks["2024-01-15"]).toBe(40268500);
+      expect(result.blocks["2024-01-16"]).toBeGreaterThan(40268500);
+      expect(result.blocks["2024-01-16"]).toBeLessThan(40959700);
+      expect(result.blocks["2024-01-17"]).toBe(40959700);
+
+      // Restore the original implementation
+      jest.restoreAllMocks();
     });
 
     it("should skip dates that are too recent (less than 1000 blocks old)", async () => {
