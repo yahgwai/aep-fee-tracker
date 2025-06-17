@@ -159,8 +159,8 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       expect(result.blocks["2024-01-15"]).toBe(40049000);
       expect(result.blocks["2024-01-16"]).toBeDefined();
       expect(result.blocks["2024-01-16"]).toBeGreaterThan(40049000);
-      // ~345,600 blocks per day on Arbitrum
-      expect(result.blocks["2024-01-16"]).toBeLessThan(40049000 + 400000);
+      // Should find the actual block for 2024-01-16 (not limited by estimation)
+      expect(result.blocks["2024-01-16"]).toBeGreaterThan(40400000);
     });
 
     it("should skip dates that are too recent (less than 1000 blocks old)", async () => {
