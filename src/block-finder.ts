@@ -176,48 +176,6 @@ export class BlockFinder {
   }
 }
 
-// Backward compatibility functions
-export async function findBlocksForDateRange(
-  startDate: Date,
-  endDate: Date,
-  provider: ethers.Provider,
-  fileManager: FileManager,
-): Promise<BlockNumberData> {
-  const blockFinder = new BlockFinder(fileManager, provider);
-  return blockFinder.findBlocksForDateRange(startDate, endDate);
-}
-
-export async function findEndOfDayBlock(
-  date: Date,
-  provider: ethers.Provider,
-  lowerBound: number,
-  upperBound: number,
-): Promise<number> {
-  // Create a dummy file manager since it's not used in findEndOfDayBlock
-  const dummyFileManager = {} as FileManager;
-  const blockFinder = new BlockFinder(dummyFileManager, provider);
-  return blockFinder.findEndOfDayBlock(date, lowerBound, upperBound);
-}
-
-export async function getSafeCurrentBlock(
-  provider: ethers.Provider,
-): Promise<number> {
-  const dummyFileManager = {} as FileManager;
-  const blockFinder = new BlockFinder(dummyFileManager, provider);
-  return blockFinder.getSafeCurrentBlock();
-}
-
-export function getSearchBounds(
-  date: Date,
-  existingBlocks: BlockNumberData,
-  safeCurrentBlock: number,
-): [number, number] {
-  const dummyFileManager = {} as FileManager;
-  const dummyProvider = {} as ethers.Provider;
-  const blockFinder = new BlockFinder(dummyFileManager, dummyProvider);
-  return blockFinder.getSearchBounds(date, existingBlocks, safeCurrentBlock);
-}
-
 // Helper functions
 function validateDateRange(startDate: Date, endDate: Date): void {
   if (!isValidDate(startDate) || !isValidDate(endDate)) {
