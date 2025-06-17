@@ -1,4 +1,4 @@
-interface RetryOptions {
+export interface RetryOptions {
   maxRetries?: number;
   initialDelay?: number;
   backoffMultiplier?: number;
@@ -17,15 +17,16 @@ export async function withRetry<T>(
   operation: () => Promise<T>,
   options: RetryOptions = {},
 ): Promise<T> {
-  const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
-  const initialDelay = options.initialDelay ?? DEFAULT_INITIAL_DELAY;
-  const backoffMultiplier =
-    options.backoffMultiplier ?? DEFAULT_BACKOFF_MULTIPLIER;
-  const shouldRetry = options.shouldRetry;
+  const {
+    maxRetries = DEFAULT_MAX_RETRIES,
+    initialDelay = DEFAULT_INITIAL_DELAY,
+    backoffMultiplier = DEFAULT_BACKOFF_MULTIPLIER,
+    shouldRetry,
+  } = options;
 
   let lastError: Error;
 
-  for (let i = 0; i < maxRetries; i++) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
@@ -36,8 +37,10 @@ export async function withRetry<T>(
         throw lastError;
       }
 
-      if (i < maxRetries - 1) {
-        await sleep(initialDelay * Math.pow(backoffMultiplier, i));
+      // Don't sleep after the last attempt
+      if (attempt < maxRetries - 1) {
+        const delay = initialDelay * Math.pow(backoffMultiplier, attempt);
+        await sleep(delay);
       }
     }
   }
