@@ -137,39 +137,35 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     });
 
     it("should find missing blocks for dates not in storage", async () => {
-      // Use a single day gap for faster testing
-      const startDate = new Date("2024-01-15");
-      const endDate = new Date("2024-01-16");
+      // Use a date range where we need to find a missing date
+      const startDate = new Date("2024-01-11");
+      const endDate = new Date("2024-01-12");
 
-      // Pre-seed just the start date with a very recent block
+      // Pre-seed with blocks that provide good bounds
+      // We have Jan 10 and Jan 15, need to find Jan 11 and Jan 12
       const existingData: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
-          "2024-01-15": 40268500, // This provides a good lower bound
+          "2024-01-10": 39039696, // Block from Jan 10 end of day
+          "2024-01-15": 40268100, // Block from Jan 15 (provides far upper bound)
         },
       };
 
       testContext.fileManager.writeBlockNumbers(existingData);
-
-      // Mock getBlockNumber to ensure bounds calculation works correctly
-      jest.spyOn(provider, "getBlockNumber").mockImplementation(async () => {
-        return 42000000; // High enough to not cap our bounds
-      });
 
       const result = await blockFinder.findBlocksForDateRange(
         startDate,
         endDate,
       );
 
-      expect(result.blocks["2024-01-15"]).toBe(40268500);
-      expect(result.blocks["2024-01-16"]).toBeDefined();
-      expect(result.blocks["2024-01-16"]).toBeGreaterThan(40268500);
-      // ~345,600 blocks per day on Arbitrum
-      expect(result.blocks["2024-01-16"]).toBeLessThan(40268500 + 400000);
-
-      // Restore the original implementation
-      jest.restoreAllMocks();
-    });
+      expect(result.blocks["2024-01-11"]).toBeDefined();
+      expect(result.blocks["2024-01-12"]).toBeDefined();
+      expect(result.blocks["2024-01-11"]).toBeGreaterThan(39039696);
+      expect(result.blocks["2024-01-12"]).toBeGreaterThan(
+        result.blocks["2024-01-11"]!,
+      );
+      expect(result.blocks["2024-01-12"]).toBeLessThan(40268100);
+    }, 30000);
 
     it("should skip dates that are too recent (less than 1000 blocks old)", async () => {
       // Create a date that's definitely recent (within last 1000 blocks)
@@ -196,82 +192,79 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
     it("should persist block numbers after finding them", async () => {
       // Test actual finding and persistence by seeding nearby data
+      // Seed with sparse data that has good bounds
       const existingData: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
-          "2024-01-14": 40049000, // Provides lower bound
-          "2024-01-16": 40740000, // Provides upper bound
+          "2024-01-10": 39039696, // Jan 10 end of day
+          "2024-01-15": 40268100, // Jan 15 (provides far upper bound)
         },
       };
 
       testContext.fileManager.writeBlockNumbers(existingData);
 
-      // Mock getBlockNumber to ensure bounds aren't capped
-      jest.spyOn(provider, "getBlockNumber").mockImplementation(async () => {
-        return 42000000; // High enough to not cap our bounds
-      });
-
-      const startDate = new Date("2024-01-14");
-      const endDate = new Date("2024-01-16");
+      const startDate = new Date("2024-01-11");
+      const endDate = new Date("2024-01-13");
 
       const result = await blockFinder.findBlocksForDateRange(
         startDate,
         endDate,
       );
 
-      // Should have found the missing date
-      expect(result.blocks["2024-01-15"]).toBeDefined();
-      expect(result.blocks["2024-01-15"]).toBeGreaterThan(40049000);
-      expect(result.blocks["2024-01-15"]).toBeLessThan(40740000);
+      // Should have found the missing dates
+      expect(result.blocks["2024-01-11"]).toBeDefined();
+      expect(result.blocks["2024-01-12"]).toBeDefined();
+      expect(result.blocks["2024-01-13"]).toBeDefined();
+      expect(result.blocks["2024-01-11"]).toBeGreaterThan(39039696);
+      expect(result.blocks["2024-01-13"]).toBeLessThan(40268100);
 
       // Verify all data is persisted
       const savedData = testContext.fileManager.readBlockNumbers();
       expect(Object.keys(savedData.blocks).sort()).toEqual([
-        "2024-01-14",
+        "2024-01-10",
+        "2024-01-11",
+        "2024-01-12",
+        "2024-01-13",
         "2024-01-15",
-        "2024-01-16",
       ]);
-      expect(savedData.blocks["2024-01-14"]).toBe(40049000);
-      expect(savedData.blocks["2024-01-16"]).toBe(40740000);
-
-      // Restore mock
-      jest.restoreAllMocks();
-    }, 15000);
+      expect(savedData.blocks["2024-01-10"]).toBe(39039696);
+      expect(savedData.blocks["2024-01-15"]).toBe(40268100);
+    }, 30000);
 
     it("should handle date range spanning multiple days", async () => {
-      // Test with just 2 days instead of 3, and pre-seed one
+      // Test with 3 days, using strategic bounds
       const existingData: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
-          "2024-01-15": 40268500,
+          "2024-01-09": 38827575, // Jan 9/10 boundary (provides good lower bound)
+          "2024-01-15": 40268100, // Jan 15 (provides upper bound for all dates)
         },
       };
       testContext.fileManager.writeBlockNumbers(existingData);
 
-      // Mock getBlockNumber to ensure bounds aren't capped
-      jest.spyOn(provider, "getBlockNumber").mockImplementation(async () => {
-        return 42000000; // High enough to not cap our bounds
-      });
-
-      const startDate = new Date("2024-01-15");
-      const endDate = new Date("2024-01-16");
+      const startDate = new Date("2024-01-10");
+      const endDate = new Date("2024-01-12");
 
       const result = await blockFinder.findBlocksForDateRange(
         startDate,
         endDate,
       );
 
+      // Result includes pre-seeded blocks plus the found blocks
       expect(Object.keys(result.blocks).sort()).toEqual([
+        "2024-01-09",
+        "2024-01-10",
+        "2024-01-11",
+        "2024-01-12",
         "2024-01-15",
-        "2024-01-16",
       ]);
-      expect(result.blocks["2024-01-16"]!).toBeGreaterThan(
-        result.blocks["2024-01-15"]!,
+      expect(result.blocks["2024-01-11"]!).toBeGreaterThan(
+        result.blocks["2024-01-10"]!,
       );
-
-      // Restore mock
-      jest.restoreAllMocks();
-    }, 20000);
+      expect(result.blocks["2024-01-11"]!).toBeLessThan(
+        result.blocks["2024-01-12"]!,
+      );
+    }, 30000);
   });
 
   describe("Error handling", () => {

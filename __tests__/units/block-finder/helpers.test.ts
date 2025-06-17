@@ -33,6 +33,8 @@ describe("BlockFinder - Helper Functions", () => {
     it("should find the last block before midnight UTC for a specific date", async () => {
       const date = new Date("2024-01-15");
       // Using bounds that contain midnight for Jan 15, 2024
+      // Block 40268100 is at Jan 15 23:59:08 UTC (verified)
+      // Block 40268500 is at Jan 16 00:01:17 UTC (verified)
       const lowerBound = 40268000;
       const upperBound = 40269000;
 
@@ -109,10 +111,11 @@ describe("BlockFinder - Helper Functions", () => {
 
     it("should find end of day block when bounds properly contain midnight", async () => {
       const date = new Date("2024-01-15");
-      // Using bounds that we know contain midnight for Jan 15
-      // From issue context, we need bounds that extend past midnight
-      const lowerBound = 40268000;
-      const upperBound = 40269000;
+      // Using tight bounds around midnight for Jan 15
+      // Block 40268100 is at Jan 15 23:59:08 UTC (verified)
+      // Block 40268500 is at Jan 16 00:01:17 UTC (verified)
+      const lowerBound = 40268050;
+      const upperBound = 40268550;
 
       const blockNumber = await blockFinder.findEndOfDayBlock(
         date,
