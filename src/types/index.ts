@@ -102,13 +102,13 @@ export const DISTRIBUTORS_DIR = "distributors";
 
 // Component Interfaces
 export interface FileManager {
-  readBlockNumbers(): BlockNumberData;
+  readBlockNumbers(): BlockNumberData | undefined;
   writeBlockNumbers(data: BlockNumberData): void;
-  readDistributors(): DistributorsData;
+  readDistributors(): DistributorsData | undefined;
   writeDistributors(data: DistributorsData): void;
-  readDistributorBalances(address: Address): BalanceData;
+  readDistributorBalances(address: Address): BalanceData | undefined;
   writeDistributorBalances(address: Address, data: BalanceData): void;
-  readDistributorOutflows(address: Address): OutflowData;
+  readDistributorOutflows(address: Address): OutflowData | undefined;
   writeDistributorOutflows(address: Address, data: OutflowData): void;
   ensureStoreDirectory(): void;
   validateAddress(address: string): Address;

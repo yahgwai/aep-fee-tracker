@@ -13,8 +13,6 @@ import {
   OutflowData,
   STORE_DIR,
   DISTRIBUTORS_DIR,
-  CHAIN_IDS,
-  CONTRACTS,
 } from "./types";
 
 // Error messages
@@ -42,9 +40,9 @@ const EXAMPLE_WEI_VALUE = "1230000000000000000000";
 const WEI_DECIMAL_REGEX = /^\d+$/;
 
 export class FileManager implements FileManagerInterface {
-  readBlockNumbers(): BlockNumberData {
-    return this.readJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), () =>
-      this.createEmptyBlockNumberData(),
+  readBlockNumbers(): BlockNumberData | undefined {
+    return this.readJsonFileOrUndefined(
+      path.join(STORE_DIR, BLOCK_NUMBERS_FILE),
     );
   }
 
@@ -54,9 +52,9 @@ export class FileManager implements FileManagerInterface {
     this.writeJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), data);
   }
 
-  readDistributors(): DistributorsData {
-    return this.readJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), () =>
-      this.createEmptyDistributorsData(),
+  readDistributors(): DistributorsData | undefined {
+    return this.readJsonFileOrUndefined(
+      path.join(STORE_DIR, DISTRIBUTORS_FILE),
     );
   }
 
@@ -66,11 +64,10 @@ export class FileManager implements FileManagerInterface {
     this.writeJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), data);
   }
 
-  readDistributorBalances(address: Address): BalanceData {
+  readDistributorBalances(address: Address): BalanceData | undefined {
     const validatedAddress = this.validateAddress(address);
-    return this.readJsonFile(
+    return this.readJsonFileOrUndefined(
       this.getDistributorFilePath(validatedAddress, BALANCES_FILE),
-      () => this.createEmptyBalanceData(validatedAddress),
     );
   }
 
@@ -84,11 +81,10 @@ export class FileManager implements FileManagerInterface {
     );
   }
 
-  readDistributorOutflows(address: Address): OutflowData {
+  readDistributorOutflows(address: Address): OutflowData | undefined {
     const validatedAddress = this.validateAddress(address);
-    return this.readJsonFile(
+    return this.readJsonFileOrUndefined(
       this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
-      () => this.createEmptyOutflowData(validatedAddress),
     );
   }
 
@@ -130,45 +126,6 @@ export class FileManager implements FileManagerInterface {
     return date.toISOString().split("T")[0]!;
   }
 
-  private createEmptyBlockNumberData(): BlockNumberData {
-    return {
-      metadata: {
-        chain_id: CHAIN_IDS.ARBITRUM_ONE,
-      },
-      blocks: {},
-    };
-  }
-
-  private createEmptyDistributorsData(): DistributorsData {
-    return {
-      metadata: {
-        chain_id: CHAIN_IDS.ARBITRUM_ONE,
-        arbowner_address: CONTRACTS.ARB_OWNER,
-      },
-      distributors: {},
-    };
-  }
-
-  private createEmptyBalanceData(address: Address): BalanceData {
-    return {
-      metadata: {
-        chain_id: CHAIN_IDS.ARBITRUM_ONE,
-        reward_distributor: address,
-      },
-      balances: {},
-    };
-  }
-
-  private createEmptyOutflowData(address: Address): OutflowData {
-    return {
-      metadata: {
-        chain_id: CHAIN_IDS.ARBITRUM_ONE,
-        reward_distributor: address,
-      },
-      outflows: {},
-    };
-  }
-
   private ensureDistributorDirectory(address: Address): void {
     const dirPath = path.join(STORE_DIR, DISTRIBUTORS_DIR, address);
     if (!fs.existsSync(dirPath)) {
@@ -180,9 +137,9 @@ export class FileManager implements FileManagerInterface {
     return path.join(STORE_DIR, DISTRIBUTORS_DIR, address, fileName);
   }
 
-  private readJsonFile<T>(filePath: string, defaultFactory: () => T): T {
+  private readJsonFileOrUndefined<T>(filePath: string): T | undefined {
     if (!fs.existsSync(filePath)) {
-      return defaultFactory();
+      return undefined;
     }
     return JSON.parse(fs.readFileSync(filePath, "utf-8")) as T;
   }

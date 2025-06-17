@@ -35,6 +35,13 @@ export class BlockFinder {
     const existingData = this.fileManager.readBlockNumbers();
     const network = await this.provider.getNetwork();
 
+    if (!existingData) {
+      return {
+        metadata: { chain_id: Number(network.chainId) },
+        blocks: {},
+      };
+    }
+
     // Preserve existing metadata if it has data in blocks (indicating it's not just default)
     // Otherwise use chain ID from provider
     const metadata =
