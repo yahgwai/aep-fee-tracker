@@ -4,11 +4,13 @@ export interface RetryOptions {
   backoffMultiplier?: number;
   shouldRetry?: (error: Error) => boolean;
   operationName?: string;
+  rateLimitDelay?: number;
 }
 
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_INITIAL_DELAY = 1000; // 1 second
 const DEFAULT_BACKOFF_MULTIPLIER = 2;
+const DEFAULT_RATE_LIMIT_DELAY = 30000; // 30 seconds
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -31,6 +33,10 @@ function logRetryAttempt(
   }
 }
 
+function isRateLimitError(error: Error): boolean {
+  return error.message.includes("429");
+}
+
 export async function withRetry<T>(
   operation: () => Promise<T>,
   options: RetryOptions = {},
@@ -41,6 +47,7 @@ export async function withRetry<T>(
     backoffMultiplier = DEFAULT_BACKOFF_MULTIPLIER,
     shouldRetry,
     operationName,
+    rateLimitDelay = DEFAULT_RATE_LIMIT_DELAY,
   } = options;
 
   let lastError: Error;
@@ -58,8 +65,20 @@ export async function withRetry<T>(
 
       // Don't sleep after the last attempt
       if (attempt < maxRetries - 1) {
+        const isRateLimit = isRateLimitError(lastError);
+
+        if (isRateLimit && operationName) {
+          console.log(
+            `Rate limit detected for ${operationName}, using longer delay`,
+          );
+        }
+
         logRetryAttempt(attempt + 1, maxRetries, operationName, lastError);
-        const delay = initialDelay * Math.pow(backoffMultiplier, attempt);
+
+        const delay = isRateLimit
+          ? rateLimitDelay
+          : initialDelay * Math.pow(backoffMultiplier, attempt);
+
         await sleep(delay);
       }
     }
