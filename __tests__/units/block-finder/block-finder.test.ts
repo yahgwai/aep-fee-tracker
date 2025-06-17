@@ -84,11 +84,11 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
       await expect(
         blockFinder.findBlocksForDateRange(invalidDate, validDate),
-      ).rejects.toThrow("Invalid Date object");
+      ).rejects.toThrow("Invalid start date provided");
 
       await expect(
         blockFinder.findBlocksForDateRange(validDate, invalidDate),
-      ).rejects.toThrow("Invalid Date object");
+      ).rejects.toThrow("Invalid end date provided");
     });
 
     it("should throw error when Date objects are invalid", async () => {
@@ -97,7 +97,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
       await expect(
         blockFinder.findBlocksForDateRange(invalidDate, validDate),
-      ).rejects.toThrow("Invalid Date object");
+      ).rejects.toThrow("Invalid start date provided");
     });
   });
 

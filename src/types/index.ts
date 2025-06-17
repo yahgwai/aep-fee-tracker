@@ -152,6 +152,36 @@ export class ValidationError extends Error {
   }
 }
 
+export class BlockFinderError extends Error {
+  constructor(
+    message: string,
+    public readonly operation: string,
+    public readonly context: {
+      date?: string;
+      searchBounds?: { lower: number; upper: number };
+      lastCheckedBlock?: { number: number; timestamp: Date };
+      targetTimestamp?: Date;
+      retryAttempt?: number;
+      cause?: Error;
+    },
+  ) {
+    super(message);
+    this.name = "BlockFinderError";
+  }
+}
+
+export class RPCError extends Error {
+  constructor(
+    message: string,
+    public readonly operation: string,
+    public readonly retryCount: number,
+    public readonly cause?: Error,
+  ) {
+    super(message);
+    this.name = "RPCError";
+  }
+}
+
 // Type Guards
 export function isValidDistributorType(type: string): type is DistributorType {
   return Object.values(DistributorType).includes(type as DistributorType);
