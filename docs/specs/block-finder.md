@@ -246,7 +246,7 @@ const blocks = await blockFinder.findBlocksForDateRange(
   new Date("2024-01-31"),
 );
 
-console.log(`Found blocks for ${Object.keys(blocks).length} dates`);
+console.log(`Found blocks for ${Object.keys(blocks.blocks).length} dates`);
 ```
 
 ## Backward Compatibility
