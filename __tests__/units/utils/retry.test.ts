@@ -101,4 +101,95 @@ describe("withRetry", () => {
       expect(mockOperation).toHaveBeenCalledTimes(3);
     });
   });
+
+  describe("configurable options", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("respects custom retry count", async () => {
+      const mockOperation = jest.fn();
+      mockOperation.mockRejectedValue(new Error("Always fails"));
+
+      const promise = withRetry(mockOperation, { maxRetries: 5 });
+
+      // Run all timers to completion
+      await jest.runAllTimersAsync();
+
+      await expect(promise).rejects.toThrow("Always fails");
+      expect(mockOperation).toHaveBeenCalledTimes(5);
+    });
+
+    it("respects custom initial delay", async () => {
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("Fail"))
+        .mockResolvedValueOnce("success");
+
+      const promise = withRetry(mockOperation, { initialDelay: 500 });
+
+      // First attempt - immediate
+      expect(mockOperation).toHaveBeenCalledTimes(1);
+
+      // Advance time by 500ms (custom initial delay)
+      await jest.advanceTimersByTimeAsync(500);
+      expect(mockOperation).toHaveBeenCalledTimes(2);
+
+      const result = await promise;
+      expect(result).toBe("success");
+    });
+
+    it("respects custom backoff multiplier", async () => {
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("Fail 1"))
+        .mockRejectedValueOnce(new Error("Fail 2"))
+        .mockResolvedValueOnce("success");
+
+      const promise = withRetry(mockOperation, {
+        initialDelay: 100,
+        backoffMultiplier: 3,
+      });
+
+      // First attempt - immediate
+      expect(mockOperation).toHaveBeenCalledTimes(1);
+
+      // Advance time by 100ms (first delay)
+      await jest.advanceTimersByTimeAsync(100);
+      expect(mockOperation).toHaveBeenCalledTimes(2);
+
+      // Advance time by 300ms (second delay = 100 * 3)
+      await jest.advanceTimersByTimeAsync(300);
+      expect(mockOperation).toHaveBeenCalledTimes(3);
+
+      const result = await promise;
+      expect(result).toBe("success");
+    });
+
+    it("uses all custom options together", async () => {
+      const mockOperation = jest.fn();
+      mockOperation.mockRejectedValue(new Error("Always fails"));
+
+      const promise = withRetry(mockOperation, {
+        maxRetries: 2,
+        initialDelay: 200,
+        backoffMultiplier: 5,
+      });
+
+      // First attempt - immediate
+      expect(mockOperation).toHaveBeenCalledTimes(1);
+
+      // Advance time by 200ms (first delay)
+      await jest.advanceTimersByTimeAsync(200);
+      expect(mockOperation).toHaveBeenCalledTimes(2);
+
+      // Should fail after 2 attempts
+      await expect(promise).rejects.toThrow("Always fails");
+      expect(mockOperation).toHaveBeenCalledTimes(2);
+    });
+  });
 });
