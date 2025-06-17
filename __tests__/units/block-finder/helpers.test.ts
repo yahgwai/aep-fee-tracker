@@ -32,10 +32,11 @@ describe("BlockFinder - Helper Functions", () => {
   describe("findEndOfDayBlock", () => {
     it("should find the last block before midnight UTC for a specific date", async () => {
       const date = new Date("2024-01-15");
-      // Use extremely tight bounds - we know the approximate block
-      // This reduces binary search to just a few iterations
-      const lowerBound = 40050200; // Very close to actual midnight block
-      const upperBound = 40050400; // Just 200 block range
+      // Using bounds that contain midnight for Jan 15, 2024
+      // Block 40268100 is at Jan 15 23:59:08 UTC (verified)
+      // Block 40268500 is at Jan 16 00:01:17 UTC (verified)
+      const lowerBound = 40268000;
+      const upperBound = 40269000;
 
       const blockNumber = await blockFinder.findEndOfDayBlock(
         date,
@@ -76,17 +77,14 @@ describe("BlockFinder - Helper Functions", () => {
       ).rejects.toThrow(/All blocks in range are before the target date/);
     });
 
-    it("should handle edge case where lower bound equals upper bound", async () => {
+    it("should throw error when single block bound is before midnight", async () => {
       const date = new Date("2024-01-15");
-      const bound = 40050000; // A block number within the valid range
+      // Use a block from the middle of the day (around noon)
+      const bound = 40200000; // Block around middle of day
 
-      const blockNumber = await blockFinder.findEndOfDayBlock(
-        date,
-        bound,
-        bound,
-      );
-
-      expect(blockNumber).toBe(bound);
+      await expect(
+        blockFinder.findEndOfDayBlock(date, bound, bound),
+      ).rejects.toThrow(/Search bounds do not contain midnight/);
     });
 
     it("should throw error when lower bound is greater than upper bound", async () => {
@@ -97,6 +95,51 @@ describe("BlockFinder - Helper Functions", () => {
       await expect(
         blockFinder.findEndOfDayBlock(date, lowerBound, upperBound),
       ).rejects.toThrow(/Invalid search bounds/);
+    });
+
+    it("should throw error when upper bound is before midnight", async () => {
+      const date = new Date("2024-01-15");
+      // These bounds are within the day but don't extend to midnight
+      // Based on the issue, block 40051000 is at ~2:40 AM on Jan 15
+      const lowerBound = 40049000;
+      const upperBound = 40051000;
+
+      await expect(
+        blockFinder.findEndOfDayBlock(date, lowerBound, upperBound),
+      ).rejects.toThrow(/Search bounds do not contain midnight/);
+    });
+
+    it("should find end of day block when bounds properly contain midnight", async () => {
+      const date = new Date("2024-01-15");
+      // Using tight bounds around midnight for Jan 15
+      // Block 40268100 is at Jan 15 23:59:08 UTC (verified)
+      // Block 40268500 is at Jan 16 00:01:17 UTC (verified)
+      const lowerBound = 40268050;
+      const upperBound = 40268550;
+
+      const blockNumber = await blockFinder.findEndOfDayBlock(
+        date,
+        lowerBound,
+        upperBound,
+      );
+
+      // Verify the block is before midnight
+      const block = await provider.getBlock(blockNumber);
+      const blockTime = new Date(block!.timestamp * 1000);
+      const nextMidnight = new Date(date);
+      nextMidnight.setUTCDate(nextMidnight.getUTCDate() + 1);
+      nextMidnight.setUTCHours(0, 0, 0, 0);
+
+      expect(blockTime.getTime()).toBeLessThan(nextMidnight.getTime());
+
+      // Verify the next block would be after midnight
+      const nextBlock = await provider.getBlock(blockNumber + 1);
+      if (nextBlock) {
+        const nextBlockTime = new Date(nextBlock.timestamp * 1000);
+        expect(nextBlockTime.getTime()).toBeGreaterThanOrEqual(
+          nextMidnight.getTime(),
+        );
+      }
     });
   });
 

@@ -256,6 +256,17 @@ function validateBlockRange(
         `  Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}`,
     );
   }
+
+  if (upperBlock.timestamp < targetTimestamp) {
+    throw new Error(
+      `Search bounds do not contain midnight\n` +
+        `  Date: ${formatDateString(date)}\n` +
+        `  Target midnight: ${fromUnixTimestamp(targetTimestamp).toISOString()}\n` +
+        `  Search bounds: ${lowerBound} to ${upperBound}\n` +
+        `  Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}\n` +
+        `  Upper bound needs to extend past midnight`,
+    );
+  }
 }
 
 function findMostRecentBlock(

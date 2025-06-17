@@ -15,6 +15,7 @@ No implementation exists. Errors would lack necessary context.
 - Error messages include the actual error from RPC or filesystem
 - Error messages include suggested resolution steps
 - Search errors include last checked block and its timestamp when relevant
+- Validation errors for search bounds clearly indicate when bounds don't contain midnight
 - File system errors clearly indicate read vs write failures
 - Chain ID mismatch errors show both provider and stored chain IDs
 - All errors maintain the context chain from lower-level operations
