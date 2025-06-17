@@ -33,29 +33,6 @@ function logRetryAttempt(
   }
 }
 
-function isRateLimitError(error: Error): boolean {
-  return error.message.includes("429");
-}
-
-function calculateRetryDelay(
-  error: Error,
-  attempt: number,
-  initialDelay: number,
-  backoffMultiplier: number,
-  rateLimitDelay: number,
-  operationName?: string,
-): number {
-  const isRateLimit = isRateLimitError(error);
-
-  if (isRateLimit && operationName) {
-    console.log(`Rate limit detected for ${operationName}, using longer delay`);
-  }
-
-  return isRateLimit
-    ? rateLimitDelay
-    : initialDelay * Math.pow(backoffMultiplier, attempt);
-}
-
 export async function withRetry<T>(
   operation: () => Promise<T>,
   options: RetryOptions = {},
@@ -84,14 +61,18 @@ export async function withRetry<T>(
 
       // Don't sleep after the last attempt
       if (attempt < maxRetries - 1) {
-        const delay = calculateRetryDelay(
-          lastError,
-          attempt,
-          initialDelay,
-          backoffMultiplier,
-          rateLimitDelay,
-          operationName,
-        );
+        // Check if this is a rate limit error
+        const isRateLimit = lastError.message.includes("429");
+
+        if (isRateLimit && operationName) {
+          console.log(
+            `Rate limit detected for ${operationName}, using longer delay`,
+          );
+        }
+
+        const delay = isRateLimit
+          ? rateLimitDelay
+          : initialDelay * Math.pow(backoffMultiplier, attempt);
 
         logRetryAttempt(attempt + 1, maxRetries, operationName, lastError);
         await sleep(delay);
