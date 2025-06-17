@@ -1,12 +1,8 @@
 import { ethers } from "ethers";
 import { BlockNumberData, DateString, FileManager } from "./types";
 
-const BLOCKS_PER_SECOND = 4;
-const SECONDS_PER_DAY = 86400;
-const BLOCKS_PER_DAY = BLOCKS_PER_SECOND * SECONDS_PER_DAY;
 const FINALITY_BLOCKS = 1000;
 const MILLISECONDS_PER_SECOND = 1000;
-const DEFAULT_DAYS_TO_SEARCH = 365;
 const MINIMUM_VALID_BLOCK = 1;
 
 export class BlockFinder {
@@ -279,10 +275,8 @@ function findMostRecentBlock(
 }
 
 function estimateUpperBound(
-  lowerBound: number,
+  _lowerBound: number,
   safeCurrentBlock: number,
 ): number {
-  const daysToSearch = lowerBound === 0 ? DEFAULT_DAYS_TO_SEARCH : 1;
-  const estimatedBlocks = daysToSearch * BLOCKS_PER_DAY;
-  return Math.min(lowerBound + estimatedBlocks, safeCurrentBlock);
+  return safeCurrentBlock;
 }
