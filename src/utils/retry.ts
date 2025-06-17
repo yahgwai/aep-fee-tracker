@@ -3,6 +3,7 @@ export interface RetryOptions {
   initialDelay?: number;
   backoffMultiplier?: number;
   shouldRetry?: (error: Error) => boolean;
+  operationName?: string;
 }
 
 const DEFAULT_MAX_RETRIES = 3;
@@ -22,6 +23,7 @@ export async function withRetry<T>(
     initialDelay = DEFAULT_INITIAL_DELAY,
     backoffMultiplier = DEFAULT_BACKOFF_MULTIPLIER,
     shouldRetry,
+    operationName,
   } = options;
 
   let lastError: Error;
@@ -39,6 +41,16 @@ export async function withRetry<T>(
 
       // Don't sleep after the last attempt
       if (attempt < maxRetries - 1) {
+        // Log the retry attempt
+        const retryNumber = attempt + 1;
+        if (operationName) {
+          console.log(
+            `Retry attempt ${retryNumber}/${maxRetries} for ${operationName} after error: ${lastError.message}`,
+          );
+        } else {
+          console.log(`Retry attempt ${retryNumber}/${maxRetries}`);
+        }
+
         const delay = initialDelay * Math.pow(backoffMultiplier, attempt);
         await sleep(delay);
       }
