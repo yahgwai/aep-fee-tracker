@@ -1,14 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { ethers } from "ethers";
-import { BlockNumberData, CHAIN_IDS } from "../../../src/types";
-import {
-  findEndOfDayBlock,
-  getSafeCurrentBlock,
-  getSearchBounds,
-} from "../../../src/block-finder";
+import { BlockNumberData, CHAIN_IDS, FileManager } from "../../../src/types";
+import { BlockFinder } from "../../../src/block-finder";
 
 describe("BlockFinder - Helper Functions", () => {
   let provider: ethers.JsonRpcProvider;
+  let blockFinder: BlockFinder;
 
   beforeEach(() => {
     const rpcUrl = process.env["RPC_URL"] || "https://nova.arbitrum.io/rpc";
@@ -20,6 +17,9 @@ describe("BlockFinder - Helper Functions", () => {
     provider = new ethers.JsonRpcProvider(rpcUrl, network, {
       staticNetwork: network,
     });
+    // Create a dummy file manager since helper methods don't use it
+    const dummyFileManager = {} as FileManager;
+    blockFinder = new BlockFinder(dummyFileManager, provider);
   });
 
   afterEach(async () => {
@@ -36,9 +36,8 @@ describe("BlockFinder - Helper Functions", () => {
       const lowerBound = 40268000;
       const upperBound = 40269000;
 
-      const blockNumber = await findEndOfDayBlock(
+      const blockNumber = await blockFinder.findEndOfDayBlock(
         date,
-        provider,
         lowerBound,
         upperBound,
       );
@@ -62,7 +61,7 @@ describe("BlockFinder - Helper Functions", () => {
       const upperBound = 41100000;
 
       await expect(
-        findEndOfDayBlock(date, provider, lowerBound, upperBound),
+        blockFinder.findEndOfDayBlock(date, lowerBound, upperBound),
       ).rejects.toThrow(/All blocks in range are after midnight/);
     });
 
@@ -72,7 +71,7 @@ describe("BlockFinder - Helper Functions", () => {
       const upperBound = 200000;
 
       await expect(
-        findEndOfDayBlock(date, provider, lowerBound, upperBound),
+        blockFinder.findEndOfDayBlock(date, lowerBound, upperBound),
       ).rejects.toThrow(/All blocks in range are before the target date/);
     });
 
@@ -82,7 +81,7 @@ describe("BlockFinder - Helper Functions", () => {
       const bound = 40200000; // Block around middle of day
 
       await expect(
-        findEndOfDayBlock(date, provider, bound, bound),
+        blockFinder.findEndOfDayBlock(date, bound, bound),
       ).rejects.toThrow(/Search bounds do not contain midnight/);
     });
 
@@ -92,7 +91,7 @@ describe("BlockFinder - Helper Functions", () => {
       const upperBound = 40000000;
 
       await expect(
-        findEndOfDayBlock(date, provider, lowerBound, upperBound),
+        blockFinder.findEndOfDayBlock(date, lowerBound, upperBound),
       ).rejects.toThrow(/Invalid search bounds/);
     });
 
@@ -104,7 +103,7 @@ describe("BlockFinder - Helper Functions", () => {
       const upperBound = 40051000;
 
       await expect(
-        findEndOfDayBlock(date, provider, lowerBound, upperBound),
+        blockFinder.findEndOfDayBlock(date, lowerBound, upperBound),
       ).rejects.toThrow(/Search bounds do not contain midnight/);
     });
 
@@ -115,9 +114,8 @@ describe("BlockFinder - Helper Functions", () => {
       const lowerBound = 40268000;
       const upperBound = 40269000;
 
-      const blockNumber = await findEndOfDayBlock(
+      const blockNumber = await blockFinder.findEndOfDayBlock(
         date,
-        provider,
         lowerBound,
         upperBound,
       );
@@ -144,7 +142,7 @@ describe("BlockFinder - Helper Functions", () => {
 
   describe("getSafeCurrentBlock", () => {
     it("should return current block number minus 1000", async () => {
-      const safeBlock = await getSafeCurrentBlock(provider);
+      const safeBlock = await blockFinder.getSafeCurrentBlock();
       const currentBlock = await provider.getBlockNumber();
 
       expect(safeBlock).toBe(currentBlock - 1000);
@@ -163,7 +161,8 @@ describe("BlockFinder - Helper Functions", () => {
       );
 
       try {
-        await expect(getSafeCurrentBlock(badProvider)).rejects.toThrow(
+        const badBlockFinder = new BlockFinder({} as FileManager, badProvider);
+        await expect(badBlockFinder.getSafeCurrentBlock()).rejects.toThrow(
           /Failed to get current block/,
         );
       } finally {
@@ -173,7 +172,7 @@ describe("BlockFinder - Helper Functions", () => {
     });
 
     it("should always return a positive number", async () => {
-      const safeBlock = await getSafeCurrentBlock(provider);
+      const safeBlock = await blockFinder.getSafeCurrentBlock();
 
       expect(safeBlock).toBeGreaterThan(0);
     });
@@ -183,14 +182,14 @@ describe("BlockFinder - Helper Functions", () => {
     it("should use previous day's block as lower bound when available", () => {
       const date = new Date("2024-01-16");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40000000,
         },
       };
       const safeCurrentBlock = 45000000;
 
-      const [lower, upper] = getSearchBounds(
+      const [lower, upper] = blockFinder.getSearchBounds(
         date,
         existingBlocks,
         safeCurrentBlock,
@@ -203,12 +202,16 @@ describe("BlockFinder - Helper Functions", () => {
     it("should use 1 as lower bound for first date", () => {
       const date = new Date("2024-01-15");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {},
       };
       const safeCurrentBlock = 45000000;
 
-      const [lower] = getSearchBounds(date, existingBlocks, safeCurrentBlock);
+      const [lower] = blockFinder.getSearchBounds(
+        date,
+        existingBlocks,
+        safeCurrentBlock,
+      );
 
       expect(lower).toBe(1);
     });
@@ -216,14 +219,18 @@ describe("BlockFinder - Helper Functions", () => {
     it("should estimate upper bound based on blocks per day", () => {
       const date = new Date("2024-01-16");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40000000,
         },
       };
       const safeCurrentBlock = 45000000;
 
-      const [, upper] = getSearchBounds(date, existingBlocks, safeCurrentBlock);
+      const [, upper] = blockFinder.getSearchBounds(
+        date,
+        existingBlocks,
+        safeCurrentBlock,
+      );
 
       // Arbitrum produces ~4 blocks per second = ~345,600 blocks per day
       // Upper bound should be previous block + estimated blocks per day
@@ -235,14 +242,18 @@ describe("BlockFinder - Helper Functions", () => {
     it("should cap upper bound at safe current block", () => {
       const date = new Date("2024-01-16");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 44999000, // Very close to safe current block
         },
       };
       const safeCurrentBlock = 45000000;
 
-      const [, upper] = getSearchBounds(date, existingBlocks, safeCurrentBlock);
+      const [, upper] = blockFinder.getSearchBounds(
+        date,
+        existingBlocks,
+        safeCurrentBlock,
+      );
 
       expect(upper).toBe(safeCurrentBlock);
     });
@@ -250,14 +261,18 @@ describe("BlockFinder - Helper Functions", () => {
     it("should handle dates with missing previous days", () => {
       const date = new Date("2024-01-17");
       const existingBlocks: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40000000, // Missing 2024-01-16
         },
       };
       const safeCurrentBlock = 45000000;
 
-      const [lower] = getSearchBounds(date, existingBlocks, safeCurrentBlock);
+      const [lower] = blockFinder.getSearchBounds(
+        date,
+        existingBlocks,
+        safeCurrentBlock,
+      );
 
       // Should use last known block as lower bound
       expect(lower).toBe(40000000);

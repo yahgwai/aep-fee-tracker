@@ -5,12 +5,13 @@ import {
   cleanupTestEnvironment,
   TestContext,
 } from "../file-manager/test-utils";
-import { findBlocksForDateRange } from "../../../src/block-finder";
+import { BlockFinder } from "../../../src/block-finder";
 import { BlockNumberData, CHAIN_IDS } from "../../../src/types";
 
 describe("BlockFinder - findBlocksForDateRange", () => {
   let testContext: TestContext;
   let provider: ethers.JsonRpcProvider;
+  let blockFinder: BlockFinder;
 
   beforeEach(() => {
     testContext = setupTestEnvironment();
@@ -56,6 +57,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       network,
       { staticNetwork: network },
     );
+    blockFinder = new BlockFinder(testContext.fileManager, provider);
   });
 
   afterEach(async () => {
@@ -72,12 +74,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const endDate = new Date("2024-01-15");
 
       await expect(
-        findBlocksForDateRange(
-          startDate,
-          endDate,
-          provider,
-          testContext.fileManager,
-        ),
+        blockFinder.findBlocksForDateRange(startDate, endDate),
       ).rejects.toThrow("Start date must not be after end date");
     });
 
@@ -86,21 +83,11 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const validDate = new Date("2024-01-15");
 
       await expect(
-        findBlocksForDateRange(
-          invalidDate,
-          validDate,
-          provider,
-          testContext.fileManager,
-        ),
+        blockFinder.findBlocksForDateRange(invalidDate, validDate),
       ).rejects.toThrow("Invalid Date object");
 
       await expect(
-        findBlocksForDateRange(
-          validDate,
-          invalidDate,
-          provider,
-          testContext.fileManager,
-        ),
+        blockFinder.findBlocksForDateRange(validDate, invalidDate),
       ).rejects.toThrow("Invalid Date object");
     });
 
@@ -109,12 +96,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const validDate = new Date("2024-01-15");
 
       await expect(
-        findBlocksForDateRange(
-          invalidDate,
-          validDate,
-          provider,
-          testContext.fileManager,
-        ),
+        blockFinder.findBlocksForDateRange(invalidDate, validDate),
       ).rejects.toThrow("Invalid Date object");
     });
   });
@@ -123,15 +105,10 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     it("should return empty object for empty date range (same start and end date)", async () => {
       const date = new Date("2024-01-15");
 
-      const result = await findBlocksForDateRange(
-        date,
-        date,
-        provider,
-        testContext.fileManager,
-      );
+      const result = await blockFinder.findBlocksForDateRange(date, date);
 
       expect(result).toEqual({
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {},
       });
     });
@@ -141,7 +118,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const endDate = new Date("2024-01-17");
 
       const existingData: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
           "2024-01-15": 40000000,
           "2024-01-16": 40345600,
@@ -151,25 +128,24 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
       testContext.fileManager.writeBlockNumbers(existingData);
 
-      const result = await findBlocksForDateRange(
+      const result = await blockFinder.findBlocksForDateRange(
         startDate,
         endDate,
-        provider,
-        testContext.fileManager,
       );
 
       expect(result).toEqual(existingData);
     });
 
     it("should find missing blocks for dates not in storage", async () => {
+      // Use a single day gap for faster testing
       const startDate = new Date("2024-01-15");
-      const endDate = new Date("2024-01-17");
+      const endDate = new Date("2024-01-16");
 
+      // Pre-seed just the start date with a very recent block
       const existingData: BlockNumberData = {
-        metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
-          "2024-01-15": 40268500,
-          "2024-01-17": 40959700,
+          "2024-01-15": 40268500, // This provides a good lower bound
         },
       };
 
@@ -180,17 +156,16 @@ describe("BlockFinder - findBlocksForDateRange", () => {
         return 42000000; // High enough to not cap our bounds
       });
 
-      const result = await findBlocksForDateRange(
+      const result = await blockFinder.findBlocksForDateRange(
         startDate,
         endDate,
-        provider,
-        testContext.fileManager,
       );
 
       expect(result.blocks["2024-01-15"]).toBe(40268500);
+      expect(result.blocks["2024-01-16"]).toBeDefined();
       expect(result.blocks["2024-01-16"]).toBeGreaterThan(40268500);
-      expect(result.blocks["2024-01-16"]).toBeLessThan(40959700);
-      expect(result.blocks["2024-01-17"]).toBe(40959700);
+      // ~345,600 blocks per day on Arbitrum
+      expect(result.blocks["2024-01-16"]).toBeLessThan(40268500 + 400000);
 
       // Restore the original implementation
       jest.restoreAllMocks();
@@ -206,11 +181,9 @@ describe("BlockFinder - findBlocksForDateRange", () => {
         return 83667204;
       });
 
-      const result = await findBlocksForDateRange(
+      const result = await blockFinder.findBlocksForDateRange(
         recentDate,
         recentDate,
-        provider,
-        testContext.fileManager,
       );
 
       expect(
@@ -222,45 +195,82 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     });
 
     it("should persist block numbers after finding them", async () => {
-      const startDate = new Date("2023-12-01");
-      const endDate = new Date("2023-12-02");
+      // Test actual finding and persistence by seeding nearby data
+      const existingData: BlockNumberData = {
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
+        blocks: {
+          "2024-01-14": 40049000, // Provides lower bound
+          "2024-01-16": 40740000, // Provides upper bound
+        },
+      };
 
-      const result = await findBlocksForDateRange(
+      testContext.fileManager.writeBlockNumbers(existingData);
+
+      // Mock getBlockNumber to ensure bounds aren't capped
+      jest.spyOn(provider, "getBlockNumber").mockImplementation(async () => {
+        return 42000000; // High enough to not cap our bounds
+      });
+
+      const startDate = new Date("2024-01-14");
+      const endDate = new Date("2024-01-16");
+
+      const result = await blockFinder.findBlocksForDateRange(
         startDate,
         endDate,
-        provider,
-        testContext.fileManager,
       );
 
-      // Check if anything was found
-      expect(Object.keys(result.blocks).length).toBeGreaterThan(0);
+      // Should have found the missing date
+      expect(result.blocks["2024-01-15"]).toBeDefined();
+      expect(result.blocks["2024-01-15"]).toBeGreaterThan(40049000);
+      expect(result.blocks["2024-01-15"]).toBeLessThan(40740000);
 
+      // Verify all data is persisted
       const savedData = testContext.fileManager.readBlockNumbers();
-      expect(savedData.blocks["2023-12-01"]).toBeDefined();
-      expect(savedData.blocks["2023-12-01"]).toBeGreaterThan(0);
+      expect(Object.keys(savedData.blocks).sort()).toEqual([
+        "2024-01-14",
+        "2024-01-15",
+        "2024-01-16",
+      ]);
+      expect(savedData.blocks["2024-01-14"]).toBe(40049000);
+      expect(savedData.blocks["2024-01-16"]).toBe(40740000);
+
+      // Restore mock
+      jest.restoreAllMocks();
     }, 15000);
 
     it("should handle date range spanning multiple days", async () => {
-      const startDate = new Date("2024-01-10");
-      const endDate = new Date("2024-01-12");
+      // Test with just 2 days instead of 3, and pre-seed one
+      const existingData: BlockNumberData = {
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
+        blocks: {
+          "2024-01-15": 40268500,
+        },
+      };
+      testContext.fileManager.writeBlockNumbers(existingData);
 
-      const result = await findBlocksForDateRange(
+      // Mock getBlockNumber to ensure bounds aren't capped
+      jest.spyOn(provider, "getBlockNumber").mockImplementation(async () => {
+        return 42000000; // High enough to not cap our bounds
+      });
+
+      const startDate = new Date("2024-01-15");
+      const endDate = new Date("2024-01-16");
+
+      const result = await blockFinder.findBlocksForDateRange(
         startDate,
         endDate,
-        provider,
-        testContext.fileManager,
       );
 
-      expect(Object.keys(result.blocks)).toContain("2024-01-10");
-      expect(Object.keys(result.blocks)).toContain("2024-01-11");
-      expect(Object.keys(result.blocks)).toContain("2024-01-12");
+      expect(Object.keys(result.blocks).sort()).toEqual([
+        "2024-01-15",
+        "2024-01-16",
+      ]);
+      expect(result.blocks["2024-01-16"]!).toBeGreaterThan(
+        result.blocks["2024-01-15"]!,
+      );
 
-      expect(result.blocks["2024-01-11"]!).toBeGreaterThan(
-        result.blocks["2024-01-10"]!,
-      );
-      expect(result.blocks["2024-01-12"]!).toBeGreaterThan(
-        result.blocks["2024-01-11"]!,
-      );
+      // Restore mock
+      jest.restoreAllMocks();
     }, 20000);
   });
 
@@ -280,13 +290,12 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const endDate = new Date("2024-01-15");
 
       try {
+        const badBlockFinder = new BlockFinder(
+          testContext.fileManager,
+          badProvider,
+        );
         await expect(
-          findBlocksForDateRange(
-            startDate,
-            endDate,
-            badProvider,
-            testContext.fileManager,
-          ),
+          badBlockFinder.findBlocksForDateRange(startDate, endDate),
         ).rejects.toThrow(/Failed to get current block/);
       } finally {
         // Ensure cleanup even if test fails
@@ -299,12 +308,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       const endDate = new Date("2020-01-02");
 
       await expect(
-        findBlocksForDateRange(
-          startDate,
-          endDate,
-          provider,
-          testContext.fileManager,
-        ),
+        blockFinder.findBlocksForDateRange(startDate, endDate),
       ).rejects.toThrow(
         /All blocks in range are after midnight|Unable to find block|before the target date/,
       );

@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { BlockNumberData, DateString, FileManager, CHAIN_IDS } from "./types";
+import { BlockNumberData, DateString, FileManager } from "./types";
 
 const BLOCKS_PER_SECOND = 4;
 const SECONDS_PER_DAY = 86400;
@@ -21,7 +21,7 @@ export class BlockFinder {
   ): Promise<BlockNumberData> {
     validateDateRange(startDate, endDate);
 
-    const result = this.initializeResult();
+    const result = await this.initializeResult();
     const safeCurrentBlock = await this.getSafeCurrentBlock();
 
     if (startDate.getTime() === endDate.getTime()) {
@@ -35,10 +35,11 @@ export class BlockFinder {
     return result;
   }
 
-  private initializeResult(): BlockNumberData {
+  private async initializeResult(): Promise<BlockNumberData> {
     const { blocks } = this.fileManager.readBlockNumbers();
+    const network = await this.provider.getNetwork();
     return {
-      metadata: { chain_id: CHAIN_IDS.ARBITRUM_ONE },
+      metadata: { chain_id: Number(network.chainId) },
       blocks: { ...blocks },
     };
   }
@@ -173,48 +174,6 @@ export class BlockFinder {
 
     return [Math.max(MINIMUM_VALID_BLOCK, lowerBound), upperBound];
   }
-}
-
-// Backward compatibility functions
-export async function findBlocksForDateRange(
-  startDate: Date,
-  endDate: Date,
-  provider: ethers.Provider,
-  fileManager: FileManager,
-): Promise<BlockNumberData> {
-  const blockFinder = new BlockFinder(fileManager, provider);
-  return blockFinder.findBlocksForDateRange(startDate, endDate);
-}
-
-export async function findEndOfDayBlock(
-  date: Date,
-  provider: ethers.Provider,
-  lowerBound: number,
-  upperBound: number,
-): Promise<number> {
-  // Create a dummy file manager since it's not used in findEndOfDayBlock
-  const dummyFileManager = {} as FileManager;
-  const blockFinder = new BlockFinder(dummyFileManager, provider);
-  return blockFinder.findEndOfDayBlock(date, lowerBound, upperBound);
-}
-
-export async function getSafeCurrentBlock(
-  provider: ethers.Provider,
-): Promise<number> {
-  const dummyFileManager = {} as FileManager;
-  const blockFinder = new BlockFinder(dummyFileManager, provider);
-  return blockFinder.getSafeCurrentBlock();
-}
-
-export function getSearchBounds(
-  date: Date,
-  existingBlocks: BlockNumberData,
-  safeCurrentBlock: number,
-): [number, number] {
-  const dummyFileManager = {} as FileManager;
-  const dummyProvider = {} as ethers.Provider;
-  const blockFinder = new BlockFinder(dummyFileManager, dummyProvider);
-  return blockFinder.getSearchBounds(date, existingBlocks, safeCurrentBlock);
 }
 
 // Helper functions
