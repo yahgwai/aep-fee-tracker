@@ -32,11 +32,19 @@ export class BlockFinder {
   }
 
   private async initializeResult(): Promise<BlockNumberData> {
-    const { blocks } = this.fileManager.readBlockNumbers();
+    const existingData = this.fileManager.readBlockNumbers();
     const network = await this.provider.getNetwork();
+
+    // Preserve existing metadata if it has data in blocks (indicating it's not just default)
+    // Otherwise use chain ID from provider
+    const metadata =
+      Object.keys(existingData.blocks).length > 0
+        ? existingData.metadata
+        : { chain_id: Number(network.chainId) };
+
     return {
-      metadata: { chain_id: Number(network.chainId) },
-      blocks: { ...blocks },
+      metadata,
+      blocks: { ...existingData.blocks },
     };
   }
 

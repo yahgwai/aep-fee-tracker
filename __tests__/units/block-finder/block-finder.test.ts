@@ -250,6 +250,43 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     }, 20000);
   });
 
+  describe("Metadata handling", () => {
+    it("should preserve existing metadata when initializing result", async () => {
+      // Arrange: Create existing data with custom metadata
+      const existingData: BlockNumberData = {
+        metadata: {
+          chain_id: 999, // Different from the provider's chain ID
+        },
+        blocks: {
+          "2024-01-15": 40000000,
+        },
+      };
+      testContext.fileManager.writeBlockNumbers(existingData);
+
+      // Act: Call findBlocksForDateRange which internally uses initializeResult
+      const result = await blockFinder.findBlocksForDateRange(
+        new Date("2024-01-16"),
+        new Date("2024-01-16"),
+      );
+
+      // Assert: The metadata should be preserved
+      expect(result.metadata.chain_id).toBe(999);
+    });
+
+    it("should set chain ID from provider when no existing metadata", async () => {
+      // Arrange: No existing data (empty file)
+
+      // Act: Call findBlocksForDateRange which internally uses initializeResult
+      const result = await blockFinder.findBlocksForDateRange(
+        new Date("2024-01-16"),
+        new Date("2024-01-16"),
+      );
+
+      // Assert: The metadata should be set from provider
+      expect(result.metadata.chain_id).toBe(CHAIN_IDS.ARBITRUM_NOVA);
+    });
+  });
+
   describe("Error handling", () => {
     it("should throw error with context when RPC provider is not available", async () => {
       // Create provider with explicit network to prevent retry loop
