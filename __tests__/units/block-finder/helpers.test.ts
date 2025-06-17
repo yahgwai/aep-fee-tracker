@@ -93,6 +93,51 @@ describe("BlockFinder - Helper Functions", () => {
         findEndOfDayBlock(date, provider, lowerBound, upperBound),
       ).rejects.toThrow(/Invalid search bounds/);
     });
+
+    it("should throw error when upper bound is before midnight", async () => {
+      const date = new Date("2024-01-15");
+      // These bounds are within the day but don't extend to midnight
+      // Based on the issue, block 40051000 is at ~2:40 AM on Jan 15
+      const lowerBound = 40049000;
+      const upperBound = 40051000;
+
+      await expect(
+        findEndOfDayBlock(date, provider, lowerBound, upperBound),
+      ).rejects.toThrow(/Search bounds do not contain midnight/);
+    });
+
+    it("should find end of day block when bounds properly contain midnight", async () => {
+      const date = new Date("2024-01-15");
+      // Using bounds that we know contain midnight for Jan 15
+      // From issue context, we need bounds that extend past midnight
+      const lowerBound = 40268000;
+      const upperBound = 40269000;
+
+      const blockNumber = await findEndOfDayBlock(
+        date,
+        provider,
+        lowerBound,
+        upperBound,
+      );
+
+      // Verify the block is before midnight
+      const block = await provider.getBlock(blockNumber);
+      const blockTime = new Date(block!.timestamp * 1000);
+      const nextMidnight = new Date(date);
+      nextMidnight.setUTCDate(nextMidnight.getUTCDate() + 1);
+      nextMidnight.setUTCHours(0, 0, 0, 0);
+
+      expect(blockTime.getTime()).toBeLessThan(nextMidnight.getTime());
+
+      // Verify the next block would be after midnight
+      const nextBlock = await provider.getBlock(blockNumber + 1);
+      if (nextBlock) {
+        const nextBlockTime = new Date(nextBlock.timestamp * 1000);
+        expect(nextBlockTime.getTime()).toBeGreaterThanOrEqual(
+          nextMidnight.getTime(),
+        );
+      }
+    });
   });
 
   describe("getSafeCurrentBlock", () => {
