@@ -199,7 +199,7 @@ The component uses topic filtering to reduce RPC load:
 const filter = {
   address: "0x0000000000000000000000000000000000000070",
   topics: [
-    null, // Event signature (OwnerActs)
+    "0x3c9e6a772755407311e3b35b3ee56799df8f87395941b3a658eee9e08a67ebda", // OwnerActs event topic
     [
       // Method signatures (OR filter)
       "0xee95a824", // L2 Base Fee

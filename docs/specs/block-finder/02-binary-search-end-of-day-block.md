@@ -11,11 +11,13 @@ No implementation exists. System cannot identify which block represents the end 
 ## Expected Behavior
 
 - System performs binary search between given lower and upper bounds
+- System validates that the upper bound timestamp is >= the target midnight timestamp
 - System queries block timestamps via RPC to determine if block is before or after midnight
 - System finds the highest block number whose timestamp is before the target midnight
 - Search converges to find the exact last block before midnight UTC
 - System handles the case where all blocks in range are after midnight
 - System handles the case where all blocks in range are before midnight
+- System throws descriptive error if search bounds do not contain midnight
 
 ## Required Context
 
