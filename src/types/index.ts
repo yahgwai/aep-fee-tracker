@@ -1,3 +1,6 @@
+// Re-export utility functions
+export { withRetry, type RetryOptions } from "../utils/retry";
+
 // Core Data Types
 
 export interface BlockNumberData {
