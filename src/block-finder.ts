@@ -61,7 +61,10 @@ export class BlockFinder {
 
   private async getNetworkWithRetry(): Promise<ethers.Network> {
     try {
-      return await withRetry(() => this.provider.getNetwork(), RETRY_CONFIG);
+      return await withRetry(() => this.provider.getNetwork(), {
+        ...RETRY_CONFIG,
+        operationName: "getNetwork",
+      });
     } catch (error) {
       throw new RPCError(
         `Failed to get network information after ${RETRY_CONFIG.maxRetries} retries`,
@@ -142,8 +145,14 @@ export class BlockFinder {
     const dateStartTimestamp = toUnixTimestamp(getMidnight(date));
 
     const [lowerBlock, upperBlock] = await Promise.all([
-      withRetry(() => this.provider.getBlock(lowerBound), RETRY_CONFIG),
-      withRetry(() => this.provider.getBlock(upperBound), RETRY_CONFIG),
+      withRetry(() => this.provider.getBlock(lowerBound), {
+        ...RETRY_CONFIG,
+        operationName: `getBlock(${lowerBound})`,
+      }),
+      withRetry(() => this.provider.getBlock(upperBound), {
+        ...RETRY_CONFIG,
+        operationName: `getBlock(${upperBound})`,
+      }),
     ]);
 
     const context = {
@@ -231,10 +240,10 @@ export class BlockFinder {
     );
 
     try {
-      const block = await withRetry(
-        () => this.provider.getBlock(blockNumber),
-        RETRY_CONFIG,
-      );
+      const block = await withRetry(() => this.provider.getBlock(blockNumber), {
+        ...RETRY_CONFIG,
+        operationName: `getBlock(${blockNumber})`,
+      });
       if (!block) {
         throw new BlockFinderError(
           `Block ${blockNumber} not found during search`,
@@ -279,7 +288,10 @@ export class BlockFinder {
     try {
       const currentBlock = await withRetry(
         () => this.provider.getBlockNumber(),
-        RETRY_CONFIG,
+        {
+          ...RETRY_CONFIG,
+          operationName: "getBlockNumber",
+        },
       );
       return currentBlock - FINALITY_BLOCKS;
     } catch (error) {
