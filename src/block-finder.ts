@@ -1,9 +1,17 @@
 import { ethers } from "ethers";
-import { BlockNumberData, DateString, FileManager } from "./types";
+import {
+  BlockNumberData,
+  DateString,
+  FileManager,
+  RPCError,
+  BlockFinderError,
+} from "./types";
 
 const FINALITY_BLOCKS = 1000;
 const MILLISECONDS_PER_SECOND = 1000;
 const MINIMUM_VALID_BLOCK = 1;
+const MAX_RPC_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000;
 
 export class BlockFinder {
   constructor(
@@ -33,7 +41,24 @@ export class BlockFinder {
 
   private async initializeResult(): Promise<BlockNumberData> {
     const existingData = this.fileManager.readBlockNumbers();
-    const network = await this.provider.getNetwork();
+
+    let network: ethers.Network;
+    try {
+      network = await retryRPCCall(
+        () => this.provider.getNetwork(),
+        "get network information",
+      );
+    } catch (error) {
+      const context: BlockFinderError["context"] = {};
+      if (error instanceof Error) {
+        context.cause = error;
+      }
+      throw new BlockFinderError(
+        `Failed to get network information from provider`,
+        "initializeResult",
+        context,
+      );
+    }
 
     if (!existingData) {
       return {
@@ -104,12 +129,36 @@ export class BlockFinder {
     const dateStartTimestamp = toUnixTimestamp(getMidnight(date));
 
     const [lowerBlock, upperBlock] = await Promise.all([
-      this.provider.getBlock(lowerBound),
-      this.provider.getBlock(upperBound),
+      retryRPCCall(
+        () => this.provider.getBlock(lowerBound),
+        `get block ${lowerBound}`,
+      ),
+      retryRPCCall(
+        () => this.provider.getBlock(upperBound),
+        `get block ${upperBound}`,
+      ),
     ]);
 
-    if (!lowerBlock) throw new Error(`Block ${lowerBound} not found`);
-    if (!upperBlock) throw new Error(`Block ${upperBound} not found`);
+    if (!lowerBlock) {
+      throw new BlockFinderError(
+        `Block ${lowerBound} not found`,
+        "findEndOfDayBlock",
+        {
+          date: formatDateString(date),
+          searchBounds: { lower: lowerBound, upper: upperBound },
+        },
+      );
+    }
+    if (!upperBlock) {
+      throw new BlockFinderError(
+        `Block ${upperBound} not found`,
+        "findEndOfDayBlock",
+        {
+          date: formatDateString(date),
+          searchBounds: { lower: lowerBound, upper: upperBound },
+        },
+      );
+    }
 
     validateBlockRange(
       date,
@@ -136,14 +185,57 @@ export class BlockFinder {
     targetTimestamp: number,
   ): Promise<number> {
     let lastValidBlock = -1;
+    let lastCheckedBlock: { number: number; timestamp: number } | undefined;
 
     while (low <= high) {
       const mid = Math.floor((low + high) / 2);
-      const block = await this.provider.getBlock(mid);
+
+      let block: ethers.Block | null;
+      try {
+        block = await retryRPCCall(
+          () => this.provider.getBlock(mid),
+          `get block ${mid}`,
+        );
+      } catch (error) {
+        const context: BlockFinderError["context"] = {
+          searchBounds: { lower: low, upper: high },
+          targetTimestamp: fromUnixTimestamp(targetTimestamp),
+        };
+        if (lastCheckedBlock) {
+          context.lastCheckedBlock = {
+            number: lastCheckedBlock.number,
+            timestamp: fromUnixTimestamp(lastCheckedBlock.timestamp),
+          };
+        }
+        if (error instanceof Error) {
+          context.cause = error;
+        }
+        throw new BlockFinderError(
+          `Failed to get block ${mid} during binary search`,
+          "binarySearchForBlock",
+          context,
+        );
+      }
 
       if (!block) {
-        throw new Error(`Block ${mid} not found during search`);
+        const context: BlockFinderError["context"] = {
+          searchBounds: { lower: low, upper: high },
+          targetTimestamp: fromUnixTimestamp(targetTimestamp),
+        };
+        if (lastCheckedBlock) {
+          context.lastCheckedBlock = {
+            number: lastCheckedBlock.number,
+            timestamp: fromUnixTimestamp(lastCheckedBlock.timestamp),
+          };
+        }
+        throw new BlockFinderError(
+          `Block ${mid} not found during search`,
+          "binarySearchForBlock",
+          context,
+        );
       }
+
+      lastCheckedBlock = { number: mid, timestamp: block.timestamp };
 
       if (block.timestamp < targetTimestamp) {
         lastValidBlock = mid;
@@ -163,14 +255,23 @@ export class BlockFinder {
 
   async getSafeCurrentBlock(): Promise<number> {
     try {
-      const currentBlock = await this.provider.getBlockNumber();
+      const currentBlock = await retryRPCCall(
+        () => this.provider.getBlockNumber(),
+        "get current block number",
+      );
       return currentBlock - FINALITY_BLOCKS;
     } catch (error) {
-      throw new Error(
-        `Failed to get current block\n` +
-          `  Error: ${error}\n` +
-          `  Check: Ensure RPC_URL is accessible`,
-      );
+      if (error instanceof RPCError) {
+        throw new BlockFinderError(
+          `Failed to get current block number\n` +
+            `  RPC request failed after ${error.retryCount} retries\n` +
+            `  Original error: ${error.cause?.message || "Unknown error"}\n` +
+            `  Check: Ensure RPC_URL is accessible and the provider is properly configured`,
+          "getSafeCurrentBlock",
+          { cause: error },
+        );
+      }
+      throw error;
     }
   }
 
@@ -297,4 +398,31 @@ function findMostRecentBlock(
   }
 
   return mostRecent;
+}
+
+export async function retryRPCCall<T>(
+  call: () => Promise<T>,
+  operation: string,
+): Promise<T> {
+  let lastError: Error | undefined;
+
+  for (let attempt = 1; attempt <= MAX_RPC_RETRIES; attempt++) {
+    try {
+      return await call();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt < MAX_RPC_RETRIES) {
+        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw new RPCError(
+    `Failed to ${operation} after ${MAX_RPC_RETRIES} retries`,
+    operation,
+    MAX_RPC_RETRIES,
+    lastError,
+  );
 }
