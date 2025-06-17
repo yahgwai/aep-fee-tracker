@@ -166,9 +166,8 @@ export class BlockFinder {
   ): [number, number] {
     const dateStr = formatDateString(date);
     const lowerBound = findMostRecentBlock(dateStr, existingBlocks);
-    const upperBound = estimateUpperBound(lowerBound, safeCurrentBlock);
 
-    return [Math.max(MINIMUM_VALID_BLOCK, lowerBound), upperBound];
+    return [Math.max(MINIMUM_VALID_BLOCK, lowerBound), safeCurrentBlock];
   }
 }
 
@@ -272,11 +271,4 @@ function findMostRecentBlock(
   }
 
   return mostRecent;
-}
-
-function estimateUpperBound(
-  _lowerBound: number,
-  safeCurrentBlock: number,
-): number {
-  return safeCurrentBlock;
 }
