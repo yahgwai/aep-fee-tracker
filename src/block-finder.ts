@@ -110,7 +110,21 @@ export class BlockFinder {
       result.blocks[dateStr] = blockNumber;
       this.fileManager.writeBlockNumbers(result);
     } catch (error) {
-      handleBlockFindingError(error, dateStr);
+      if (error instanceof BlockFinderError) {
+        throw error;
+      }
+      const context: BlockFinderError["context"] = {
+        date: dateStr,
+        searchBounds: { lower: lowerBound, upper: upperBound },
+      };
+      if (error instanceof Error) {
+        context.cause = error;
+      }
+      throw new BlockFinderError(
+        `Failed to find end-of-day block for ${dateStr}`,
+        "processDate",
+        context,
+      );
     }
   }
 
@@ -120,8 +134,17 @@ export class BlockFinder {
     upperBound: number,
   ): Promise<number> {
     if (lowerBound > upperBound) {
-      throw new Error(
-        "Invalid search bounds: lower bound is greater than upper bound",
+      throw new BlockFinderError(
+        `Invalid search bounds: lower bound is greater than upper bound\n` +
+          `  Date: ${formatDateString(date)}\n` +
+          `  Lower bound: ${lowerBound}\n` +
+          `  Upper bound: ${upperBound}\n` +
+          `  Check: Ensure safe current block (${upperBound}) is greater than most recent known block (${lowerBound})`,
+        "findEndOfDayBlock",
+        {
+          date: formatDateString(date),
+          searchBounds: { lower: lowerBound, upper: upperBound },
+        },
       );
     }
 
@@ -289,23 +312,38 @@ export class BlockFinder {
 
 // Helper functions
 function validateDateRange(startDate: Date, endDate: Date): void {
-  if (!isValidDate(startDate) || !isValidDate(endDate)) {
-    throw new Error("Invalid Date object");
+  if (!isValidDate(startDate)) {
+    throw new BlockFinderError(
+      `Invalid start date provided\n` +
+        `  Value: ${startDate}\n` +
+        `  Type: ${typeof startDate}\n` +
+        `  Check: Ensure a valid Date object is provided`,
+      "validateDateRange",
+      {},
+    );
+  }
+
+  if (!isValidDate(endDate)) {
+    throw new BlockFinderError(
+      `Invalid end date provided\n` +
+        `  Value: ${endDate}\n` +
+        `  Type: ${typeof endDate}\n` +
+        `  Check: Ensure a valid Date object is provided`,
+      "validateDateRange",
+      {},
+    );
   }
 
   if (startDate > endDate) {
-    throw new Error("Start date must not be after end date");
+    throw new BlockFinderError(
+      `Start date must not be after end date\n` +
+        `  Start date: ${startDate.toISOString()}\n` +
+        `  End date: ${endDate.toISOString()}\n` +
+        `  Check: Ensure date range is valid`,
+      "validateDateRange",
+      {},
+    );
   }
-}
-
-function handleBlockFindingError(error: unknown, dateStr: string): never {
-  if (
-    error instanceof Error &&
-    error.message.includes("Unable to find block")
-  ) {
-    throw error;
-  }
-  throw new Error(`Failed to find block for ${dateStr}: ${error}`);
 }
 
 function isValidDate(date: unknown): date is Date {
@@ -355,32 +393,64 @@ function validateBlockRange(
   dateStartTimestamp: number,
 ): void {
   if (lowerBlock.timestamp >= targetTimestamp) {
-    throw new Error(
+    throw new BlockFinderError(
       `All blocks in range are after midnight\n` +
         `  Date: ${formatDateString(date)}\n` +
         `  Target: Before ${fromUnixTimestamp(targetTimestamp).toISOString()}\n` +
         `  Search bounds: ${lowerBound} to ${upperBound}\n` +
-        `  Lower block ${lowerBound} timestamp: ${fromUnixTimestamp(lowerBlock.timestamp).toISOString()}`,
+        `  Lower block ${lowerBound} timestamp: ${fromUnixTimestamp(lowerBlock.timestamp).toISOString()}\n` +
+        `  Check: Expand search bounds to include earlier blocks`,
+      "validateBlockRange",
+      {
+        date: formatDateString(date),
+        searchBounds: { lower: lowerBound, upper: upperBound },
+        targetTimestamp: fromUnixTimestamp(targetTimestamp),
+        lastCheckedBlock: {
+          number: lowerBound,
+          timestamp: fromUnixTimestamp(lowerBlock.timestamp),
+        },
+      },
     );
   }
 
   if (upperBlock.timestamp < dateStartTimestamp) {
-    throw new Error(
+    throw new BlockFinderError(
       `All blocks in range are before the target date\n` +
         `  Date: ${formatDateString(date)}\n` +
         `  Search bounds: ${lowerBound} to ${upperBound}\n` +
-        `  Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}`,
+        `  Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}\n` +
+        `  Check: Ensure the date is valid and search bounds are correct`,
+      "validateBlockRange",
+      {
+        date: formatDateString(date),
+        searchBounds: { lower: lowerBound, upper: upperBound },
+        lastCheckedBlock: {
+          number: upperBound,
+          timestamp: fromUnixTimestamp(upperBlock.timestamp),
+        },
+      },
     );
   }
 
   if (upperBlock.timestamp < targetTimestamp) {
-    throw new Error(
+    throw new BlockFinderError(
       `Search bounds do not contain midnight\n` +
         `  Date: ${formatDateString(date)}\n` +
         `  Target midnight: ${fromUnixTimestamp(targetTimestamp).toISOString()}\n` +
         `  Search bounds: ${lowerBound} to ${upperBound}\n` +
         `  Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}\n` +
-        `  Upper bound needs to extend past midnight`,
+        `  Upper bound needs to extend past midnight\n` +
+        `  Check: Increase upper bound or wait for more blocks to be mined`,
+      "validateBlockRange",
+      {
+        date: formatDateString(date),
+        searchBounds: { lower: lowerBound, upper: upperBound },
+        targetTimestamp: fromUnixTimestamp(targetTimestamp),
+        lastCheckedBlock: {
+          number: upperBound,
+          timestamp: fromUnixTimestamp(upperBlock.timestamp),
+        },
+      },
     );
   }
 }
