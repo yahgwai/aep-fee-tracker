@@ -40,16 +40,19 @@ describe("withRetry", () => {
     });
 
     it("throws error after 3 failed attempts", async () => {
-      const mockOperation = jest.fn();
-      mockOperation.mockRejectedValue(new Error("Operation failed"));
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValue(new Error("Operation failed"));
 
-      const promise = withRetry(mockOperation);
+      const promise = withRetry(mockOperation).catch((e) => e);
 
-      // Run all timers to completion
-      await jest.runAllTimersAsync();
+      // Run through all retry attempts
+      await jest.advanceTimersByTimeAsync(1000); // First retry
+      await jest.advanceTimersByTimeAsync(2000); // Second retry
 
-      // Now the promise should reject
-      await expect(promise).rejects.toThrow("Operation failed");
+      const error = await promise;
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe("Operation failed");
       expect(mockOperation).toHaveBeenCalledTimes(3);
     });
   });
@@ -88,16 +91,19 @@ describe("withRetry", () => {
     });
 
     it("does not apply delay after last failed attempt", async () => {
-      const mockOperation = jest.fn();
-      mockOperation.mockRejectedValue(new Error("Always fails"));
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValue(new Error("Always fails"));
 
-      const promise = withRetry(mockOperation);
+      const promise = withRetry(mockOperation).catch((e) => e);
 
-      // Run all timers to completion
-      await jest.runAllTimersAsync();
+      // Run through all retry attempts
+      await jest.advanceTimersByTimeAsync(1000); // First retry
+      await jest.advanceTimersByTimeAsync(2000); // Second retry
 
-      // Should throw after third attempt
-      await expect(promise).rejects.toThrow("Always fails");
+      const error = await promise;
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe("Always fails");
       expect(mockOperation).toHaveBeenCalledTimes(3);
     });
   });
@@ -112,15 +118,23 @@ describe("withRetry", () => {
     });
 
     it("respects custom retry count", async () => {
-      const mockOperation = jest.fn();
-      mockOperation.mockRejectedValue(new Error("Always fails"));
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValue(new Error("Always fails"));
 
-      const promise = withRetry(mockOperation, { maxRetries: 5 });
+      const promise = withRetry(mockOperation, { maxRetries: 5 }).catch(
+        (e) => e,
+      );
 
-      // Run all timers to completion
-      await jest.runAllTimersAsync();
+      // Run through all 5 retry attempts
+      await jest.advanceTimersByTimeAsync(1000); // 1st retry
+      await jest.advanceTimersByTimeAsync(2000); // 2nd retry
+      await jest.advanceTimersByTimeAsync(4000); // 3rd retry
+      await jest.advanceTimersByTimeAsync(8000); // 4th retry
 
-      await expect(promise).rejects.toThrow("Always fails");
+      const error = await promise;
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe("Always fails");
       expect(mockOperation).toHaveBeenCalledTimes(5);
     });
 
@@ -171,24 +185,25 @@ describe("withRetry", () => {
     });
 
     it("uses all custom options together", async () => {
-      const mockOperation = jest.fn();
-      mockOperation.mockRejectedValue(new Error("Always fails"));
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValue(new Error("Always fails"));
 
       const promise = withRetry(mockOperation, {
         maxRetries: 2,
         initialDelay: 200,
         backoffMultiplier: 5,
-      });
+      }).catch((e) => e);
 
       // First attempt - immediate
       expect(mockOperation).toHaveBeenCalledTimes(1);
 
-      // Advance time by 200ms (first delay)
-      await jest.advanceTimersByTimeAsync(200);
-      expect(mockOperation).toHaveBeenCalledTimes(2);
+      // Run through retry with custom delay
+      await jest.advanceTimersByTimeAsync(200); // First retry (200ms)
 
-      // Should fail after 2 attempts
-      await expect(promise).rejects.toThrow("Always fails");
+      const error = await promise;
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe("Always fails");
       expect(mockOperation).toHaveBeenCalledTimes(2);
     });
   });
@@ -209,7 +224,8 @@ describe("withRetry", () => {
         .mockRejectedValueOnce(new Error("Another transient"))
         .mockResolvedValueOnce("success");
 
-      const shouldRetry = (error: Error) => error.message.includes("transient");
+      const shouldRetry = (error: Error) =>
+        error.message.toLowerCase().includes("transient");
 
       const promise = withRetry(mockOperation, { shouldRetry });
 
@@ -241,12 +257,17 @@ describe("withRetry", () => {
 
       const shouldRetry = (error: Error) => !error.message.includes("Fatal");
 
-      const promise = withRetry(mockOperation, { shouldRetry });
+      const promise = withRetry(mockOperation, { shouldRetry }).catch((e) => e);
 
-      // First retry happens after delay
+      // First attempt - immediate, fails with "Transient error"
+      expect(mockOperation).toHaveBeenCalledTimes(1);
+
+      // Run timer for first retry
       await jest.advanceTimersByTimeAsync(1000);
 
-      await expect(promise).rejects.toThrow("Fatal error");
+      const error = await promise;
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe("Fatal error");
       expect(mockOperation).toHaveBeenCalledTimes(2);
     });
 
