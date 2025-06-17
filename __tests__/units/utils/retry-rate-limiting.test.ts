@@ -134,5 +134,5 @@ describe("Retry with HTTP 429 Rate Limiting", () => {
 
     // Should use default 30 second delay
     expect(duration).toBeGreaterThanOrEqual(30000);
-  });
+  }, 35000); // 35 second timeout for this test
 });
