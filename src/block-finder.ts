@@ -1,9 +1,21 @@
 import { ethers } from "ethers";
-import { BlockNumberData, DateString, FileManager } from "./types";
+import {
+  BlockNumberData,
+  DateString,
+  FileManager,
+  withRetry,
+  RPCError,
+  BlockFinderError,
+} from "./types";
 
 const FINALITY_BLOCKS = 1000;
 const MILLISECONDS_PER_SECOND = 1000;
 const MINIMUM_VALID_BLOCK = 1;
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  initialDelay: 1000,
+  backoffMultiplier: 2,
+};
 
 export class BlockFinder {
   constructor(
@@ -33,26 +45,31 @@ export class BlockFinder {
 
   private async initializeResult(): Promise<BlockNumberData> {
     const existingData = this.fileManager.readBlockNumbers();
-    const network = await this.provider.getNetwork();
+    const network = await this.getNetworkWithRetry();
+    const chainId = Number(network.chainId);
 
     if (!existingData) {
-      return {
-        metadata: { chain_id: Number(network.chainId) },
-        blocks: {},
-      };
+      return { metadata: { chain_id: chainId }, blocks: {} };
     }
 
-    // Preserve existing metadata if it has data in blocks (indicating it's not just default)
-    // Otherwise use chain ID from provider
-    const metadata =
-      Object.keys(existingData.blocks).length > 0
-        ? existingData.metadata
-        : { chain_id: Number(network.chainId) };
-
+    const hasData = Object.keys(existingData.blocks).length > 0;
     return {
-      metadata,
+      metadata: hasData ? existingData.metadata : { chain_id: chainId },
       blocks: { ...existingData.blocks },
     };
+  }
+
+  private async getNetworkWithRetry(): Promise<ethers.Network> {
+    try {
+      return await withRetry(() => this.provider.getNetwork(), RETRY_CONFIG);
+    } catch (error) {
+      throw new RPCError(
+        `Failed to get network information after ${RETRY_CONFIG.maxRetries} retries`,
+        "getNetwork",
+        RETRY_CONFIG.maxRetries,
+        error instanceof Error ? error : undefined,
+      );
+    }
   }
 
   private async processDate(
@@ -61,10 +78,7 @@ export class BlockFinder {
     safeCurrentBlock: number,
   ): Promise<void> {
     const dateStr = formatDateString(date);
-
-    if (result.blocks[dateStr]) {
-      return;
-    }
+    if (result.blocks[dateStr]) return;
 
     const [lowerBound, upperBound] = this.getSearchBounds(
       date,
@@ -72,9 +86,7 @@ export class BlockFinder {
       safeCurrentBlock,
     );
 
-    if (upperBound > safeCurrentBlock) {
-      return;
-    }
+    if (upperBound > safeCurrentBlock) return;
 
     try {
       const blockNumber = await this.findEndOfDayBlock(
@@ -85,7 +97,20 @@ export class BlockFinder {
       result.blocks[dateStr] = blockNumber;
       this.fileManager.writeBlockNumbers(result);
     } catch (error) {
-      handleBlockFindingError(error, dateStr);
+      if (error instanceof BlockFinderError) throw error;
+
+      const context: BlockFinderError["context"] = {
+        date: dateStr,
+        searchBounds: { lower: lowerBound, upper: upperBound },
+      };
+      if (error instanceof Error) {
+        context.cause = error;
+      }
+      throw new BlockFinderError(
+        `Failed to find end-of-day block for ${dateStr}`,
+        "processDate",
+        context,
+      );
     }
   }
 
@@ -95,8 +120,21 @@ export class BlockFinder {
     upperBound: number,
   ): Promise<number> {
     if (lowerBound > upperBound) {
-      throw new Error(
-        "Invalid search bounds: lower bound is greater than upper bound",
+      throw new BlockFinderError(
+        formatErrorMessage(
+          "Invalid search bounds: lower bound is greater than upper bound",
+          [
+            `Date: ${formatDateString(date)}`,
+            `Lower bound: ${lowerBound}`,
+            `Upper bound: ${upperBound}`,
+          ],
+          `Ensure safe current block (${upperBound}) is greater than most recent known block (${lowerBound})`,
+        ),
+        "findEndOfDayBlock",
+        {
+          date: formatDateString(date),
+          searchBounds: { lower: lowerBound, upper: upperBound },
+        },
       );
     }
 
@@ -104,12 +142,29 @@ export class BlockFinder {
     const dateStartTimestamp = toUnixTimestamp(getMidnight(date));
 
     const [lowerBlock, upperBlock] = await Promise.all([
-      this.provider.getBlock(lowerBound),
-      this.provider.getBlock(upperBound),
+      withRetry(() => this.provider.getBlock(lowerBound), RETRY_CONFIG),
+      withRetry(() => this.provider.getBlock(upperBound), RETRY_CONFIG),
     ]);
 
-    if (!lowerBlock) throw new Error(`Block ${lowerBound} not found`);
-    if (!upperBlock) throw new Error(`Block ${upperBound} not found`);
+    const context = {
+      date: formatDateString(date),
+      searchBounds: { lower: lowerBound, upper: upperBound },
+    };
+
+    if (!lowerBlock) {
+      throw new BlockFinderError(
+        `Block ${lowerBound} not found`,
+        "findEndOfDayBlock",
+        context,
+      );
+    }
+    if (!upperBlock) {
+      throw new BlockFinderError(
+        `Block ${upperBound} not found`,
+        "findEndOfDayBlock",
+        context,
+      );
+    }
 
     validateBlockRange(
       date,
@@ -136,14 +191,19 @@ export class BlockFinder {
     targetTimestamp: number,
   ): Promise<number> {
     let lastValidBlock = -1;
+    let lastCheckedBlock: { number: number; timestamp: number } | undefined;
 
     while (low <= high) {
       const mid = Math.floor((low + high) / 2);
-      const block = await this.provider.getBlock(mid);
+      const block = await this.getBlockForSearch(
+        mid,
+        low,
+        high,
+        targetTimestamp,
+        lastCheckedBlock,
+      );
 
-      if (!block) {
-        throw new Error(`Block ${mid} not found during search`);
-      }
+      lastCheckedBlock = { number: mid, timestamp: block.timestamp };
 
       if (block.timestamp < targetTimestamp) {
         lastValidBlock = mid;
@@ -153,25 +213,97 @@ export class BlockFinder {
       }
     }
 
-    // If no valid block was found, all blocks are after midnight
-    if (lastValidBlock === -1) {
-      return low - 1;
-    }
+    return lastValidBlock === -1 ? low - 1 : lastValidBlock;
+  }
 
-    return lastValidBlock;
+  private async getBlockForSearch(
+    blockNumber: number,
+    low: number,
+    high: number,
+    targetTimestamp: number,
+    lastCheckedBlock?: { number: number; timestamp: number },
+  ): Promise<ethers.Block> {
+    const context = this.createSearchContext(
+      low,
+      high,
+      targetTimestamp,
+      lastCheckedBlock,
+    );
+
+    try {
+      const block = await withRetry(
+        () => this.provider.getBlock(blockNumber),
+        RETRY_CONFIG,
+      );
+      if (!block) {
+        throw new BlockFinderError(
+          `Block ${blockNumber} not found during search`,
+          "binarySearchForBlock",
+          context,
+        );
+      }
+      return block;
+    } catch (error) {
+      if (error instanceof BlockFinderError) throw error;
+      if (error instanceof Error) {
+        context.cause = error;
+      }
+      throw new BlockFinderError(
+        `Failed to get block ${blockNumber} during binary search`,
+        "binarySearchForBlock",
+        context,
+      );
+    }
+  }
+
+  private createSearchContext(
+    low: number,
+    high: number,
+    targetTimestamp: number,
+    lastCheckedBlock?: { number: number; timestamp: number },
+  ): BlockFinderError["context"] {
+    const context: BlockFinderError["context"] = {
+      searchBounds: { lower: low, upper: high },
+      targetTimestamp: fromUnixTimestamp(targetTimestamp),
+    };
+    if (lastCheckedBlock) {
+      context.lastCheckedBlock = {
+        number: lastCheckedBlock.number,
+        timestamp: fromUnixTimestamp(lastCheckedBlock.timestamp),
+      };
+    }
+    return context;
   }
 
   async getSafeCurrentBlock(): Promise<number> {
     try {
-      const currentBlock = await this.provider.getBlockNumber();
+      const currentBlock = await withRetry(
+        () => this.provider.getBlockNumber(),
+        RETRY_CONFIG,
+      );
       return currentBlock - FINALITY_BLOCKS;
     } catch (error) {
-      throw new Error(
-        `Failed to get current block\n` +
-          `  Error: ${error}\n` +
-          `  Check: Ensure RPC_URL is accessible`,
+      const rpcError = new RPCError(
+        `Failed to get current block number after ${RETRY_CONFIG.maxRetries} retries`,
+        "getBlockNumber",
+        RETRY_CONFIG.maxRetries,
+        error instanceof Error ? error : undefined,
+      );
+      throw new BlockFinderError(
+        this.formatRPCError(rpcError),
+        "getSafeCurrentBlock",
+        { cause: rpcError },
       );
     }
+  }
+
+  private formatRPCError(rpcError: RPCError): string {
+    return [
+      `Failed to get current block number`,
+      `  RPC request failed after ${rpcError.retryCount} retries`,
+      `  Original error: ${rpcError.cause?.message || "Unknown error"}`,
+      `  Check: Ensure RPC_URL is accessible and the provider is properly configured`,
+    ].join("\n");
   }
 
   getSearchBounds(
@@ -188,23 +320,48 @@ export class BlockFinder {
 
 // Helper functions
 function validateDateRange(startDate: Date, endDate: Date): void {
-  if (!isValidDate(startDate) || !isValidDate(endDate)) {
-    throw new Error("Invalid Date object");
+  if (!isValidDate(startDate)) {
+    throw createInvalidDateError("start", startDate);
   }
-
+  if (!isValidDate(endDate)) {
+    throw createInvalidDateError("end", endDate);
+  }
   if (startDate > endDate) {
-    throw new Error("Start date must not be after end date");
+    throw new BlockFinderError(
+      formatErrorMessage(
+        "Start date must not be after end date",
+        [
+          `Start date: ${startDate.toISOString()}`,
+          `End date: ${endDate.toISOString()}`,
+        ],
+        "Ensure date range is valid",
+      ),
+      "validateDateRange",
+      {},
+    );
   }
 }
 
-function handleBlockFindingError(error: unknown, dateStr: string): never {
-  if (
-    error instanceof Error &&
-    error.message.includes("Unable to find block")
-  ) {
-    throw error;
-  }
-  throw new Error(`Failed to find block for ${dateStr}: ${error}`);
+function createInvalidDateError(type: string, date: unknown): BlockFinderError {
+  return new BlockFinderError(
+    formatErrorMessage(
+      `Invalid ${type} date provided`,
+      [`Value: ${date}`, `Type: ${typeof date}`],
+      "Ensure a valid Date object is provided",
+    ),
+    "validateDateRange",
+    {},
+  );
+}
+
+function formatErrorMessage(
+  message: string,
+  details: string[],
+  check?: string,
+): string {
+  const parts = [message, ...details.map((d) => `  ${d}`)];
+  if (check) parts.push(`  Check: ${check}`);
+  return parts.join("\n");
 }
 
 function isValidDate(date: unknown): date is Date {
@@ -253,35 +410,92 @@ function validateBlockRange(
   targetTimestamp: number,
   dateStartTimestamp: number,
 ): void {
+  const dateStr = formatDateString(date);
+  const bounds = { lower: lowerBound, upper: upperBound };
+
   if (lowerBlock.timestamp >= targetTimestamp) {
-    throw new Error(
-      `All blocks in range are after midnight\n` +
-        `  Date: ${formatDateString(date)}\n` +
-        `  Target: Before ${fromUnixTimestamp(targetTimestamp).toISOString()}\n` +
-        `  Search bounds: ${lowerBound} to ${upperBound}\n` +
-        `  Lower block ${lowerBound} timestamp: ${fromUnixTimestamp(lowerBlock.timestamp).toISOString()}`,
+    throw createBlockRangeError(
+      "All blocks in range are after midnight",
+      dateStr,
+      bounds,
+      [
+        `Target: Before ${fromUnixTimestamp(targetTimestamp).toISOString()}`,
+        `Lower block ${lowerBound} timestamp: ${fromUnixTimestamp(lowerBlock.timestamp).toISOString()}`,
+      ],
+      "Expand search bounds to include earlier blocks",
+      lowerBound,
+      lowerBlock.timestamp,
+      targetTimestamp,
     );
   }
 
   if (upperBlock.timestamp < dateStartTimestamp) {
-    throw new Error(
-      `All blocks in range are before the target date\n` +
-        `  Date: ${formatDateString(date)}\n` +
-        `  Search bounds: ${lowerBound} to ${upperBound}\n` +
-        `  Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}`,
+    throw createBlockRangeError(
+      "All blocks in range are before the target date",
+      dateStr,
+      bounds,
+      [
+        `Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}`,
+      ],
+      "Ensure the date is valid and search bounds are correct",
+      upperBound,
+      upperBlock.timestamp,
     );
   }
 
   if (upperBlock.timestamp < targetTimestamp) {
-    throw new Error(
-      `Search bounds do not contain midnight\n` +
-        `  Date: ${formatDateString(date)}\n` +
-        `  Target midnight: ${fromUnixTimestamp(targetTimestamp).toISOString()}\n` +
-        `  Search bounds: ${lowerBound} to ${upperBound}\n` +
-        `  Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}\n` +
-        `  Upper bound needs to extend past midnight`,
+    throw createBlockRangeError(
+      "Search bounds do not contain midnight",
+      dateStr,
+      bounds,
+      [
+        `Target midnight: ${fromUnixTimestamp(targetTimestamp).toISOString()}`,
+        `Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}`,
+        `Upper bound needs to extend past midnight`,
+      ],
+      "Increase upper bound or wait for more blocks to be mined",
+      upperBound,
+      upperBlock.timestamp,
+      targetTimestamp,
     );
   }
+}
+
+function createBlockRangeError(
+  message: string,
+  date: string,
+  bounds: { lower: number; upper: number },
+  details: string[],
+  check: string,
+  blockNumber: number,
+  blockTimestamp: number,
+  targetTimestamp?: number,
+): BlockFinderError {
+  const context: BlockFinderError["context"] = {
+    date,
+    searchBounds: bounds,
+    lastCheckedBlock: {
+      number: blockNumber,
+      timestamp: fromUnixTimestamp(blockTimestamp),
+    },
+  };
+  if (targetTimestamp !== undefined) {
+    context.targetTimestamp = fromUnixTimestamp(targetTimestamp);
+  }
+
+  return new BlockFinderError(
+    formatErrorMessage(
+      message,
+      [
+        `Date: ${date}`,
+        `Search bounds: ${bounds.lower} to ${bounds.upper}`,
+        ...details,
+      ],
+      check,
+    ),
+    "validateBlockRange",
+    context,
+  );
 }
 
 function findMostRecentBlock(
