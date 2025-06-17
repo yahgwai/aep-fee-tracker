@@ -192,4 +192,89 @@ describe("withRetry", () => {
       expect(mockOperation).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe("error filtering", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("retries only on errors that match the filter", async () => {
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("Transient error"))
+        .mockRejectedValueOnce(new Error("Another transient"))
+        .mockResolvedValueOnce("success");
+
+      const shouldRetry = (error: Error) => error.message.includes("transient");
+
+      const promise = withRetry(mockOperation, { shouldRetry });
+
+      await jest.runAllTimersAsync();
+
+      const result = await promise;
+      expect(result).toBe("success");
+      expect(mockOperation).toHaveBeenCalledTimes(3);
+    });
+
+    it("does not retry on errors that do not match the filter", async () => {
+      const mockOperation = jest.fn();
+      mockOperation.mockRejectedValue(new Error("Permanent failure"));
+
+      const shouldRetry = (error: Error) => error.message.includes("transient");
+
+      const promise = withRetry(mockOperation, { shouldRetry });
+
+      await expect(promise).rejects.toThrow("Permanent failure");
+      expect(mockOperation).toHaveBeenCalledTimes(1);
+    });
+
+    it("stops retrying when encountering non-retryable error", async () => {
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("Transient error"))
+        .mockRejectedValueOnce(new Error("Fatal error"))
+        .mockResolvedValueOnce("should not reach");
+
+      const shouldRetry = (error: Error) => !error.message.includes("Fatal");
+
+      const promise = withRetry(mockOperation, { shouldRetry });
+
+      // First retry happens after delay
+      await jest.advanceTimersByTimeAsync(1000);
+
+      await expect(promise).rejects.toThrow("Fatal error");
+      expect(mockOperation).toHaveBeenCalledTimes(2);
+    });
+
+    it("combines error filtering with custom retry options", async () => {
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("Retry this"))
+        .mockRejectedValueOnce(new Error("Retry this too"))
+        .mockResolvedValueOnce("success");
+
+      const shouldRetry = (error: Error) => error.message.includes("Retry");
+
+      const promise = withRetry(mockOperation, {
+        shouldRetry,
+        maxRetries: 5,
+        initialDelay: 100,
+      });
+
+      // First retry after 100ms
+      await jest.advanceTimersByTimeAsync(100);
+      expect(mockOperation).toHaveBeenCalledTimes(2);
+
+      // Second retry after 200ms (100 * 2)
+      await jest.advanceTimersByTimeAsync(200);
+      expect(mockOperation).toHaveBeenCalledTimes(3);
+
+      const result = await promise;
+      expect(result).toBe("success");
+    });
+  });
 });

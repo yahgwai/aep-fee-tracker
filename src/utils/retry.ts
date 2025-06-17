@@ -2,6 +2,7 @@ interface RetryOptions {
   maxRetries?: number;
   initialDelay?: number;
   backoffMultiplier?: number;
+  shouldRetry?: (error: Error) => boolean;
 }
 
 const DEFAULT_MAX_RETRIES = 3;
@@ -20,6 +21,7 @@ export async function withRetry<T>(
   const initialDelay = options.initialDelay ?? DEFAULT_INITIAL_DELAY;
   const backoffMultiplier =
     options.backoffMultiplier ?? DEFAULT_BACKOFF_MULTIPLIER;
+  const shouldRetry = options.shouldRetry;
 
   let lastError: Error;
 
@@ -28,6 +30,12 @@ export async function withRetry<T>(
       return await operation();
     } catch (error) {
       lastError = error as Error;
+
+      // Check if we should retry this error
+      if (shouldRetry && !shouldRetry(lastError)) {
+        throw lastError;
+      }
+
       if (i < maxRetries - 1) {
         await sleep(initialDelay * Math.pow(backoffMultiplier, i));
       }
