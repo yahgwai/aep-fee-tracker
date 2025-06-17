@@ -37,9 +37,9 @@ describe("FileManager - Block Numbers", () => {
   });
 
   describe("readBlockNumbers()", () => {
-    it("should return empty BlockNumberData when block_numbers.json does not exist", () => {
+    it("should return undefined when block_numbers.json does not exist", () => {
       const result = testContext.fileManager.readBlockNumbers();
-      expect(result).toEqual(createBlockNumberData());
+      expect(result).toBeUndefined();
     });
 
     it("should write and read back BlockNumberData with multiple date entries", () => {
@@ -68,7 +68,7 @@ describe("FileManager - Block Numbers", () => {
       testContext.fileManager.writeBlockNumbers(testData);
       const result = testContext.fileManager.readBlockNumbers();
 
-      expect(result.blocks["2024-01-15"]).toBe(largeBlockNumber);
+      expect(result?.blocks["2024-01-15"]).toBe(largeBlockNumber);
     });
 
     it("should format JSON with 2-space indentation for human readability", () => {
@@ -96,7 +96,7 @@ describe("FileManager - Block Numbers", () => {
       testContext.fileManager.writeBlockNumbers(testData);
       const result = testContext.fileManager.readBlockNumbers();
 
-      const dates = Object.keys(result.blocks);
+      const dates = Object.keys(result?.blocks || {});
       expect(dates).toEqual(["2024-01-17", "2024-01-15", "2024-01-16"]);
     });
 

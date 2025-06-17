@@ -220,15 +220,15 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
       // Verify all data is persisted
       const savedData = testContext.fileManager.readBlockNumbers();
-      expect(Object.keys(savedData.blocks).sort()).toEqual([
+      expect(Object.keys(savedData?.blocks || {}).sort()).toEqual([
         "2024-01-10",
         "2024-01-11",
         "2024-01-12",
         "2024-01-13",
         "2024-01-15",
       ]);
-      expect(savedData.blocks["2024-01-10"]).toBe(39039696);
-      expect(savedData.blocks["2024-01-15"]).toBe(40268100);
+      expect(savedData?.blocks["2024-01-10"]).toBe(39039696);
+      expect(savedData?.blocks["2024-01-15"]).toBe(40268100);
     }, 30000);
 
     it("should handle date range spanning multiple days", async () => {

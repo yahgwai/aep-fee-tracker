@@ -296,10 +296,10 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
       const result =
         testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
-      expect(result.outflows["2024-01-15"]?.total_outflow_wei).toBe(
+      expect(result?.outflows["2024-01-15"]?.total_outflow_wei).toBe(
         MAX_UINT256,
       );
-      expect(result.outflows["2024-01-15"]?.events[0]?.value_wei).toBe(
+      expect(result?.outflows["2024-01-15"]?.events[0]?.value_wei).toBe(
         MAX_UINT256,
       );
     });

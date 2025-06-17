@@ -205,7 +205,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
       const result =
         testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
-      expect(result.balances["2024-01-15"]?.balance_wei).toBe(MAX_UINT256);
+      expect(result?.balances["2024-01-15"]?.balance_wei).toBe(MAX_UINT256);
     });
 
     it("should use validateWeiValue with proper context for balance validation", () => {
