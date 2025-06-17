@@ -246,28 +246,7 @@ const blocks = await blockFinder.findBlocksForDateRange(
   new Date("2024-01-31"),
 );
 
-console.log(`Found blocks for ${Object.keys(blocks).length} dates`);
-```
-
-## Backward Compatibility
-
-For backward compatibility, the module also exports standalone functions that create a BlockFinder instance internally:
-
-```typescript
-import {
-  findBlocksForDateRange,
-  findEndOfDayBlock,
-  getSafeCurrentBlock,
-  getSearchBounds,
-} from "./block-finder";
-
-// These functions maintain the original API but use the BlockFinder class internally
-const blocks = await findBlocksForDateRange(
-  new Date("2024-01-01"),
-  new Date("2024-01-31"),
-  provider,
-  fileManager,
-);
+console.log(`Found blocks for ${Object.keys(blocks.blocks).length} dates`);
 ```
 
 ## Testing Notes
