@@ -219,7 +219,25 @@ describe("BlockFinder - Helper Functions", () => {
       expect(lower).toBe(1);
     });
 
-    it("should estimate upper bound based on blocks per day", () => {
+    it("should always use safe current block as upper bound for first date", () => {
+      const date = new Date("2024-01-15");
+      const existingBlocks: BlockNumberData = {
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
+        blocks: {},
+      };
+      const safeCurrentBlock = 200000000; // High enough that 365 days won't reach it
+
+      const [, upper] = blockFinder.getSearchBounds(
+        date,
+        existingBlocks,
+        safeCurrentBlock,
+      );
+
+      // Should always use safeCurrentBlock as upper bound, even for first date
+      expect(upper).toBe(safeCurrentBlock);
+    });
+
+    it("should always use safe current block as upper bound when lower bound exists", () => {
       const date = new Date("2024-01-16");
       const existingBlocks: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
@@ -235,11 +253,8 @@ describe("BlockFinder - Helper Functions", () => {
         safeCurrentBlock,
       );
 
-      // Arbitrum produces ~4 blocks per second = ~345,600 blocks per day
-      // Upper bound should be previous block + estimated blocks per day
-      const expectedUpper = 40000000 + 345600;
-      expect(upper).toBeGreaterThanOrEqual(expectedUpper - 50000); // Allow some variance
-      expect(upper).toBeLessThanOrEqual(expectedUpper + 50000);
+      // Should always use safeCurrentBlock as upper bound
+      expect(upper).toBe(safeCurrentBlock);
     });
 
     it("should cap upper bound at safe current block", () => {
