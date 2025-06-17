@@ -14,6 +14,23 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function logRetryAttempt(
+  retryNumber: number,
+  maxRetries: number,
+  operationName: string | undefined,
+  error: Error,
+): void {
+  const baseMessage = `Retry attempt ${retryNumber}/${maxRetries}`;
+
+  if (operationName) {
+    console.log(
+      `${baseMessage} for ${operationName} after error: ${error.message}`,
+    );
+  } else {
+    console.log(baseMessage);
+  }
+}
+
 export async function withRetry<T>(
   operation: () => Promise<T>,
   options: RetryOptions = {},
@@ -41,16 +58,7 @@ export async function withRetry<T>(
 
       // Don't sleep after the last attempt
       if (attempt < maxRetries - 1) {
-        // Log the retry attempt
-        const retryNumber = attempt + 1;
-        if (operationName) {
-          console.log(
-            `Retry attempt ${retryNumber}/${maxRetries} for ${operationName} after error: ${lastError.message}`,
-          );
-        } else {
-          console.log(`Retry attempt ${retryNumber}/${maxRetries}`);
-        }
-
+        logRetryAttempt(attempt + 1, maxRetries, operationName, lastError);
         const delay = initialDelay * Math.pow(backoffMultiplier, attempt);
         await sleep(delay);
       }
