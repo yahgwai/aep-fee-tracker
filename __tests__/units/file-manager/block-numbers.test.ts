@@ -18,7 +18,7 @@ function createBlockNumberData(
 ): BlockNumberData {
   return {
     metadata: {
-      chain_id: CHAIN_IDS.ARBITRUM_ONE,
+      chain_id: CHAIN_IDS.ARBITRUM_NOVA,
     },
     blocks: {},
     ...overrides,

@@ -1,6 +1,13 @@
 // Re-export utility functions
 export { withRetry, type RetryOptions } from "../utils/retry";
 
+// Re-export constants
+export {
+  REWARD_DISTRIBUTOR_BYTECODE,
+  REWARD_DISTRIBUTOR_BYTECODE_HASH,
+  REFERENCE_REWARD_DISTRIBUTOR_ADDRESS,
+} from "../constants/reward-distributor-bytecode";
+
 // Core Data Types
 
 export interface BlockNumberData {
@@ -32,12 +39,13 @@ export interface DistributorsData {
 
 export interface DistributorInfo {
   type: DistributorType;
-  discovered_block: number;
-  discovered_date: string;
+  block: number;
+  date: string;
   tx_hash: string;
   method: string;
   owner: string;
   event_data: string;
+  is_reward_distributor: boolean;
 }
 
 export interface BalanceData {
@@ -82,8 +90,8 @@ export type TxHash = string;
 
 // Constants
 export const DISTRIBUTOR_METHODS = {
-  L2_BASE_FEE: "0xee95a824",
-  L2_SURPLUS_FEE: "0x2d9125e9",
+  L2_BASE_FEE: "0x57f585db",
+  L2_SURPLUS_FEE: "0xfcdde2b4",
   L1_SURPLUS_FEE: "0x934be07d",
 } as const;
 
@@ -96,7 +104,6 @@ export const CONTRACTS = {
 } as const;
 
 export const CHAIN_IDS = {
-  ARBITRUM_ONE: 42161,
   ARBITRUM_NOVA: 42170,
 } as const;
 

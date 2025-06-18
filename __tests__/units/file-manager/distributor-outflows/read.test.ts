@@ -31,7 +31,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
     it("should create distributor directory when writing outflows for new address", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -62,7 +62,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
     it("should write and read back OutflowData with multiple dates", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -108,7 +108,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
     it("should handle outflows with no events", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -157,7 +157,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
 
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -182,7 +182,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
 
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -218,7 +218,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
     it("should handle outflow value of 0 correctly", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {

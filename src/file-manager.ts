@@ -259,8 +259,8 @@ export class FileManager implements FileManagerInterface {
     // Check required fields
     const requiredFields: (keyof DistributorInfo)[] = [
       "type",
-      "discovered_block",
-      "discovered_date",
+      "block",
+      "date",
       "tx_hash",
       "method",
       "owner",
@@ -281,9 +281,9 @@ export class FileManager implements FileManagerInterface {
       "DistributorType",
       Object.values(DistributorType),
     );
-    this.validateDateFormat(info.discovered_date);
+    this.validateDateFormat(info.date);
     this.validateTransactionHash(info.tx_hash);
-    this.validateBlockNumber(info.discovered_block);
+    this.validateBlockNumber(info.block);
     this.validateAddress(info.owner);
   }
 

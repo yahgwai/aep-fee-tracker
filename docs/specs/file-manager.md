@@ -48,7 +48,7 @@ Maps dates to the last block before midnight UTC.
 ```json
 {
   "metadata": {
-    "chain_id": 42161 // From provider.getNetwork().chainId
+    "chain_id": 42170 // From provider.getNetwork().chainId
   },
   "blocks": {
     "2024-01-15": 12345678,
@@ -64,7 +64,7 @@ Tracks all discovered distributors with their metadata.
 ```json
 {
   "metadata": {
-    "chain_id": 42161, // From provider.getNetwork().chainId
+    "chain_id": 42170, // From provider.getNetwork().chainId
     "arbowner_address": "0x0000000000000000000000000000000000000070",
     "last_scanned_block": 12356789
   },
@@ -74,7 +74,7 @@ Tracks all discovered distributors with their metadata.
       "discovered_block": 12345678,
       "discovered_date": "2024-01-15",
       "tx_hash": "0xabc123...",
-      "method": "0xee95a824",
+      "method": "0x57f585db",
       "owner": "0x0000000000000000000000000000000000000070",
       "event_data": "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9"
     },
@@ -83,7 +83,7 @@ Tracks all discovered distributors with their metadata.
       "discovered_block": 15678901,
       "discovered_date": "2024-06-01",
       "tx_hash": "0xdef456...",
-      "method": "0x2d9125e9",
+      "method": "0xfcdde2b4",
       "owner": "0x0000000000000000000000000000000000000070",
       "event_data": "0x0000000000000000000000001234567890123456789012345678901234567890"
     }
@@ -93,8 +93,8 @@ Tracks all discovered distributors with their metadata.
 
 **Distributor Types:**
 
-- `L2_BASE_FEE` - Created via method `0xee95a824`
-- `L2_SURPLUS_FEE` - Created via method `0x2d9125e9`
+- `L2_BASE_FEE` - Created via method `0x57f585db`
+- `L2_SURPLUS_FEE` - Created via method `0xfcdde2b4`
 - `L1_SURPLUS_FEE` - Created via method `0x934be07d`
 - `L1_BASE_FEE` - (Skipping detection for now, see OUTSTANDING.md)
 
@@ -105,7 +105,7 @@ End-of-day balance snapshots for a distributor.
 ```json
 {
   "metadata": {
-    "chain_id": 42161, // From provider.getNetwork().chainId
+    "chain_id": 42170, // From provider.getNetwork().chainId
     "reward_distributor": "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"
   },
   "balances": {
@@ -124,7 +124,7 @@ Daily distribution events and totals.
 ```json
 {
   "metadata": {
-    "chain_id": 42161, // From provider.getNetwork().chainId
+    "chain_id": 42170, // From provider.getNetwork().chainId
     "reward_distributor": "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"
   },
   "outflows": {

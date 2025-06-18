@@ -25,7 +25,7 @@ describe("FileManager - Distributor Balances - Write Operations", () => {
 
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {},
@@ -42,7 +42,7 @@ describe("FileManager - Distributor Balances - Write Operations", () => {
     it("should format JSON with 2-space indentation", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {

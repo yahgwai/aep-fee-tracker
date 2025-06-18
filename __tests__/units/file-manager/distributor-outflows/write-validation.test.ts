@@ -26,7 +26,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should validate address is checksummed", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -56,7 +56,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
 
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: differentAddress,
         },
         outflows: {
@@ -79,7 +79,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should validate recipient addresses are checksummed", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -110,7 +110,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should validate date formats in outflows", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -133,7 +133,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should validate block numbers are positive", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -158,7 +158,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should reject negative total_outflow_wei values", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -181,7 +181,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should reject event value_wei in scientific notation", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -210,7 +210,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should use validateWeiValue with context for total_outflow_wei", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -239,7 +239,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should use validateWeiValue with context for event value_wei", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -274,7 +274,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should handle maximum uint256 outflow values", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -309,7 +309,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should validate transaction hashes format", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -338,7 +338,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should use validateTransactionHash for tx_hash validation", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {
@@ -371,7 +371,7 @@ describe("FileManager - Distributor Outflows - Write Validation", () => {
     it("should validate total_outflow_wei matches sum of events", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {

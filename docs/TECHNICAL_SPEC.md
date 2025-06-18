@@ -33,8 +33,8 @@ event OwnerActs(bytes4 indexed method, address indexed owner, bytes data);
 
 **Method Signatures:**
 
-- `0xee95a824` - L2 Base Fee
-- `0x2d9125e9` - L2 Surplus Fee
+- `0x57f585db` - L2 Base Fee
+- `0xfcdde2b4` - L2 Surplus Fee
 - `0x934be07d` - L1 Surplus Fee
 - L1 Base Fee detection is being skipped for now (see OUTSTANDING.md)
 

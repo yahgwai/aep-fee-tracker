@@ -25,7 +25,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
     it("should validate address is checksummed", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -54,7 +54,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
 
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: differentAddress,
         },
         balances: {
@@ -78,7 +78,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
     it("should validate date formats in balances", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -100,7 +100,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
     it("should validate block numbers are positive", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -124,7 +124,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
     it("should reject negative wei values", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -146,7 +146,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
     it("should reject wei values in scientific notation", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -168,7 +168,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
     it("should reject wei values with decimal points", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -190,7 +190,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
     it("should handle maximum uint256 wei values", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -211,7 +211,7 @@ describe("FileManager - Distributor Balances - Write Validation", () => {
     it("should use validateWeiValue with proper context for balance validation", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {

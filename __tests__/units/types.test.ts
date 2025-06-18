@@ -24,13 +24,13 @@ describe("Core Types", () => {
     it("should create valid BlockNumberData object", () => {
       const data: BlockNumberData = {
         metadata: {
-          chain_id: 42161,
+          chain_id: 42170,
         },
         blocks: {
           "2024-01-15": 12345678,
         },
       };
-      expect(data.metadata.chain_id).toBe(42161);
+      expect(data.metadata.chain_id).toBe(42170);
       expect(data.blocks["2024-01-15"]).toBe(12345678);
     });
   });
@@ -48,23 +48,24 @@ describe("Core Types", () => {
     it("should create valid DistributorsData object", () => {
       const data: DistributorsData = {
         metadata: {
-          chain_id: 42161,
+          chain_id: 42170,
           arbowner_address: "0x0000000000000000000000000000000000000070",
         },
         distributors: {
           "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
             type: DistributorType.L2_BASE_FEE,
-            discovered_block: 12345678,
-            discovered_date: "2024-01-15",
+            block: 12345678,
+            date: "2024-01-15",
             tx_hash: "0xabc123",
-            method: "0xee95a824",
+            method: "0x57f585db",
             owner: "0x0000000000000000000000000000000000000070",
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+            is_reward_distributor: true,
           },
         },
       };
-      expect(data.metadata.chain_id).toBe(42161);
+      expect(data.metadata.chain_id).toBe(42170);
       expect(data.metadata.arbowner_address).toBe(
         "0x0000000000000000000000000000000000000070",
       );
@@ -72,7 +73,7 @@ describe("Core Types", () => {
         data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"];
       expect(distributor).toBeDefined();
       expect(distributor?.type).toBe(DistributorType.L2_BASE_FEE);
-      expect(distributor?.discovered_block).toBe(12345678);
+      expect(distributor?.block).toBe(12345678);
     });
   });
 
@@ -80,7 +81,7 @@ describe("Core Types", () => {
     it("should create valid BalanceData object", () => {
       const data: BalanceData = {
         metadata: {
-          chain_id: 42161,
+          chain_id: 42170,
           reward_distributor: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
         },
         balances: {
@@ -90,7 +91,7 @@ describe("Core Types", () => {
           },
         },
       };
-      expect(data.metadata.chain_id).toBe(42161);
+      expect(data.metadata.chain_id).toBe(42170);
       const balance = data.balances["2024-01-15"];
       expect(balance).toBeDefined();
       expect(balance?.balance_wei).toBe("1000000000000000000000");
@@ -101,7 +102,7 @@ describe("Core Types", () => {
     it("should create valid OutflowData object", () => {
       const data: OutflowData = {
         metadata: {
-          chain_id: 42161,
+          chain_id: 42170,
           reward_distributor: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
         },
         outflows: {
@@ -118,7 +119,7 @@ describe("Core Types", () => {
           },
         },
       };
-      expect(data.metadata.chain_id).toBe(42161);
+      expect(data.metadata.chain_id).toBe(42170);
       const outflow = data.outflows["2024-01-15"];
       expect(outflow).toBeDefined();
       expect(outflow?.total_outflow_wei).toBe("500000000000000000000");
@@ -130,8 +131,8 @@ describe("Core Types", () => {
 
   describe("Constants", () => {
     it("should define DISTRIBUTOR_METHODS correctly", () => {
-      expect(DISTRIBUTOR_METHODS.L2_BASE_FEE).toBe("0xee95a824");
-      expect(DISTRIBUTOR_METHODS.L2_SURPLUS_FEE).toBe("0x2d9125e9");
+      expect(DISTRIBUTOR_METHODS.L2_BASE_FEE).toBe("0x57f585db");
+      expect(DISTRIBUTOR_METHODS.L2_SURPLUS_FEE).toBe("0xfcdde2b4");
       expect(DISTRIBUTOR_METHODS.L1_SURPLUS_FEE).toBe("0x934be07d");
     });
 
@@ -145,7 +146,6 @@ describe("Core Types", () => {
     });
 
     it("should define CHAIN_IDS correctly", () => {
-      expect(CHAIN_IDS.ARBITRUM_ONE).toBe(42161);
       expect(CHAIN_IDS.ARBITRUM_NOVA).toBe(42170);
     });
 
@@ -248,22 +248,22 @@ describe("Core Types", () => {
     it("should define FileManager interface correctly", () => {
       const mockFileManager: FileManager = {
         readBlockNumbers: () => ({
-          metadata: { chain_id: 42161 },
+          metadata: { chain_id: 42170 },
           blocks: {},
         }),
         writeBlockNumbers: () => {},
         readDistributors: () => ({
-          metadata: { chain_id: 42161, arbowner_address: "" },
+          metadata: { chain_id: 42170, arbowner_address: "" },
           distributors: {},
         }),
         writeDistributors: () => {},
         readDistributorBalances: () => ({
-          metadata: { chain_id: 42161, reward_distributor: "" },
+          metadata: { chain_id: 42170, reward_distributor: "" },
           balances: {},
         }),
         writeDistributorBalances: () => {},
         readDistributorOutflows: () => ({
-          metadata: { chain_id: 42161, reward_distributor: "" },
+          metadata: { chain_id: 42170, reward_distributor: "" },
           outflows: {},
         }),
         writeDistributorOutflows: () => {},

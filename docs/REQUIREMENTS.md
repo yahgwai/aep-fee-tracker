@@ -108,7 +108,6 @@ The Arbitrum Ecosystem Program needs to accurately track fees collected by vario
 
 - Real-time fee tracking (only daily granularity)
 - Fee distribution analysis (only collection)
-- Multi-chain support (Arbitrum One only)
 - Web interface (CLI only)
 - Automated remediation of failures
 
@@ -128,7 +127,7 @@ Simulate RPC failures and verify system fails gracefully
 
 ### AT4: Performance
 
-Process Nova years of data and verify completion within 8 hours
+Process 3 years of data and verify completion within 8 hours
 
 ### AT5: Data Integrity
 
