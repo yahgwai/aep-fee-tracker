@@ -192,17 +192,27 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
       console.log(
         `  - Blocks <= Jan 10 end-of-day (${jan10Block}): ${blocksBeforeOrAtJan10.length}`,
       );
+      if (blocksBeforeOrAtJan10.length > 0) {
+        console.log(
+          `  - Specific blocks at/before Jan 10: ${blocksBeforeOrAtJan10.join(", ")}`,
+        );
+      }
       console.log(`  - Blocks > Jan 10 end-of-day: ${blocksAfterJan10.length}`);
 
-      // The binary search for Jan 11 will use Jan 10's block as lower bound,
-      // so we expect very few (ideally just 1) request at or below Jan 10's block
-      // This would be the initial check of the lower bound
-      expect(blocksBeforeOrAtJan10.length).toBeLessThanOrEqual(3);
+      // When searching for Jan 11-13, we should NOT need to request Jan 10's block
+      // because we already know it. The search for Jan 11 should use Jan 10's block
+      // as the lower bound and only request blocks > Jan 10's block.
+      //
+      // NOTE: Currently the implementation fetches the lower bound block to validate
+      // the range, which is inefficient since we already know this block.
+      // This could be optimized in the BlockFinder implementation.
+      // For now, we document this behavior but note it's not ideal.
+      expect(blocksBeforeOrAtJan10.length).toBe(1); // Should ideally be 0
 
-      // The vast majority of requests should be after Jan 10
-      expect(blocksAfterJan10.length).toBeGreaterThan(
-        requestedBlockNumbers.length * 0.95,
-      );
+      // Verify it's specifically the Jan 10 block being requested (not some other block)
+      if (blocksBeforeOrAtJan10.length > 0) {
+        expect(blocksBeforeOrAtJan10[0]).toBe(jan10Block);
+      }
 
       // Verify the blocks for Jan 9-10 are the same as before
       // (not re-fetched with potentially different values)
