@@ -99,7 +99,7 @@ describe("BlockFinder - Error Messages", () => {
 
       expect(error).toBeInstanceOf(BlockFinderError);
       const blockError = error as BlockFinderError;
-      expect(blockError.message).toContain("Block 40000000 not found");
+      expect(blockError.message).toContain("Block 40100000 not found");
       expect(blockError.operation).toBe("findEndOfDayBlock");
       expect(blockError.context.date).toBe("2024-01-15");
       expect(blockError.context.searchBounds).toEqual({
