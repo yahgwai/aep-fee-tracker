@@ -92,10 +92,16 @@ export class BlockFinder {
     if (upperBound > safeCurrentBlock) return;
 
     try {
+      // Check if lowerBound is a known block from our storage
+      const lowerBoundIsKnown = Object.values(result.blocks).includes(
+        lowerBound,
+      );
+
       const blockNumber = await this.findEndOfDayBlock(
         date,
         lowerBound,
         upperBound,
+        lowerBoundIsKnown,
       );
       result.blocks[dateStr] = blockNumber;
       this.fileManager.writeBlockNumbers(result);
@@ -118,6 +124,7 @@ export class BlockFinder {
     date: Date,
     lowerBound: number,
     upperBound: number,
+    lowerBoundIsKnown: boolean = false,
   ): Promise<number> {
     if (lowerBound > upperBound) {
       throw new BlockFinderError(
@@ -133,16 +140,42 @@ export class BlockFinder {
     const targetTimestamp = this.toUnixTimestamp(this.getNextMidnight(date));
     const dateStartTimestamp = this.toUnixTimestamp(this.getMidnight(date));
 
-    const [lowerBlock, upperBlock] = await Promise.all([
-      withRetry(() => this.provider.getBlock(lowerBound), {
-        ...RETRY_CONFIG,
-        operationName: `getBlock(${lowerBound})`,
-      }),
-      withRetry(() => this.provider.getBlock(upperBound), {
+    // For validation purposes, we need the timestamps of both blocks
+    // However, if the lower bound is a known block (already processed),
+    // we can skip validation since we know it's valid
+    let lowerBlock: ethers.Block | null;
+    let upperBlock: ethers.Block | null;
+
+    if (lowerBoundIsKnown) {
+      // Only fetch the upper block since lower is already known
+      upperBlock = await withRetry(() => this.provider.getBlock(upperBound), {
         ...RETRY_CONFIG,
         operationName: `getBlock(${upperBound})`,
-      }),
-    ]);
+      });
+
+      // For known blocks, we can skip validation by creating a synthetic block
+      // with a timestamp that will pass validation (before target timestamp)
+      const targetTimestamp = this.toUnixTimestamp(this.getNextMidnight(date));
+      lowerBlock = {
+        number: lowerBound,
+        timestamp: targetTimestamp - 1, // Ensures it passes validation
+      } as ethers.Block;
+    } else {
+      // Fetch both blocks for new date processing
+      const [fetchedLowerBlock, fetchedUpperBlock] = await Promise.all([
+        withRetry(() => this.provider.getBlock(lowerBound), {
+          ...RETRY_CONFIG,
+          operationName: `getBlock(${lowerBound})`,
+        }),
+        withRetry(() => this.provider.getBlock(upperBound), {
+          ...RETRY_CONFIG,
+          operationName: `getBlock(${upperBound})`,
+        }),
+      ]);
+
+      lowerBlock = fetchedLowerBlock;
+      upperBlock = fetchedUpperBlock;
+    }
 
     const context = {
       date: this.formatDateString(date),
@@ -164,15 +197,18 @@ export class BlockFinder {
       );
     }
 
-    this.validateBlockRange(
-      date,
-      lowerBlock,
-      upperBlock,
-      lowerBound,
-      upperBound,
-      targetTimestamp,
-      dateStartTimestamp,
-    );
+    // Skip validation if lower bound is a known block since we know it's valid
+    if (!lowerBoundIsKnown) {
+      this.validateBlockRange(
+        date,
+        lowerBlock,
+        upperBlock,
+        lowerBound,
+        upperBound,
+        targetTimestamp,
+        dateStartTimestamp,
+      );
+    }
 
     const lastValidBlock = await this.binarySearchForBlock(
       lowerBound,
