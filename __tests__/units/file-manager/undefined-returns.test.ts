@@ -36,7 +36,7 @@ describe("FileManager - Undefined Returns", () => {
     it("should return data when block_numbers.json exists", () => {
       const testData: BlockNumberData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
         },
         blocks: {
           "2024-01-15": 12345678,
@@ -64,7 +64,7 @@ describe("FileManager - Undefined Returns", () => {
     it("should return data when distributors.json exists", () => {
       const testData: DistributorsData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {},
@@ -92,7 +92,7 @@ describe("FileManager - Undefined Returns", () => {
     it("should return data when balances.json exists", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -137,7 +137,7 @@ describe("FileManager - Undefined Returns", () => {
     it("should return data when outflows.json exists", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {

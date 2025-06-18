@@ -27,7 +27,7 @@ function createDistributorsData(
 ): DistributorsData {
   return {
     metadata: {
-      chain_id: CHAIN_IDS.ARBITRUM_ONE,
+      chain_id: CHAIN_IDS.ARBITRUM_NOVA,
       arbowner_address: CONTRACTS.ARB_OWNER,
     },
     distributors: {},
@@ -45,6 +45,7 @@ function createDistributorInfo(
     method: string;
     owner: string;
     event_data: string;
+    is_reward_distributor: boolean;
   }>,
 ): {
   type: DistributorType;
@@ -54,6 +55,7 @@ function createDistributorInfo(
   method: string;
   owner: string;
   event_data: string;
+  is_reward_distributor: boolean;
 } {
   return {
     type: DistributorType.L2_BASE_FEE,
@@ -64,6 +66,7 @@ function createDistributorInfo(
     owner: CONTRACTS.ARB_OWNER,
     event_data:
       "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+    is_reward_distributor: true,
     ...overrides,
   };
 }
@@ -165,7 +168,7 @@ describe("FileManager - Distributors", () => {
     it("should validate date formats", () => {
       const invalidDateData: DistributorsData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {
@@ -179,6 +182,7 @@ describe("FileManager - Distributors", () => {
             owner: CONTRACTS.ARB_OWNER,
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+            is_reward_distributor: true,
           },
         },
       };
@@ -191,7 +195,7 @@ describe("FileManager - Distributors", () => {
     it("should validate transaction hashes", () => {
       const invalidTxHashData: DistributorsData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {
@@ -204,6 +208,7 @@ describe("FileManager - Distributors", () => {
             owner: CONTRACTS.ARB_OWNER,
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+            is_reward_distributor: true,
           },
         },
       };
@@ -216,7 +221,7 @@ describe("FileManager - Distributors", () => {
     it("should format JSON with 2-space indentation", () => {
       const testData: DistributorsData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {
@@ -230,6 +235,7 @@ describe("FileManager - Distributors", () => {
             owner: CONTRACTS.ARB_OWNER,
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+            is_reward_distributor: true,
           },
         },
       };
@@ -245,7 +251,7 @@ describe("FileManager - Distributors", () => {
 
       const testData: DistributorsData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {},
@@ -261,7 +267,7 @@ describe("FileManager - Distributors", () => {
       const address = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
       const testData: DistributorsData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           arbowner_address: "0x0000000000000000000000000000000000000001",
         },
         distributors: {
@@ -277,6 +283,7 @@ describe("FileManager - Distributors", () => {
             method: "create",
             owner: "0x0000000000000000000000000000000000000001",
             event_data: "{}",
+            is_reward_distributor: true,
           },
         },
       };

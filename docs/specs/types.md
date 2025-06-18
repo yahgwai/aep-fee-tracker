@@ -196,7 +196,6 @@ const CONTRACTS = {
 
 // Chain IDs
 const CHAIN_IDS = {
-  ARBITRUM_ONE: 42161,
   ARBITRUM_NOVA: 42170,
 } as const;
 

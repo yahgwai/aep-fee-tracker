@@ -161,6 +161,19 @@ static parseDistributorCreation(
  * @returns Distributor type or null if unknown
  */
 static getDistributorType(methodSig: string): DistributorType | null;
+
+/**
+ * Verifies if a contract is a valid reward distributor.
+ * Compares deployed bytecode against expected reward distributor bytecode.
+ *
+ * @param provider - Provider for RPC calls
+ * @param address - Contract address to verify
+ * @returns True if contract code matches reward distributor bytecode
+ */
+static async isRewardDistributor(
+  provider: ethers.Provider,
+  address: string,
+): Promise<boolean>;
 ```
 
 ## Algorithm Details
@@ -193,7 +206,14 @@ static getDistributorType(methodSig: string): DistributorType | null;
    - Determine distributor type from method
    - Record transaction details for audit trail
 
-5. **Update registry**
+5. **Verify distributor contract**
+
+   - Get deployed bytecode at distributor address using `provider.getCode(address)`
+   - Compare against known reward distributor bytecode
+   - Set `is_reward_distributor` to true if bytecode matches exactly
+   - Set `is_reward_distributor` to false if bytecode differs
+
+6. **Update registry**
    - Add new distributors (skip if already known)
    - Update last_scanned_block to the end block
    - Preserve all existing distributor data
@@ -231,6 +251,30 @@ const address = "0x" + log.data.slice(26); // Remove padding
 const checksummed = ethers.getAddress(address); // Validate and checksum
 ```
 
+### Contract Verification
+
+After extracting the distributor address, verify it's a valid reward distributor:
+
+```typescript
+import { REWARD_DISTRIBUTOR_BYTECODE } from "../constants/reward-distributor-bytecode";
+
+// Get deployed bytecode at the address
+const deployedCode = await provider.getCode(address);
+
+// Compare against expected reward distributor bytecode
+const isRewardDistributor = deployedCode === REWARD_DISTRIBUTOR_BYTECODE;
+
+// Store verification result with distributor info
+distributorInfo.is_reward_distributor = isRewardDistributor;
+```
+
+**Important Notes:**
+
+- Reference bytecode from contract `0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce` on Nova
+- Bytecode comparison must be exact match
+- Non-matching bytecode doesn't invalidate the distributor, just flags it
+- This verification helps identify if ArbOwner set a non-standard contract as distributor
+
 ## Data Structures
 
 ### Input Requirements
@@ -263,6 +307,7 @@ interface DistributorInfo {
   method: string; // Method signature (e.g., "0xee95a824")
   owner: string; // Always the ArbOwner address
   event_data: string; // Raw event data field
+  is_reward_distributor: boolean; // True if deployed code matches expected reward distributor bytecode
 }
 ```
 
@@ -369,7 +414,6 @@ Configuration:
 
    - Fetch chain ID from provider using `(await provider.getNetwork()).chainId`
    - Verify chain ID matches stored metadata if data exists
-   - Ensure we're on Nova chain (42170)
 
 2. **Address Validation**
 

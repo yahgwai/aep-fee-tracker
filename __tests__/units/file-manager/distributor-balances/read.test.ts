@@ -30,7 +30,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
     it("should create distributor directory when writing balances for new address", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -54,7 +54,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
     it("should write and read back BalanceData with many dates", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -95,7 +95,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
 
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -117,7 +117,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
     it("should handle balance of 0 correctly", () => {
       const testData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -138,7 +138,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
     it("should update existing balance file with new dates", () => {
       const initialData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {
@@ -157,7 +157,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
       // Add a new date to the existing data
       const updatedData: BalanceData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         balances: {

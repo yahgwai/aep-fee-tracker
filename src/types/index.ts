@@ -1,6 +1,13 @@
 // Re-export utility functions
 export { withRetry, type RetryOptions } from "../utils/retry";
 
+// Re-export constants
+export {
+  REWARD_DISTRIBUTOR_BYTECODE,
+  REWARD_DISTRIBUTOR_BYTECODE_HASH,
+  REFERENCE_REWARD_DISTRIBUTOR_ADDRESS,
+} from "../constants/reward-distributor-bytecode";
+
 // Core Data Types
 
 export interface BlockNumberData {
@@ -38,6 +45,7 @@ export interface DistributorInfo {
   method: string;
   owner: string;
   event_data: string;
+  is_reward_distributor: boolean;
 }
 
 export interface BalanceData {
@@ -96,7 +104,6 @@ export const CONTRACTS = {
 } as const;
 
 export const CHAIN_IDS = {
-  ARBITRUM_ONE: 42161,
   ARBITRUM_NOVA: 42170,
 } as const;
 

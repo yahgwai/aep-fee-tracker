@@ -25,7 +25,7 @@ describe("FileManager - Distributor Outflows - Write Operations", () => {
 
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {},
@@ -42,7 +42,7 @@ describe("FileManager - Distributor Outflows - Write Operations", () => {
     it("should format JSON with 2-space indentation", () => {
       const testData: OutflowData = {
         metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
           reward_distributor: VALID_ADDRESS,
         },
         outflows: {

@@ -48,7 +48,7 @@ Maps dates to the last block before midnight UTC.
 ```json
 {
   "metadata": {
-    "chain_id": 42161 // From provider.getNetwork().chainId
+    "chain_id": 42170 // From provider.getNetwork().chainId
   },
   "blocks": {
     "2024-01-15": 12345678,
@@ -64,7 +64,7 @@ Tracks all discovered distributors with their metadata.
 ```json
 {
   "metadata": {
-    "chain_id": 42161, // From provider.getNetwork().chainId
+    "chain_id": 42170, // From provider.getNetwork().chainId
     "arbowner_address": "0x0000000000000000000000000000000000000070",
     "last_scanned_block": 12356789
   },
@@ -105,7 +105,7 @@ End-of-day balance snapshots for a distributor.
 ```json
 {
   "metadata": {
-    "chain_id": 42161, // From provider.getNetwork().chainId
+    "chain_id": 42170, // From provider.getNetwork().chainId
     "reward_distributor": "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"
   },
   "balances": {
@@ -124,7 +124,7 @@ Daily distribution events and totals.
 ```json
 {
   "metadata": {
-    "chain_id": 42161, // From provider.getNetwork().chainId
+    "chain_id": 42170, // From provider.getNetwork().chainId
     "reward_distributor": "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"
   },
   "outflows": {
