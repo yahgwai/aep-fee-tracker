@@ -57,7 +57,7 @@ describe("Core Types", () => {
             block: 12345678,
             date: "2024-01-15",
             tx_hash: "0xabc123",
-            method: "0xee95a824",
+            method: "0x57f585db",
             owner: "0x0000000000000000000000000000000000000070",
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
@@ -131,8 +131,8 @@ describe("Core Types", () => {
 
   describe("Constants", () => {
     it("should define DISTRIBUTOR_METHODS correctly", () => {
-      expect(DISTRIBUTOR_METHODS.L2_BASE_FEE).toBe("0xee95a824");
-      expect(DISTRIBUTOR_METHODS.L2_SURPLUS_FEE).toBe("0x2d9125e9");
+      expect(DISTRIBUTOR_METHODS.L2_BASE_FEE).toBe("0x57f585db");
+      expect(DISTRIBUTOR_METHODS.L2_SURPLUS_FEE).toBe("0xfcdde2b4");
       expect(DISTRIBUTOR_METHODS.L1_SURPLUS_FEE).toBe("0x934be07d");
     });
 

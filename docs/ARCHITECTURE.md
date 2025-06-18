@@ -114,8 +114,8 @@ Discovers reward distributor addresses through `OwnerActs` events.
 - Reads block ranges from `store/block_numbers.json`
 - Queries ArbOwner precompile for `OwnerActs` events
 - Filters for distributor creation methods:
-  - `0xee95a824` - L2 Base Fee
-  - `0x2d9125e9` - L2 Surplus Fee
+  - `0x57f585db` - L2 Base Fee
+  - `0xfcdde2b4` - L2 Surplus Fee
   - `0x934be07d` - L1 Surplus Fee
 - Extracts distributor addresses and stores complete event information
 

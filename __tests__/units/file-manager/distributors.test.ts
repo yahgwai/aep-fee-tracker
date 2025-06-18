@@ -62,7 +62,7 @@ function createDistributorInfo(
     block: TEST_BLOCK_NUMBER,
     date: TEST_DATE,
     tx_hash: VALID_TX_HASH,
-    method: "0xee95a824",
+    method: "0x57f585db",
     owner: CONTRACTS.ARB_OWNER,
     event_data:
       "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
@@ -98,7 +98,7 @@ describe("FileManager - Distributors", () => {
             date: "2024-06-01",
             tx_hash:
               "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-            method: "0x2d9125e9",
+            method: "0xfcdde2b4",
             event_data:
               "0x0000000000000000000000001234567890123456789012345678901234567890",
           }),
@@ -178,7 +178,7 @@ describe("FileManager - Distributors", () => {
             date: "01/15/2024",
             tx_hash:
               "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
-            method: "0xee95a824",
+            method: "0x57f585db",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
@@ -204,7 +204,7 @@ describe("FileManager - Distributors", () => {
             block: 12345678,
             date: "2024-01-15",
             tx_hash: "0xinvalid",
-            method: "0xee95a824",
+            method: "0x57f585db",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
@@ -231,7 +231,7 @@ describe("FileManager - Distributors", () => {
             date: "2024-01-15",
             tx_hash:
               "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
-            method: "0xee95a824",
+            method: "0x57f585db",
             owner: CONTRACTS.ARB_OWNER,
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",

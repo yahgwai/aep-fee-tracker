@@ -44,7 +44,7 @@ interface DistributorInfo {
   discovered_block: number;
   discovered_date: string; // format: "YYYY-MM-DD"
   tx_hash: string;
-  method: string; // "0xee95a824" | "0x2d9125e9" | "0x934be07d"
+  method: string; // "0x57f585db" | "0xfcdde2b4" | "0x934be07d"
   owner: string;
   event_data: string;
 }
@@ -117,8 +117,8 @@ type TxHash = string;
 ```typescript
 // Known method signatures for distributor creation
 const DISTRIBUTOR_METHODS = {
-  L2_BASE_FEE: "0xee95a824",
-  L2_SURPLUS_FEE: "0x2d9125e9",
+  L2_BASE_FEE: "0x57f585db",
+  L2_SURPLUS_FEE: "0xfcdde2b4",
   L1_SURPLUS_FEE: "0x934be07d",
   // L1_BASE_FEE: TBD - skipping for now
 } as const;

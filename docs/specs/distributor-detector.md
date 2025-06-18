@@ -71,12 +71,12 @@ This event is emitted whenever the ArbOwner performs an administrative action. T
 
 The following method signatures indicate distributor creation:
 
-1. **L2 Base Fee Distributor** - `0xee95a824`
+1. **L2 Base Fee Distributor** - `0x57f585db`
 
    - Method: `setL2BaseFeeRewardRecipient`
    - Data: 32-byte address of the new distributor
 
-2. **L2 Surplus Fee Distributor** - `0x2d9125e9`
+2. **L2 Surplus Fee Distributor** - `0xfcdde2b4`
 
    - Method: `setL2SurplusFeeRewardRecipient`
    - Data: 32-byte address of the new distributor
@@ -230,8 +230,8 @@ const filter = {
     "0x3c9e6a772755407311e3b35b3ee56799df8f87395941b3a658eee9e08a67ebda", // OwnerActs event topic
     [
       // Method signatures (OR filter)
-      "0xee95a824", // L2 Base Fee
-      "0x2d9125e9", // L2 Surplus Fee
+      "0x57f585db", // L2 Base Fee
+      "0xfcdde2b4", // L2 Surplus Fee
       "0x934be07d", // L1 Surplus Fee
     ],
   ],
@@ -304,7 +304,7 @@ interface DistributorInfo {
   block: number;
   date: string; // YYYY-MM-DD format (stored as string for consistency)
   tx_hash: string;
-  method: string; // Method signature (e.g., "0xee95a824")
+  method: string; // Method signature (e.g., "0x57f585db")
   owner: string; // Always the ArbOwner address
   event_data: string; // Raw event data field
   is_reward_distributor: boolean; // True if deployed code matches expected reward distributor bytecode

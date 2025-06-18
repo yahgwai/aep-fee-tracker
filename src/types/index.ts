@@ -90,8 +90,8 @@ export type TxHash = string;
 
 // Constants
 export const DISTRIBUTOR_METHODS = {
-  L2_BASE_FEE: "0xee95a824",
-  L2_SURPLUS_FEE: "0x2d9125e9",
+  L2_BASE_FEE: "0x57f585db",
+  L2_SURPLUS_FEE: "0xfcdde2b4",
   L1_SURPLUS_FEE: "0x934be07d",
 } as const;
 
