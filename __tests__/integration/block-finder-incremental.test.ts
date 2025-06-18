@@ -121,11 +121,8 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
       }
       console.log(`  - Blocks > Jan 10 end-of-day: ${blocksAfterJan10.length}`);
 
-      expect(blocksBeforeOrAtJan10.length).toBe(1);
-
-      if (blocksBeforeOrAtJan10.length > 0) {
-        expect(blocksBeforeOrAtJan10[0]).toBe(jan10Block);
-      }
+      // With the optimization, we should not re-fetch the Jan 10 block
+      expect(blocksBeforeOrAtJan10.length).toBe(0);
 
       expectedPartialDays.forEach((date) => {
         expect(fullResult.blocks[date]).toBe(partialResult.blocks[date]);

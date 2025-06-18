@@ -133,16 +133,43 @@ export class BlockFinder {
     const targetTimestamp = this.toUnixTimestamp(this.getNextMidnight(date));
     const dateStartTimestamp = this.toUnixTimestamp(this.getMidnight(date));
 
-    const [lowerBlock, upperBlock] = await Promise.all([
-      withRetry(() => this.provider.getBlock(lowerBound), {
-        ...RETRY_CONFIG,
-        operationName: `getBlock(${lowerBound})`,
-      }),
-      withRetry(() => this.provider.getBlock(upperBound), {
+    // Check if the lower bound is a known end-of-day block
+    const existingData = this.fileManager.readBlockNumbers();
+    const isKnownEndOfDayBlock =
+      existingData && Object.values(existingData.blocks).includes(lowerBound);
+
+    // Fetch blocks - optimize by skipping lower bound if it's a known end-of-day block
+    let lowerBlock: ethers.Block | null;
+    let upperBlock: ethers.Block | null;
+
+    if (isKnownEndOfDayBlock) {
+      // If lower bound is a known end-of-day block, we only need to fetch the upper bound
+      // We can create a minimal block object for validation since we know it's before midnight
+      upperBlock = await withRetry(() => this.provider.getBlock(upperBound), {
         ...RETRY_CONFIG,
         operationName: `getBlock(${upperBound})`,
-      }),
-    ]);
+      });
+
+      // Create a minimal block object for the lower bound
+      // Since it's an end-of-day block, its timestamp is guaranteed to be just before midnight
+      // We can safely use a timestamp that's definitely before the target date
+      lowerBlock = {
+        timestamp: dateStartTimestamp - 1, // One second before the current date's start
+        number: lowerBound,
+      } as ethers.Block;
+    } else {
+      // Normal case: fetch both blocks
+      [lowerBlock, upperBlock] = await Promise.all([
+        withRetry(() => this.provider.getBlock(lowerBound), {
+          ...RETRY_CONFIG,
+          operationName: `getBlock(${lowerBound})`,
+        }),
+        withRetry(() => this.provider.getBlock(upperBound), {
+          ...RETRY_CONFIG,
+          operationName: `getBlock(${upperBound})`,
+        }),
+      ]);
+    }
 
     const context = {
       date: this.formatDateString(date),
