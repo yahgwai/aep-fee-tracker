@@ -135,21 +135,12 @@ export class BlockFinder {
     const targetTimestamp = this.toUnixTimestamp(this.getNextMidnight(date));
     const dateStartTimestamp = this.toUnixTimestamp(this.getMidnight(date));
 
-    // Check if lowerBound is a known end-of-day block
-    let skipLowerBoundFetch = false;
-    if (knownBlocks) {
-      for (const [dateStr, blockNum] of Object.entries(knownBlocks.blocks)) {
-        if (blockNum === lowerBound) {
-          // This block is a known end-of-day block for dateStr
-          const blockDate = new Date(dateStr);
-          // If this block's date is before our target date, we know it's valid as lower bound
-          if (blockDate < date) {
-            skipLowerBoundFetch = true;
-            break;
-          }
-        }
-      }
-    }
+    // Check if lowerBound is a known end-of-day block that we can trust
+    const skipLowerBoundFetch = this.isKnownValidLowerBound(
+      lowerBound,
+      date,
+      knownBlocks,
+    );
 
     let lowerBlock: ethers.Block | null = null;
     let upperBlock: ethers.Block | null;
@@ -194,8 +185,18 @@ export class BlockFinder {
       );
     }
 
-    // Only validate if we have both blocks
-    if (!skipLowerBoundFetch && lowerBlock) {
+    // Validate the block range
+    if (skipLowerBoundFetch) {
+      // For known blocks, we only need to validate the upper bound contains midnight
+      this.validateUpperBoundContainsMidnight(
+        upperBlock,
+        upperBound,
+        targetTimestamp,
+        date,
+        context,
+      );
+    } else if (lowerBlock) {
+      // Full validation when we have both blocks
       this.validateBlockRange(
         date,
         lowerBlock,
@@ -205,15 +206,6 @@ export class BlockFinder {
         targetTimestamp,
         dateStartTimestamp,
       );
-    } else if (skipLowerBoundFetch) {
-      // For known blocks, we only validate the upper bound contains midnight
-      if (upperBlock.timestamp < targetTimestamp) {
-        throw new BlockFinderError(
-          `Search bounds do not contain midnight\n  Date: ${this.formatDateString(date)}\n  Search bounds: ${lowerBound} to ${upperBound}\n  Target midnight: ${this.fromUnixTimestamp(targetTimestamp).toISOString()}\n  Upper block ${upperBound} timestamp: ${this.fromUnixTimestamp(upperBlock.timestamp).toISOString()}\n  Upper bound needs to extend past midnight\n  Check: Increase upper bound or wait for more blocks to be mined`,
-          "findEndOfDayBlock",
-          context,
-        );
-      }
     }
 
     const lastValidBlock = await this.binarySearchForBlock(
@@ -368,6 +360,25 @@ export class BlockFinder {
     return mostRecent;
   }
 
+  private isKnownValidLowerBound(
+    lowerBound: number,
+    targetDate: Date,
+    knownBlocks?: BlockNumberData,
+  ): boolean {
+    if (!knownBlocks) return false;
+
+    for (const [dateStr, blockNum] of Object.entries(knownBlocks.blocks)) {
+      if (blockNum === lowerBound) {
+        // This block is a known end-of-day block for dateStr
+        const blockDate = new Date(dateStr);
+        // If this block's date is before our target date, we know it's valid as lower bound
+        return blockDate < targetDate;
+      }
+    }
+
+    return false;
+  }
+
   private validateDateRange(startDate: Date, endDate: Date): void {
     const isValidDate = (date: unknown): date is Date => {
       return date instanceof Date && !isNaN(date.getTime());
@@ -428,6 +439,25 @@ export class BlockFinder {
     while (current <= end) {
       yield new Date(current);
       current.setUTCDate(current.getUTCDate() + 1);
+    }
+  }
+
+  private validateUpperBoundContainsMidnight(
+    upperBlock: ethers.Block,
+    upperBound: number,
+    targetTimestamp: number,
+    date: Date,
+    context: {
+      date: string;
+      searchBounds: { lower: number; upper: number };
+    },
+  ): void {
+    if (upperBlock.timestamp < targetTimestamp) {
+      throw new BlockFinderError(
+        `Search bounds do not contain midnight\n  Date: ${this.formatDateString(date)}\n  Search bounds: ${context.searchBounds.lower} to ${context.searchBounds.upper}\n  Target midnight: ${this.fromUnixTimestamp(targetTimestamp).toISOString()}\n  Upper block ${upperBound} timestamp: ${this.fromUnixTimestamp(upperBlock.timestamp).toISOString()}\n  Upper bound needs to extend past midnight\n  Check: Increase upper bound or wait for more blocks to be mined`,
+        "validateUpperBoundContainsMidnight",
+        context,
+      );
     }
   }
 
