@@ -5,27 +5,9 @@ import {
   cleanupTestEnvironment,
   TestContext,
 } from "../file-manager/test-utils";
+import { createMockProvider, expectError, INVALID_RPC } from "./test-utils";
 import { BlockFinder } from "../../../src/block-finder";
 import { BlockFinderError, RPCError } from "../../../src/types";
-
-const INVALID_RPC = "https://invalid-rpc-url.com";
-const VALID_RPC = "https://nova.arbitrum.io/rpc";
-const NETWORK_CONFIG = { name: "arbitrum-nova", chainId: 42170 };
-
-function createMockProvider(url = VALID_RPC) {
-  return new ethers.JsonRpcProvider(url, NETWORK_CONFIG);
-}
-
-async function expectError(
-  operation: () => Promise<unknown>,
-): Promise<unknown> {
-  try {
-    await operation();
-    throw new Error("Should have thrown");
-  } catch (error) {
-    return error;
-  }
-}
 
 describe("BlockFinder - Error Messages", () => {
   let testContext: TestContext;
@@ -176,7 +158,7 @@ describe("BlockFinder - Error Messages", () => {
         async (blockNumber) =>
           ({
             number: blockNumber,
-            timestamp: 1705363200 + 3600, // After midnight on Jan 16
+            timestamp: 1705363200 + 3600,
             hash: "0x123",
           }) as ethers.Block,
       );

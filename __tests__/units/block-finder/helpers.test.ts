@@ -2,28 +2,22 @@ import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { ethers } from "ethers";
 import { BlockNumberData, CHAIN_IDS, FileManager } from "../../../src/types";
 import { BlockFinder } from "../../../src/block-finder";
+import {
+  createProvider,
+  createBlockFinderWithMockFileManager,
+  LOCALHOST_RPC,
+} from "./test-utils";
 
 describe("BlockFinder - Helper Functions", () => {
   let provider: ethers.JsonRpcProvider;
   let blockFinder: BlockFinder;
 
   beforeEach(() => {
-    const rpcUrl = process.env["RPC_URL"] || "https://nova.arbitrum.io/rpc";
-    // Create provider with static network to prevent auto-detection retry loop
-    const network = ethers.Network.from({
-      chainId: 42170,
-      name: "arbitrum-nova",
-    });
-    provider = new ethers.JsonRpcProvider(rpcUrl, network, {
-      staticNetwork: network,
-    });
-    // Create a dummy file manager since helper methods don't use it
-    const dummyFileManager = {} as FileManager;
-    blockFinder = new BlockFinder(dummyFileManager, provider);
+    provider = createProvider();
+    blockFinder = createBlockFinderWithMockFileManager(provider);
   });
 
   afterEach(async () => {
-    // Destroy the provider to clean up network connections
     if (provider) {
       await provider.destroy();
     }
@@ -32,9 +26,6 @@ describe("BlockFinder - Helper Functions", () => {
   describe("findEndOfDayBlock", () => {
     it("should find the last block before midnight UTC for a specific date", async () => {
       const date = new Date("2024-01-15");
-      // Using bounds that contain midnight for Jan 15, 2024
-      // Block 40268100 is at Jan 15 23:59:08 UTC (verified)
-      // Block 40268500 is at Jan 16 00:01:17 UTC (verified)
       const lowerBound = 40268000;
       const upperBound = 40269000;
 
@@ -47,7 +38,6 @@ describe("BlockFinder - Helper Functions", () => {
       expect(blockNumber).toBeGreaterThanOrEqual(lowerBound);
       expect(blockNumber).toBeLessThanOrEqual(upperBound);
 
-      // Verify the block is before midnight
       const block = await provider.getBlock(blockNumber);
       const blockTime = new Date(block!.timestamp * 1000);
       const nextMidnight = new Date(date);
@@ -59,7 +49,7 @@ describe("BlockFinder - Helper Functions", () => {
 
     it("should throw error when all blocks in range are after midnight", async () => {
       const date = new Date("2024-01-15");
-      const lowerBound = 41000000; // Too high - after midnight
+      const lowerBound = 41000000;
       const upperBound = 41100000;
 
       await expect(
@@ -69,7 +59,7 @@ describe("BlockFinder - Helper Functions", () => {
 
     it("should throw error when all blocks in range are before the target date", async () => {
       const date = new Date("2024-01-15");
-      const lowerBound = 100000; // Too low - way before the date
+      const lowerBound = 100000;
       const upperBound = 200000;
 
       await expect(
@@ -79,8 +69,7 @@ describe("BlockFinder - Helper Functions", () => {
 
     it("should throw error when single block bound is before midnight", async () => {
       const date = new Date("2024-01-15");
-      // Use a block from the middle of the day (around noon)
-      const bound = 40200000; // Block around middle of day
+      const bound = 40200000;
 
       await expect(
         blockFinder.findEndOfDayBlock(date, bound, bound),
@@ -99,8 +88,6 @@ describe("BlockFinder - Helper Functions", () => {
 
     it("should throw error when upper bound is before midnight", async () => {
       const date = new Date("2024-01-15");
-      // These bounds are within the day but don't extend to midnight
-      // Based on the issue, block 40051000 is at ~2:40 AM on Jan 15
       const lowerBound = 40049000;
       const upperBound = 40051000;
 
@@ -111,9 +98,6 @@ describe("BlockFinder - Helper Functions", () => {
 
     it("should find end of day block when bounds properly contain midnight", async () => {
       const date = new Date("2024-01-15");
-      // Using tight bounds around midnight for Jan 15
-      // Block 40268100 is at Jan 15 23:59:08 UTC (verified)
-      // Block 40268500 is at Jan 16 00:01:17 UTC (verified)
       const lowerBound = 40268050;
       const upperBound = 40268550;
 
@@ -123,7 +107,6 @@ describe("BlockFinder - Helper Functions", () => {
         upperBound,
       );
 
-      // Verify the block is before midnight
       const block = await provider.getBlock(blockNumber);
       const blockTime = new Date(block!.timestamp * 1000);
       const nextMidnight = new Date(date);
@@ -132,7 +115,6 @@ describe("BlockFinder - Helper Functions", () => {
 
       expect(blockTime.getTime()).toBeLessThan(nextMidnight.getTime());
 
-      // Verify the next block would be after midnight
       const nextBlock = await provider.getBlock(blockNumber + 1);
       if (nextBlock) {
         const nextBlockTime = new Date(nextBlock.timestamp * 1000);
@@ -152,16 +134,7 @@ describe("BlockFinder - Helper Functions", () => {
     });
 
     it("should throw error when unable to get current block", async () => {
-      // Create provider with explicit network to prevent retry loop
-      const network = ethers.Network.from({
-        chainId: 42170,
-        name: "arbitrum-nova",
-      });
-      const badProvider = new ethers.JsonRpcProvider(
-        "http://localhost:9999",
-        network,
-        { staticNetwork: network },
-      );
+      const badProvider = createProvider(LOCALHOST_RPC);
 
       try {
         const badBlockFinder = new BlockFinder({} as FileManager, badProvider);
@@ -169,7 +142,6 @@ describe("BlockFinder - Helper Functions", () => {
           /Failed to get current block/,
         );
       } finally {
-        // Ensure cleanup even if test fails
         await badProvider.destroy();
       }
     });
@@ -225,7 +197,7 @@ describe("BlockFinder - Helper Functions", () => {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {},
       };
-      const safeCurrentBlock = 200000000; // High enough that 365 days won't reach it
+      const safeCurrentBlock = 200000000;
 
       const [, upper] = blockFinder.getSearchBounds(
         date,
@@ -233,7 +205,6 @@ describe("BlockFinder - Helper Functions", () => {
         safeCurrentBlock,
       );
 
-      // Should always use safeCurrentBlock as upper bound, even for first date
       expect(upper).toBe(safeCurrentBlock);
     });
 
@@ -253,7 +224,6 @@ describe("BlockFinder - Helper Functions", () => {
         safeCurrentBlock,
       );
 
-      // Should always use safeCurrentBlock as upper bound
       expect(upper).toBe(safeCurrentBlock);
     });
 
@@ -262,7 +232,7 @@ describe("BlockFinder - Helper Functions", () => {
       const existingBlocks: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
-          "2024-01-15": 44999000, // Very close to safe current block
+          "2024-01-15": 44999000,
         },
       };
       const safeCurrentBlock = 45000000;
@@ -281,7 +251,7 @@ describe("BlockFinder - Helper Functions", () => {
       const existingBlocks: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
         blocks: {
-          "2024-01-15": 40000000, // Missing 2024-01-16
+          "2024-01-15": 40000000,
         },
       };
       const safeCurrentBlock = 45000000;
@@ -292,7 +262,6 @@ describe("BlockFinder - Helper Functions", () => {
         safeCurrentBlock,
       );
 
-      // Should use last known block as lower bound
       expect(lower).toBe(40000000);
     });
   });
