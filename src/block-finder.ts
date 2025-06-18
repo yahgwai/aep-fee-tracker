@@ -27,7 +27,7 @@ export class BlockFinder {
     startDate: Date,
     endDate: Date,
   ): Promise<BlockNumberData> {
-    validateDateRange(startDate, endDate);
+    this.validateDateRange(startDate, endDate);
 
     const result = await this.initializeResult();
     const safeCurrentBlock = await this.getSafeCurrentBlock();
@@ -36,7 +36,7 @@ export class BlockFinder {
       return result;
     }
 
-    for (const date of datesBetween(startDate, endDate)) {
+    for (const date of this.datesBetween(startDate, endDate)) {
       await this.processDate(date, result, safeCurrentBlock);
     }
 
@@ -45,7 +45,7 @@ export class BlockFinder {
 
   private async initializeResult(): Promise<BlockNumberData> {
     const existingData = this.fileManager.readBlockNumbers();
-    const network = await this.getNetworkWithRetry();
+    const network = await this.getNetwork();
     const chainId = Number(network.chainId);
 
     if (!existingData) {
@@ -59,7 +59,7 @@ export class BlockFinder {
     };
   }
 
-  private async getNetworkWithRetry(): Promise<ethers.Network> {
+  private async getNetwork(): Promise<ethers.Network> {
     try {
       return await withRetry(() => this.provider.getNetwork(), {
         ...RETRY_CONFIG,
@@ -80,7 +80,7 @@ export class BlockFinder {
     result: BlockNumberData,
     safeCurrentBlock: number,
   ): Promise<void> {
-    const dateStr = formatDateString(date);
+    const dateStr = this.formatDateString(date);
     if (result.blocks[dateStr]) return;
 
     const [lowerBound, upperBound] = this.getSearchBounds(
@@ -102,17 +102,14 @@ export class BlockFinder {
     } catch (error) {
       if (error instanceof BlockFinderError) throw error;
 
-      const context: BlockFinderError["context"] = {
-        date: dateStr,
-        searchBounds: { lower: lowerBound, upper: upperBound },
-      };
-      if (error instanceof Error) {
-        context.cause = error;
-      }
       throw new BlockFinderError(
         `Failed to find end-of-day block for ${dateStr}`,
         "processDate",
-        context,
+        {
+          date: dateStr,
+          searchBounds: { lower: lowerBound, upper: upperBound },
+          ...(error instanceof Error && { cause: error }),
+        },
       );
     }
   }
@@ -124,25 +121,17 @@ export class BlockFinder {
   ): Promise<number> {
     if (lowerBound > upperBound) {
       throw new BlockFinderError(
-        formatErrorMessage(
-          "Invalid search bounds: lower bound is greater than upper bound",
-          [
-            `Date: ${formatDateString(date)}`,
-            `Lower bound: ${lowerBound}`,
-            `Upper bound: ${upperBound}`,
-          ],
-          `Ensure safe current block (${upperBound}) is greater than most recent known block (${lowerBound})`,
-        ),
+        `Invalid search bounds: lower bound is greater than upper bound\n  Date: ${this.formatDateString(date)}\n  Lower bound: ${lowerBound}\n  Upper bound: ${upperBound}\n  Check: Ensure safe current block (${upperBound}) is greater than most recent known block (${lowerBound})`,
         "findEndOfDayBlock",
         {
-          date: formatDateString(date),
+          date: this.formatDateString(date),
           searchBounds: { lower: lowerBound, upper: upperBound },
         },
       );
     }
 
-    const targetTimestamp = toUnixTimestamp(getNextMidnight(date));
-    const dateStartTimestamp = toUnixTimestamp(getMidnight(date));
+    const targetTimestamp = this.toUnixTimestamp(this.getNextMidnight(date));
+    const dateStartTimestamp = this.toUnixTimestamp(this.getMidnight(date));
 
     const [lowerBlock, upperBlock] = await Promise.all([
       withRetry(() => this.provider.getBlock(lowerBound), {
@@ -156,7 +145,7 @@ export class BlockFinder {
     ]);
 
     const context = {
-      date: formatDateString(date),
+      date: this.formatDateString(date),
       searchBounds: { lower: lowerBound, upper: upperBound },
     };
 
@@ -175,7 +164,7 @@ export class BlockFinder {
       );
     }
 
-    validateBlockRange(
+    this.validateBlockRange(
       date,
       lowerBlock,
       upperBlock,
@@ -254,13 +243,11 @@ export class BlockFinder {
       return block;
     } catch (error) {
       if (error instanceof BlockFinderError) throw error;
-      if (error instanceof Error) {
-        context.cause = error;
-      }
+
       throw new BlockFinderError(
         `Failed to get block ${blockNumber} during binary search`,
         "binarySearchForBlock",
-        context,
+        { ...context, ...(error instanceof Error && { cause: error }) },
       );
     }
   }
@@ -271,17 +258,16 @@ export class BlockFinder {
     targetTimestamp: number,
     lastCheckedBlock?: { number: number; timestamp: number },
   ): BlockFinderError["context"] {
-    const context: BlockFinderError["context"] = {
+    return {
       searchBounds: { lower: low, upper: high },
-      targetTimestamp: fromUnixTimestamp(targetTimestamp),
+      targetTimestamp: this.fromUnixTimestamp(targetTimestamp),
+      ...(lastCheckedBlock && {
+        lastCheckedBlock: {
+          number: lastCheckedBlock.number,
+          timestamp: this.fromUnixTimestamp(lastCheckedBlock.timestamp),
+        },
+      }),
     };
-    if (lastCheckedBlock) {
-      context.lastCheckedBlock = {
-        number: lastCheckedBlock.number,
-        timestamp: fromUnixTimestamp(lastCheckedBlock.timestamp),
-      };
-    }
-    return context;
   }
 
   async getSafeCurrentBlock(): Promise<number> {
@@ -310,12 +296,7 @@ export class BlockFinder {
   }
 
   private formatRPCError(rpcError: RPCError): string {
-    return [
-      `Failed to get current block number`,
-      `  RPC request failed after ${rpcError.retryCount} retries`,
-      `  Original error: ${rpcError.cause?.message || "Unknown error"}`,
-      `  Check: Ensure RPC_URL is accessible and the provider is properly configured`,
-    ].join("\n");
+    return `Failed to get current block number\n  RPC request failed after ${rpcError.retryCount} retries\n  Original error: ${rpcError.cause?.message || "Unknown error"}\n  Check: Ensure RPC_URL is accessible and the provider is properly configured`;
   }
 
   getSearchBounds(
@@ -323,204 +304,154 @@ export class BlockFinder {
     existingBlocks: BlockNumberData,
     safeCurrentBlock: number,
   ): [number, number] {
-    const dateStr = formatDateString(date);
-    const lowerBound = findMostRecentBlock(dateStr, existingBlocks);
+    const dateStr = this.formatDateString(date);
+    const lowerBound = this.findMostRecentBlock(dateStr, existingBlocks);
 
     return [Math.max(MINIMUM_VALID_BLOCK, lowerBound), safeCurrentBlock];
   }
-}
 
-// Helper functions
-function validateDateRange(startDate: Date, endDate: Date): void {
-  if (!isValidDate(startDate)) {
-    throw createInvalidDateError("start", startDate);
-  }
-  if (!isValidDate(endDate)) {
-    throw createInvalidDateError("end", endDate);
-  }
-  if (startDate > endDate) {
-    throw new BlockFinderError(
-      formatErrorMessage(
-        "Start date must not be after end date",
-        [
-          `Start date: ${startDate.toISOString()}`,
-          `End date: ${endDate.toISOString()}`,
-        ],
-        "Ensure date range is valid",
-      ),
-      "validateDateRange",
-      {},
-    );
-  }
-}
+  // Find the most recent known block before the target date
+  private findMostRecentBlock(
+    targetDate: string,
+    existingBlocks: BlockNumberData,
+  ): number {
+    const dates = Object.keys(existingBlocks.blocks).sort();
+    let mostRecent = 0;
 
-function createInvalidDateError(type: string, date: unknown): BlockFinderError {
-  return new BlockFinderError(
-    formatErrorMessage(
-      `Invalid ${type} date provided`,
-      [`Value: ${date}`, `Type: ${typeof date}`],
-      "Ensure a valid Date object is provided",
-    ),
-    "validateDateRange",
-    {},
-  );
-}
+    for (const date of dates) {
+      if (date >= targetDate) break;
+      mostRecent = existingBlocks.blocks[date]!;
+    }
 
-function formatErrorMessage(
-  message: string,
-  details: string[],
-  check?: string,
-): string {
-  const parts = [message, ...details.map((d) => `  ${d}`)];
-  if (check) parts.push(`  Check: ${check}`);
-  return parts.join("\n");
-}
-
-function isValidDate(date: unknown): date is Date {
-  return date instanceof Date && !isNaN(date.getTime());
-}
-
-function formatDateString(date: Date): DateString {
-  return date.toISOString().split("T")[0]!;
-}
-
-function getNextMidnight(date: Date): Date {
-  const midnight = new Date(date);
-  midnight.setUTCDate(midnight.getUTCDate() + 1);
-  midnight.setUTCHours(0, 0, 0, 0);
-  return midnight;
-}
-
-function getMidnight(date: Date): Date {
-  const midnight = new Date(date);
-  midnight.setUTCHours(0, 0, 0, 0);
-  return midnight;
-}
-
-function toUnixTimestamp(date: Date): number {
-  return Math.floor(date.getTime() / MILLISECONDS_PER_SECOND);
-}
-
-function fromUnixTimestamp(timestamp: number): Date {
-  return new Date(timestamp * MILLISECONDS_PER_SECOND);
-}
-
-function* datesBetween(start: Date, end: Date): Generator<Date> {
-  const current = new Date(start);
-  while (current <= end) {
-    yield new Date(current);
-    current.setUTCDate(current.getUTCDate() + 1);
-  }
-}
-
-function validateBlockRange(
-  date: Date,
-  lowerBlock: ethers.Block,
-  upperBlock: ethers.Block,
-  lowerBound: number,
-  upperBound: number,
-  targetTimestamp: number,
-  dateStartTimestamp: number,
-): void {
-  const dateStr = formatDateString(date);
-  const bounds = { lower: lowerBound, upper: upperBound };
-
-  if (lowerBlock.timestamp >= targetTimestamp) {
-    throw createBlockRangeError(
-      "All blocks in range are after midnight",
-      dateStr,
-      bounds,
-      [
-        `Target: Before ${fromUnixTimestamp(targetTimestamp).toISOString()}`,
-        `Lower block ${lowerBound} timestamp: ${fromUnixTimestamp(lowerBlock.timestamp).toISOString()}`,
-      ],
-      "Expand search bounds to include earlier blocks",
-      lowerBound,
-      lowerBlock.timestamp,
-      targetTimestamp,
-    );
+    return mostRecent;
   }
 
-  if (upperBlock.timestamp < dateStartTimestamp) {
-    throw createBlockRangeError(
-      "All blocks in range are before the target date",
-      dateStr,
-      bounds,
-      [
-        `Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}`,
-      ],
-      "Ensure the date is valid and search bounds are correct",
-      upperBound,
-      upperBlock.timestamp,
-    );
+  private validateDateRange(startDate: Date, endDate: Date): void {
+    const isValidDate = (date: unknown): date is Date => {
+      return date instanceof Date && !isNaN(date.getTime());
+    };
+
+    if (!isValidDate(startDate)) {
+      throw new BlockFinderError(
+        `Invalid start date provided\n  Value: ${startDate}\n  Type: ${typeof startDate}\n  Check: Ensure a valid Date object is provided`,
+        "validateDateRange",
+        {},
+      );
+    }
+
+    if (!isValidDate(endDate)) {
+      throw new BlockFinderError(
+        `Invalid end date provided\n  Value: ${endDate}\n  Type: ${typeof endDate}\n  Check: Ensure a valid Date object is provided`,
+        "validateDateRange",
+        {},
+      );
+    }
+
+    if (startDate > endDate) {
+      throw new BlockFinderError(
+        `Start date must not be after end date\n  Start date: ${startDate.toISOString()}\n  End date: ${endDate.toISOString()}\n  Check: Ensure date range is valid`,
+        "validateDateRange",
+        {},
+      );
+    }
   }
 
-  if (upperBlock.timestamp < targetTimestamp) {
-    throw createBlockRangeError(
-      "Search bounds do not contain midnight",
-      dateStr,
-      bounds,
-      [
-        `Target midnight: ${fromUnixTimestamp(targetTimestamp).toISOString()}`,
-        `Upper block ${upperBound} timestamp: ${fromUnixTimestamp(upperBlock.timestamp).toISOString()}`,
-        `Upper bound needs to extend past midnight`,
-      ],
-      "Increase upper bound or wait for more blocks to be mined",
-      upperBound,
-      upperBlock.timestamp,
-      targetTimestamp,
-    );
-  }
-}
-
-function createBlockRangeError(
-  message: string,
-  date: string,
-  bounds: { lower: number; upper: number },
-  details: string[],
-  check: string,
-  blockNumber: number,
-  blockTimestamp: number,
-  targetTimestamp?: number,
-): BlockFinderError {
-  const context: BlockFinderError["context"] = {
-    date,
-    searchBounds: bounds,
-    lastCheckedBlock: {
-      number: blockNumber,
-      timestamp: fromUnixTimestamp(blockTimestamp),
-    },
-  };
-  if (targetTimestamp !== undefined) {
-    context.targetTimestamp = fromUnixTimestamp(targetTimestamp);
+  private formatDateString(date: Date): DateString {
+    return date.toISOString().split("T")[0]!;
   }
 
-  return new BlockFinderError(
-    formatErrorMessage(
-      message,
-      [
-        `Date: ${date}`,
-        `Search bounds: ${bounds.lower} to ${bounds.upper}`,
-        ...details,
-      ],
-      check,
-    ),
-    "validateBlockRange",
-    context,
-  );
-}
-
-function findMostRecentBlock(
-  targetDate: string,
-  existingBlocks: BlockNumberData,
-): number {
-  const dates = Object.keys(existingBlocks.blocks).sort();
-  let mostRecent = 0;
-
-  for (const date of dates) {
-    if (date >= targetDate) break;
-    mostRecent = existingBlocks.blocks[date]!;
+  private getNextMidnight(date: Date): Date {
+    const midnight = new Date(date);
+    midnight.setUTCDate(midnight.getUTCDate() + 1);
+    midnight.setUTCHours(0, 0, 0, 0);
+    return midnight;
   }
 
-  return mostRecent;
+  private getMidnight(date: Date): Date {
+    const midnight = new Date(date);
+    midnight.setUTCHours(0, 0, 0, 0);
+    return midnight;
+  }
+
+  private toUnixTimestamp(date: Date): number {
+    return Math.floor(date.getTime() / MILLISECONDS_PER_SECOND);
+  }
+
+  private fromUnixTimestamp(timestamp: number): Date {
+    return new Date(timestamp * MILLISECONDS_PER_SECOND);
+  }
+
+  private *datesBetween(start: Date, end: Date): Generator<Date> {
+    const current = new Date(start);
+    while (current <= end) {
+      yield new Date(current);
+      current.setUTCDate(current.getUTCDate() + 1);
+    }
+  }
+
+  private validateBlockRange(
+    date: Date,
+    lowerBlock: ethers.Block,
+    upperBlock: ethers.Block,
+    lowerBound: number,
+    upperBound: number,
+    targetTimestamp: number,
+    dateStartTimestamp: number,
+  ): void {
+    const dateStr = this.formatDateString(date);
+    const bounds = { lower: lowerBound, upper: upperBound };
+
+    if (lowerBlock.timestamp >= targetTimestamp) {
+      const context: BlockFinderError["context"] = {
+        date: dateStr,
+        searchBounds: bounds,
+        lastCheckedBlock: {
+          number: lowerBound,
+          timestamp: this.fromUnixTimestamp(lowerBlock.timestamp),
+        },
+        targetTimestamp: this.fromUnixTimestamp(targetTimestamp),
+      };
+
+      throw new BlockFinderError(
+        `All blocks in range are after midnight\n  Date: ${dateStr}\n  Search bounds: ${bounds.lower} to ${bounds.upper}\n  Target: Before ${this.fromUnixTimestamp(targetTimestamp).toISOString()}\n  Lower block ${lowerBound} timestamp: ${this.fromUnixTimestamp(lowerBlock.timestamp).toISOString()}\n  Check: Expand search bounds to include earlier blocks`,
+        "validateBlockRange",
+        context,
+      );
+    }
+
+    if (upperBlock.timestamp < dateStartTimestamp) {
+      const context: BlockFinderError["context"] = {
+        date: dateStr,
+        searchBounds: bounds,
+        lastCheckedBlock: {
+          number: upperBound,
+          timestamp: this.fromUnixTimestamp(upperBlock.timestamp),
+        },
+      };
+
+      throw new BlockFinderError(
+        `All blocks in range are before the target date\n  Date: ${dateStr}\n  Search bounds: ${bounds.lower} to ${bounds.upper}\n  Upper block ${upperBound} timestamp: ${this.fromUnixTimestamp(upperBlock.timestamp).toISOString()}\n  Check: Ensure the date is valid and search bounds are correct`,
+        "validateBlockRange",
+        context,
+      );
+    }
+
+    if (upperBlock.timestamp < targetTimestamp) {
+      const context: BlockFinderError["context"] = {
+        date: dateStr,
+        searchBounds: bounds,
+        lastCheckedBlock: {
+          number: upperBound,
+          timestamp: this.fromUnixTimestamp(upperBlock.timestamp),
+        },
+        targetTimestamp: this.fromUnixTimestamp(targetTimestamp),
+      };
+
+      throw new BlockFinderError(
+        `Search bounds do not contain midnight\n  Date: ${dateStr}\n  Search bounds: ${bounds.lower} to ${bounds.upper}\n  Target midnight: ${this.fromUnixTimestamp(targetTimestamp).toISOString()}\n  Upper block ${upperBound} timestamp: ${this.fromUnixTimestamp(upperBlock.timestamp).toISOString()}\n  Upper bound needs to extend past midnight\n  Check: Increase upper bound or wait for more blocks to be mined`,
+        "validateBlockRange",
+        context,
+      );
+    }
+  }
 }
