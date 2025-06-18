@@ -240,15 +240,47 @@ const filter = {
 };
 ```
 
-### Address Extraction
+### Event Parsing and Address Extraction
 
-Distributor addresses are encoded in the event data field:
+Parse OwnerActs events to extract method signatures and distributor addresses:
 
 ```typescript
-// Data field contains 32-byte padded address
-// Example: 0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9
-const address = "0x" + log.data.slice(26); // Remove padding
-const checksummed = ethers.getAddress(address); // Validate and checksum
+import { ethers } from "ethers";
+
+// Define the event ABI
+const OWNER_ACTS_ABI = [
+  "event OwnerActs(bytes4 indexed method, address indexed owner, bytes data)",
+];
+
+// Create interface
+const iface = new ethers.Interface(OWNER_ACTS_ABI);
+
+// Example event from the blockchain
+const event = {
+  topics: [
+    "0x3c9e6a772755407311e3b35b3ee56799df8f87395941b3a658eee9e08a67ebda",
+    "0xfcdde2b400000000000000000000000000000000000000000000000000000000",
+    "0x0000000000000000000000009c040726f2a657226ed95712245dee84b650a1b5",
+  ],
+  data: "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024fcdde2b400000000000000000000000037daa99b1caae0c22670963e103a66ca2c5db2db00000000000000000000000000000000000000000000000000000000",
+};
+
+// Parse the event
+const parsedLog = iface.parseLog(event);
+
+// Extract values
+const method = parsedLog.args.method; // "0xfcdde2b4"
+const owner = parsedLog.args.owner; // "0x9C040726F2A657226Ed95712245DeE84b650A1b5"
+const eventData = parsedLog.args.data; // "0xfcdde2b4000000..."
+
+// Decode the distributor address from the data field
+const distributorAddress = ethers.AbiCoder.defaultAbiCoder().decode(
+  ["address"],
+  "0x" + eventData.substring(10), // Skip method selector in data
+)[0]; // "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
+
+// Checksum the address
+const checksummedAddress = ethers.getAddress(distributorAddress);
 ```
 
 ### Contract Verification
