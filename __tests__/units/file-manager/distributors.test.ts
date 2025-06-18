@@ -80,9 +80,9 @@ describe("FileManager - Distributors", () => {
   });
 
   describe("readDistributors()", () => {
-    it("should return empty DistributorsData when distributors.json does not exist", () => {
+    it("should return undefined when distributors.json does not exist", () => {
       const result = testContext.fileManager.readDistributors();
-      expect(result).toEqual(createDistributorsData());
+      expect(result).toBeUndefined();
     });
 
     it("should write and read back DistributorsData with multiple distributors", () => {

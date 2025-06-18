@@ -21,17 +21,11 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
   });
 
   describe("readDistributorOutflows()", () => {
-    it("should return empty OutflowData when outflows.json does not exist", () => {
+    it("should return undefined when outflows.json does not exist", () => {
       const result =
         testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
-      expect(result).toEqual({
-        metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
-          reward_distributor: VALID_ADDRESS,
-        },
-        outflows: {},
-      });
+      expect(result).toBeUndefined();
     });
 
     it("should create distributor directory when writing outflows for new address", () => {
@@ -180,7 +174,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
         testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
       expect(result).toEqual(testData);
-      expect(result.outflows["2024-01-15"]?.events.length).toBe(10);
+      expect(result?.outflows["2024-01-15"]?.events.length).toBe(10);
     });
 
     it("should preserve wei values as strings without modification", () => {
@@ -210,13 +204,13 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
       const result =
         testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
-      expect(result.outflows["2024-01-15"]?.total_outflow_wei).toBe(
+      expect(result?.outflows["2024-01-15"]?.total_outflow_wei).toBe(
         exactWeiValue,
       );
-      expect(result.outflows["2024-01-15"]?.events[0]?.value_wei).toBe(
+      expect(result?.outflows["2024-01-15"]?.events[0]?.value_wei).toBe(
         exactWeiValue,
       );
-      expect(typeof result.outflows["2024-01-15"]?.events[0]?.value_wei).toBe(
+      expect(typeof result?.outflows["2024-01-15"]?.events[0]?.value_wei).toBe(
         "string",
       );
     });
@@ -240,7 +234,7 @@ describe("FileManager - Distributor Outflows - Read Operations", () => {
       const result =
         testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
-      expect(result.outflows["2024-01-15"]?.total_outflow_wei).toBe("0");
+      expect(result?.outflows["2024-01-15"]?.total_outflow_wei).toBe("0");
     });
   });
 });

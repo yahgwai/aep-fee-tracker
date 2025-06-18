@@ -249,30 +249,9 @@ const blocks = await blockFinder.findBlocksForDateRange(
 console.log(`Found blocks for ${Object.keys(blocks.blocks).length} dates`);
 ```
 
-## Backward Compatibility
-
-For backward compatibility, the module also exports standalone functions that create a BlockFinder instance internally:
-
-```typescript
-import {
-  findBlocksForDateRange,
-  findEndOfDayBlock,
-  getSafeCurrentBlock,
-  getSearchBounds,
-} from "./block-finder";
-
-// These functions maintain the original API but use the BlockFinder class internally
-const blocks = await findBlocksForDateRange(
-  new Date("2024-01-01"),
-  new Date("2024-01-31"),
-  provider,
-  fileManager,
-);
-```
-
 ## Testing Notes
 
-For integration and end-to-end tests, use the public Arbitrum One RPC endpoint: `https://arb1.arbitrum.io/rpc`
+For integration and end-to-end tests, use the public Arbitrum Nova RPC endpoint: `https://nova.arbitrum.io/rpc`
 
 This provides access to real historical data without requiring a private archive node during development.
 

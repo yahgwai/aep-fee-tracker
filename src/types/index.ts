@@ -1,3 +1,6 @@
+// Re-export utility functions
+export { withRetry, type RetryOptions } from "../utils/retry";
+
 // Core Data Types
 
 export interface BlockNumberData {
@@ -102,13 +105,13 @@ export const DISTRIBUTORS_DIR = "distributors";
 
 // Component Interfaces
 export interface FileManager {
-  readBlockNumbers(): BlockNumberData;
+  readBlockNumbers(): BlockNumberData | undefined;
   writeBlockNumbers(data: BlockNumberData): void;
-  readDistributors(): DistributorsData;
+  readDistributors(): DistributorsData | undefined;
   writeDistributors(data: DistributorsData): void;
-  readDistributorBalances(address: Address): BalanceData;
+  readDistributorBalances(address: Address): BalanceData | undefined;
   writeDistributorBalances(address: Address, data: BalanceData): void;
-  readDistributorOutflows(address: Address): OutflowData;
+  readDistributorOutflows(address: Address): OutflowData | undefined;
   writeDistributorOutflows(address: Address, data: OutflowData): void;
   ensureStoreDirectory(): void;
   validateAddress(address: string): Address;
@@ -146,6 +149,36 @@ export class ValidationError extends Error {
   ) {
     super(message);
     this.name = "ValidationError";
+  }
+}
+
+export class BlockFinderError extends Error {
+  constructor(
+    message: string,
+    public readonly operation: string,
+    public readonly context: {
+      date?: string;
+      searchBounds?: { lower: number; upper: number };
+      lastCheckedBlock?: { number: number; timestamp: Date };
+      targetTimestamp?: Date;
+      retryAttempt?: number;
+      cause?: Error;
+    },
+  ) {
+    super(message);
+    this.name = "BlockFinderError";
+  }
+}
+
+export class RPCError extends Error {
+  constructor(
+    message: string,
+    public readonly operation: string,
+    public readonly retryCount: number,
+    public readonly cause?: Error,
+  ) {
+    super(message);
+    this.name = "RPCError";
   }
 }
 

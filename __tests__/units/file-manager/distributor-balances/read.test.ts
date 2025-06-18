@@ -20,17 +20,11 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
   });
 
   describe("readDistributorBalances()", () => {
-    it("should return empty BalanceData when balances.json does not exist", () => {
+    it("should return undefined when balances.json does not exist", () => {
       const result =
         testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
-      expect(result).toEqual({
-        metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_ONE,
-          reward_distributor: VALID_ADDRESS,
-        },
-        balances: {},
-      });
+      expect(result).toBeUndefined();
     });
 
     it("should create distributor directory when writing balances for new address", () => {
@@ -92,7 +86,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
         testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
       expect(result).toEqual(testData);
-      expect(Object.keys(result.balances).length).toBe(5);
+      expect(Object.keys(result?.balances || {}).length).toBe(5);
     });
 
     it("should preserve wei values as strings without modification", () => {
@@ -116,8 +110,8 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
       const result =
         testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
-      expect(result.balances["2024-01-15"]?.balance_wei).toBe(exactWeiValue);
-      expect(typeof result.balances["2024-01-15"]?.balance_wei).toBe("string");
+      expect(result?.balances["2024-01-15"]?.balance_wei).toBe(exactWeiValue);
+      expect(typeof result?.balances["2024-01-15"]?.balance_wei).toBe("string");
     });
 
     it("should handle balance of 0 correctly", () => {
@@ -138,7 +132,7 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
       const result =
         testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
-      expect(result.balances["2024-01-15"]?.balance_wei).toBe("0");
+      expect(result?.balances["2024-01-15"]?.balance_wei).toBe("0");
     });
 
     it("should update existing balance file with new dates", () => {
@@ -185,11 +179,11 @@ describe("FileManager - Distributor Balances - Read Operations", () => {
       const result =
         testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
 
-      expect(Object.keys(result.balances).length).toBe(2);
-      expect(result.balances["2024-01-15"]?.balance_wei).toBe(
+      expect(Object.keys(result?.balances || {}).length).toBe(2);
+      expect(result?.balances["2024-01-15"]?.balance_wei).toBe(
         "1000000000000000000000",
       );
-      expect(result.balances["2024-01-16"]?.balance_wei).toBe(
+      expect(result?.balances["2024-01-16"]?.balance_wei).toBe(
         "2000000000000000000000",
       );
     });
