@@ -134,7 +134,7 @@ export class BlockFinder {
     const dateStartTimestamp = this.toUnixTimestamp(this.getMidnight(date));
 
     // Check if the lower bound is a known end-of-day block
-    const existingData = this.fileManager.readBlockNumbers();
+    const existingData = this.fileManager.readBlockNumbers?.();
     const isKnownEndOfDayBlock =
       existingData && Object.values(existingData.blocks).includes(lowerBound);
 
