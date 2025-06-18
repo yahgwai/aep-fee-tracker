@@ -96,6 +96,7 @@ export class BlockFinder {
         date,
         lowerBound,
         upperBound,
+        result,
       );
       result.blocks[dateStr] = blockNumber;
       this.fileManager.writeBlockNumbers(result);
@@ -118,6 +119,7 @@ export class BlockFinder {
     date: Date,
     lowerBound: number,
     upperBound: number,
+    knownBlocks?: BlockNumberData,
   ): Promise<number> {
     if (lowerBound > upperBound) {
       throw new BlockFinderError(
@@ -133,23 +135,51 @@ export class BlockFinder {
     const targetTimestamp = this.toUnixTimestamp(this.getNextMidnight(date));
     const dateStartTimestamp = this.toUnixTimestamp(this.getMidnight(date));
 
-    const [lowerBlock, upperBlock] = await Promise.all([
-      withRetry(() => this.provider.getBlock(lowerBound), {
-        ...RETRY_CONFIG,
-        operationName: `getBlock(${lowerBound})`,
-      }),
-      withRetry(() => this.provider.getBlock(upperBound), {
+    // Check if lowerBound is a known end-of-day block
+    let skipLowerBoundFetch = false;
+    if (knownBlocks) {
+      for (const [dateStr, blockNum] of Object.entries(knownBlocks.blocks)) {
+        if (blockNum === lowerBound) {
+          // This block is a known end-of-day block for dateStr
+          const blockDate = new Date(dateStr);
+          // If this block's date is before our target date, we know it's valid as lower bound
+          if (blockDate < date) {
+            skipLowerBoundFetch = true;
+            break;
+          }
+        }
+      }
+    }
+
+    let lowerBlock: ethers.Block | null = null;
+    let upperBlock: ethers.Block | null;
+
+    if (skipLowerBoundFetch) {
+      // Only fetch the upper block since lower bound is a known valid block
+      upperBlock = await withRetry(() => this.provider.getBlock(upperBound), {
         ...RETRY_CONFIG,
         operationName: `getBlock(${upperBound})`,
-      }),
-    ]);
+      });
+    } else {
+      // Fetch both blocks in parallel as before
+      [lowerBlock, upperBlock] = await Promise.all([
+        withRetry(() => this.provider.getBlock(lowerBound), {
+          ...RETRY_CONFIG,
+          operationName: `getBlock(${lowerBound})`,
+        }),
+        withRetry(() => this.provider.getBlock(upperBound), {
+          ...RETRY_CONFIG,
+          operationName: `getBlock(${upperBound})`,
+        }),
+      ]);
+    }
 
     const context = {
       date: this.formatDateString(date),
       searchBounds: { lower: lowerBound, upper: upperBound },
     };
 
-    if (!lowerBlock) {
+    if (!skipLowerBoundFetch && !lowerBlock) {
       throw new BlockFinderError(
         `Block ${lowerBound} not found`,
         "findEndOfDayBlock",
@@ -164,15 +194,27 @@ export class BlockFinder {
       );
     }
 
-    this.validateBlockRange(
-      date,
-      lowerBlock,
-      upperBlock,
-      lowerBound,
-      upperBound,
-      targetTimestamp,
-      dateStartTimestamp,
-    );
+    // Only validate if we have both blocks
+    if (!skipLowerBoundFetch && lowerBlock) {
+      this.validateBlockRange(
+        date,
+        lowerBlock,
+        upperBlock,
+        lowerBound,
+        upperBound,
+        targetTimestamp,
+        dateStartTimestamp,
+      );
+    } else if (skipLowerBoundFetch) {
+      // For known blocks, we only validate the upper bound contains midnight
+      if (upperBlock.timestamp < targetTimestamp) {
+        throw new BlockFinderError(
+          `Search bounds do not contain midnight\n  Date: ${this.formatDateString(date)}\n  Search bounds: ${lowerBound} to ${upperBound}\n  Target midnight: ${this.fromUnixTimestamp(targetTimestamp).toISOString()}\n  Upper block ${upperBound} timestamp: ${this.fromUnixTimestamp(upperBlock.timestamp).toISOString()}\n  Upper bound needs to extend past midnight\n  Check: Increase upper bound or wait for more blocks to be mined`,
+          "findEndOfDayBlock",
+          context,
+        );
+      }
+    }
 
     const lastValidBlock = await this.binarySearchForBlock(
       lowerBound,
