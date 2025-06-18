@@ -30,16 +30,25 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
 
   function instrumentProviderForCallTracking(
     provider: ethers.JsonRpcProvider,
-  ): { getCallCount: () => number } {
+  ): { getCallCount: () => number; getRequestedBlocks: () => number[] } {
     let callCount = 0;
+    const requestedBlocks: number[] = [];
     const original = provider.getBlock.bind(provider);
     provider.getBlock = async function (
       ...args: Parameters<typeof provider.getBlock>
     ) {
       callCount++;
+      // Track the block number if it's a numeric request
+      const blockTag = args[0];
+      if (typeof blockTag === "number") {
+        requestedBlocks.push(blockTag);
+      }
       return original(...args);
     };
-    return { getCallCount: () => callCount };
+    return {
+      getCallCount: () => callCount,
+      getRequestedBlocks: () => requestedBlocks,
+    };
   }
 
   beforeEach(() => {
@@ -50,12 +59,18 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
     blockFinder = new BlockFinder(testContext.fileManager, provider);
 
     // Track RPC calls by intercepting getBlock method
+    const requestedBlocks: number[] = [];
     rpcCallCount = 0;
     originalGetBlock = provider.getBlock.bind(provider);
     provider.getBlock = async function (
       ...args: Parameters<typeof provider.getBlock>
     ) {
       rpcCallCount++;
+      // Track the block number if it's a numeric request
+      const blockTag = args[0];
+      if (typeof blockTag === "number") {
+        requestedBlocks.push(blockTag);
+      }
       return originalGetBlock(...args);
     };
   });
@@ -102,12 +117,19 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
       );
       expect(rpcCallsForFirstTwoDays).toBeGreaterThan(0);
 
+      // Store the block numbers found for Jan 9-10
+      const foundBlocks = {
+        "2024-01-09": partialResult.blocks["2024-01-09"],
+        "2024-01-10": partialResult.blocks["2024-01-10"],
+      };
+
       // Simulate interruption by creating a new BlockFinder instance
       // This represents the process restarting after a failure
       console.log("Simulating interruption and restart...");
 
       const newProvider = createProvider();
-      const { getCallCount } = instrumentProviderForCallTracking(newProvider);
+      const { getCallCount, getRequestedBlocks } =
+        instrumentProviderForCallTracking(newProvider);
       const resumedBlockFinder = new BlockFinder(
         testContext.fileManager,
         newProvider,
@@ -138,14 +160,49 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
         expectedAllDays.length,
       );
 
-      // Critical assertion: Verify no RPC calls were made for already-found blocks
-      // We should only have made calls for the 3 remaining days (Jan 11-13)
+      // Critical assertion: Verify no duplicate work for already-found blocks
       const resumeRpcCallCount = getCallCount();
+      const requestedBlockNumbers = getRequestedBlocks();
       console.log(`RPC calls made during resume: ${resumeRpcCallCount}`);
 
-      // The resumed finder should NOT have made any RPC calls for Jan 9-10
-      // since those blocks were already in storage
-      expect(resumeRpcCallCount).toBeGreaterThan(0); // Should make some calls for new days
+      // The resumed finder should make RPC calls only for new days
+      expect(resumeRpcCallCount).toBeGreaterThan(0);
+
+      // Verify that the block finder is efficiently using previous results
+      // When searching for Jan 11-13, it should use Jan 10's block as a lower bound
+      const jan10Block = foundBlocks["2024-01-10"];
+
+      // The block finder's getSearchBounds method uses the most recent known block
+      // as the lower bound for the next day's search. So when searching for Jan 11,
+      // it should start from Jan 10's block (39039698) as the lower bound.
+      console.log(`Previously found block for Jan 10: ${jan10Block}`);
+
+      // Count how many blocks were requested at or before Jan 10's end-of-day block
+      const blocksBeforeOrAtJan10 = requestedBlockNumbers.filter(
+        (block) => block <= jan10Block!,
+      );
+      const blocksAfterJan10 = requestedBlockNumbers.filter(
+        (block) => block > jan10Block!,
+      );
+
+      console.log(`Block requests analysis:`);
+      console.log(
+        `  - Total blocks requested: ${requestedBlockNumbers.length}`,
+      );
+      console.log(
+        `  - Blocks <= Jan 10 end-of-day (${jan10Block}): ${blocksBeforeOrAtJan10.length}`,
+      );
+      console.log(`  - Blocks > Jan 10 end-of-day: ${blocksAfterJan10.length}`);
+
+      // The binary search for Jan 11 will use Jan 10's block as lower bound,
+      // so we expect very few (ideally just 1) request at or below Jan 10's block
+      // This would be the initial check of the lower bound
+      expect(blocksBeforeOrAtJan10.length).toBeLessThanOrEqual(3);
+
+      // The vast majority of requests should be after Jan 10
+      expect(blocksAfterJan10.length).toBeGreaterThan(
+        requestedBlockNumbers.length * 0.95,
+      );
 
       // Verify the blocks for Jan 9-10 are the same as before
       // (not re-fetched with potentially different values)
