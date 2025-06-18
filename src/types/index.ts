@@ -32,8 +32,8 @@ export interface DistributorsData {
 
 export interface DistributorInfo {
   type: DistributorType;
-  discovered_block: number;
-  discovered_date: string;
+  block: number;
+  date: string;
   tx_hash: string;
   method: string;
   owner: string;

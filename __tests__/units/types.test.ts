@@ -54,8 +54,8 @@ describe("Core Types", () => {
         distributors: {
           "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
             type: DistributorType.L2_BASE_FEE,
-            discovered_block: 12345678,
-            discovered_date: "2024-01-15",
+            block: 12345678,
+            date: "2024-01-15",
             tx_hash: "0xabc123",
             method: "0xee95a824",
             owner: "0x0000000000000000000000000000000000000070",
@@ -72,7 +72,7 @@ describe("Core Types", () => {
         data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"];
       expect(distributor).toBeDefined();
       expect(distributor?.type).toBe(DistributorType.L2_BASE_FEE);
-      expect(distributor?.discovered_block).toBe(12345678);
+      expect(distributor?.block).toBe(12345678);
     });
   });
 

@@ -17,24 +17,26 @@ The Distributor Detector component discovers all reward distributor contracts cr
 ### Component Role
 
 - **Position**: Early stage component that provides distributor registry for all other components
-- **Dependencies**: File Manager, Block Finder data, Ethereum RPC provider
+- **Dependencies**: File Manager, Block Finder data, Nova RPC provider
 - **Consumers**: Balance Fetcher, Event Scanner, Fee Calculator
 
 ## Dependencies
 
 - **File Manager**: For reading block numbers and writing distributor data
 - **Block Numbers**: Must have block mappings before scanning
-- **Ethereum RPC Provider**: For querying logs
+- **Nova RPC Provider**: For querying logs
 - **ethers.js**: For RPC communication and address validation
 
 ## Data Flow
 
 ```
-Input: End date to scan up to
+Input: End date (Date object) to scan up to
     ↓
-Read last scanned block from distributors.json
+Read last scanned block from FileManager
     ↓
-Read block number for end date from block_numbers.json
+Convert end date to YYYY-MM-DD string format
+    ↓
+Read block number for end date from FileManager
     ↓
 Scan from (last_scanned_block + 1) to end_date_block
     ↓
@@ -44,7 +46,7 @@ Filter for distributor creation methods
     ↓
 Extract distributor addresses
     ↓
-Update distributors.json with:
+Update distributor data via FileManager with:
   - New distributors found
   - Updated last_scanned_block
     ↓
@@ -55,7 +57,7 @@ Output: Updated distributor registry
 
 ### ArbOwner Precompile
 
-The ArbOwner precompile at `0x0000000000000000000000000000000000000070` is used to manage various aspects of the Arbitrum network, including creating reward distributors.
+The ArbOwner precompile at `0x0000000000000000000000000000000000000070` is used to manage various aspects of the Arbitrum Nova network, including creating reward distributors.
 
 ### OwnerActs Event
 
@@ -94,7 +96,7 @@ The following method signatures indicate distributor creation:
  * Creates a new DistributorDetector instance with the specified dependencies.
  *
  * @param fileManager - File manager instance for data persistence
- * @param provider - Ethereum provider for RPC calls
+ * @param provider - Nova provider for RPC calls
  */
 class DistributorDetector {
   constructor(
@@ -112,26 +114,28 @@ class DistributorDetector {
  * Scans OwnerActs events from the last scanned block to find new distributors.
  * Tracks its own progress to support incremental scanning.
  *
- * @param endDate - Scan up to this date (YYYY-MM-DD format)
+ * @param endDate - Scan up to this date
  * @returns Updated distributor registry data
  * @throws Error if unable to query events or write data
  */
-async detectDistributors(endDate: string): Promise<DistributorsData>;
+async detectDistributors(endDate: Date): Promise<DistributorsData>;
 ```
 
-### Private Methods
+### Public Static Methods
 
 ```typescript
 /**
  * Scans a specific block range for distributor creation events.
  * Queries OwnerActs events and filters for known method signatures.
  *
+ * @param provider - Nova provider for RPC calls
  * @param fromBlock - Starting block (inclusive)
  * @param toBlock - Ending block (inclusive)
  * @returns Array of discovered distributor info
  * @throws Error if RPC query fails
  */
-private async scanBlockRange(
+static async scanBlockRange(
+  provider: ethers.Provider,
   fromBlock: number,
   toBlock: number,
 ): Promise<DistributorInfo[]>;
@@ -141,9 +145,13 @@ private async scanBlockRange(
  * Validates event structure and extracts address from data field.
  *
  * @param log - Raw log entry from eth_getLogs
+ * @param blockTimestamp - Timestamp of the block containing the event
  * @returns Parsed distributor info or null if not a creation event
  */
-private parseDistributorCreation(log: ethers.Log): DistributorInfo | null;
+static parseDistributorCreation(
+  log: ethers.Log,
+  blockTimestamp: number,
+): DistributorInfo | null;
 
 /**
  * Determines distributor type from method signature.
@@ -152,7 +160,7 @@ private parseDistributorCreation(log: ethers.Log): DistributorInfo | null;
  * @param methodSig - 4-byte method signature
  * @returns Distributor type or null if unknown
  */
-private getDistributorType(methodSig: string): DistributorType | null;
+static getDistributorType(methodSig: string): DistributorType | null;
 ```
 
 ## Algorithm Details
@@ -161,9 +169,9 @@ private getDistributorType(methodSig: string): DistributorType | null;
 
 1. **Load existing data**
 
-   - Read current distributors and last_scanned_block from `distributors.json`
+   - Read current distributors and last_scanned_block using `fileManager.readDistributors()`
    - If no last_scanned_block exists, start from block 0
-   - Read block number for the end date from `block_numbers.json`
+   - Read block number for the end date using `fileManager.readBlockNumbers()`, throw error if not present in data
    - If existing data has chain_id, verify it matches `(await provider.getNetwork()).chainId`
 
 2. **Determine scan range**
@@ -189,7 +197,7 @@ private getDistributorType(methodSig: string): DistributorType | null;
    - Add new distributors (skip if already known)
    - Update last_scanned_block to the end block
    - Preserve all existing distributor data
-   - Save updated registry atomically with chain_id from `(await provider.getNetwork()).chainId`
+   - Save updated registry using `fileManager.writeDistributors()` with chain_id from `(await provider.getNetwork()).chainId`
 
 ### Event Filtering
 
@@ -227,32 +235,34 @@ const checksummed = ethers.getAddress(address); // Validate and checksum
 
 ### Input Requirements
 
-- End date must have corresponding entry in `block_numbers.json`
-- Date must be in YYYY-MM-DD format
-- Component tracks its own scanning progress
+- End date must have corresponding entry in block numbers data (accessed via `fileManager.readBlockNumbers()`)
+- Date is provided as a Date object and converted to YYYY-MM-DD format internally
+- Component tracks its own scanning progress in the metadata
 
 ### Output Format
 
-Updates the `distributors.json` file with discovered distributors:
+Returns a `DistributorsData` object (defined in `src/types/index.ts`):
 
-```json
-{
-  "metadata": {
-    "chain_id": 42161, // Retrieved from provider.getNetwork().chainId
-    "arbowner_address": "0x0000000000000000000000000000000000000070",
-    "last_scanned_block": 12356789
-  },
-  "distributors": {
-    "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
-      "type": "L2_BASE_FEE",
-      "discovered_block": 12345678,
-      "discovered_date": "2024-01-15",
-      "tx_hash": "0xabc123...",
-      "method": "0xee95a824",
-      "owner": "0x0000000000000000000000000000000000000070",
-      "event_data": "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9"
-    }
-  }
+```typescript
+interface DistributorsData {
+  metadata: {
+    chain_id: number; // Retrieved from provider.getNetwork().chainId
+    arbowner_address: string; // Always "0x0000000000000000000000000000000000000070"
+    last_scanned_block?: number; // Updated after each scan
+  };
+  distributors: {
+    [address: string]: DistributorInfo;
+  };
+}
+
+interface DistributorInfo {
+  type: DistributorType; // Enum: L2_BASE_FEE, L2_SURPLUS_FEE, L1_SURPLUS_FEE
+  block: number;
+  date: string; // YYYY-MM-DD format (stored as string for consistency)
+  tx_hash: string;
+  method: string; // Method signature (e.g., "0xee95a824")
+  owner: string; // Always the ArbOwner address
+  event_data: string; // Raw event data field
 }
 ```
 
@@ -275,10 +285,10 @@ Updates the `distributors.json` file with discovered distributors:
    - Unknown method signatures
    - Chain ID mismatch between provider and stored data
 
-3. **File System Errors**
-   - Unable to read input files
-   - Unable to write output
-   - Corrupted JSON data
+3. **FileManager Errors**
+   - Unable to read data via FileManager
+   - Unable to write data via FileManager
+   - Data validation failures
 
 ### Error Messages
 
@@ -303,18 +313,25 @@ Error: Invalid distributor address in event
 
 ```
 Error: Chain ID mismatch
-  Provider chain ID: 42170
-  Stored chain ID: 42161
-  Suggestion: Ensure you're connected to the same network as the stored data
+  Provider chain ID: 1
+  Stored chain ID: 42170
+  Suggestion: Ensure you're connected to Nova network (chain ID 42170)
 ```
 
 ## Implementation Requirements
+
+### Design Decisions
+
+1. **Static Methods for Testability**
+   - Core logic methods (`scanBlockRange`, `parseDistributorCreation`, `getDistributorType`) are public static
+   - Enables unit testing without instantiating the full class
+   - Allows testing of parsing logic in isolation from RPC/FileManager dependencies
 
 ### Performance Optimization
 
 1. **Batch Processing**
 
-   - Query multiple dates in single RPC call where possible
+   - Query multiple blocks in single RPC call where possible
    - Use reasonable block range sizes (e.g., 10,000 blocks)
    - Implement pagination for large result sets
 
@@ -331,28 +348,20 @@ Error: Chain ID mismatch
 
 ### Retry Strategy
 
+The component should use the shared retry utility for all RPC calls to handle transient failures:
+
 ```typescript
-const MAX_RETRIES = 3;
-const INITIAL_DELAY = 1000; // 1 second
 const MAX_BLOCK_RANGE = 10000; // Prevent overwhelming RPC
 
-async function queryWithRetry(
-  provider: ethers.Provider,
-  filter: ethers.Filter,
-  retries: number = MAX_RETRIES,
-): Promise<ethers.Log[]> {
-  try {
-    return await provider.getLogs(filter);
-  } catch (error) {
-    if (retries > 0) {
-      const delay = INITIAL_DELAY * Math.pow(2, MAX_RETRIES - retries);
-      await sleep(delay);
-      return queryWithRetry(provider, filter, retries - 1);
-    }
-    throw error;
-  }
-}
+// Use the shared retry utility for RPC calls
+const logs = await retryWithBackoff(() => provider.getLogs(filter));
 ```
+
+Configuration:
+
+- Maximum block range per query: 10,000 blocks
+- Retry behavior is handled by the shared utility
+- No custom retry logic needed in this component
 
 ### Validation Requirements
 
@@ -360,7 +369,7 @@ async function queryWithRetry(
 
    - Fetch chain ID from provider using `(await provider.getNetwork()).chainId`
    - Verify chain ID matches stored metadata if data exists
-   - Ensure we're on a supported Arbitrum chain (42161 or 42170)
+   - Ensure we're on Nova chain (42170)
 
 2. **Address Validation**
 
@@ -376,26 +385,32 @@ async function queryWithRetry(
 
 4. **Data Consistency**
    - Never overwrite existing distributor data
-   - Ensure discovered_date matches actual block date
+   - Ensure date matches actual block date (formatted as YYYY-MM-DD)
    - Verify block numbers are within scanned range
 
 ## Testing Requirements
 
 ### Unit Tests
 
-1. **Event Parsing**
+1. **Event Parsing** (using static methods)
 
-   - Test parsing of valid OwnerActs events
+   - Test `parseDistributorCreation()` with valid OwnerActs events
    - Test rejection of malformed events
-   - Test all distributor types
+   - Test `getDistributorType()` for all distributor types
 
-2. **Address Extraction**
+2. **Address Extraction** (via `parseDistributorCreation()`)
 
    - Test extraction from properly padded data
    - Test checksum validation
    - Test invalid address formats
 
-3. **Progress Tracking**
+3. **Block Range Scanning** (using `scanBlockRange()`)
+
+   - Test querying events in a specific range
+   - Test handling of empty ranges
+   - Test batch processing and pagination
+
+4. **Progress Tracking**
    - Test resuming from last_scanned_block
    - Test first run (no previous scan)
    - Test when already up to date
@@ -404,13 +419,13 @@ async function queryWithRetry(
 
 1. **RPC Integration**
 
-   - Test with real Arbitrum RPC endpoint
+   - Test with real Nova RPC endpoint
    - Verify known historical distributors
-   - Test retry logic with rate limits
+   - Test error handling when RPC calls fail after retries are exhausted
 
-2. **File Integration**
-   - Test reading block numbers
-   - Test updating distributor registry
+2. **FileManager Integration**
+   - Test reading block numbers via FileManager
+   - Test updating distributor registry via FileManager
    - Test preserving existing data
 
 ### Test Scenarios
@@ -473,7 +488,9 @@ const fileManager = new FileManager("./store");
 const distributorDetector = new DistributorDetector(fileManager, provider);
 
 // Detect distributors up to end of January 2024
-const distributors = await distributorDetector.detectDistributors("2024-01-31");
+const distributors = await distributorDetector.detectDistributors(
+  new Date("2024-01-31"),
+);
 
 console.log(
   `Found ${Object.keys(distributors.distributors).length} distributors`,
@@ -481,22 +498,7 @@ console.log(
 console.log(`Scanned up to block ${distributors.metadata.last_scanned_block}`);
 ```
 
-## Backward Compatibility
-
-For backward compatibility, the module may also export a standalone function that creates a DistributorDetector instance internally:
-
-```typescript
-import { detectDistributors } from "./distributor-detector";
-
-// This function maintains the original API but uses the DistributorDetector class internally
-const distributors = await detectDistributors(
-  "2024-01-31",
-  provider,
-  fileManager,
-);
-```
-
-## Future Enhancements
+## Out of Scope
 
 1. **L1 Base Fee Detection**
 
