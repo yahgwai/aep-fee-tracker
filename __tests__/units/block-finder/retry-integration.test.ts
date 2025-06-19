@@ -1,7 +1,21 @@
-import { describe, it, expect, jest } from "@jest/globals";
+import {
+  describe,
+  it,
+  expect,
+  jest,
+  beforeEach,
+  afterEach,
+} from "@jest/globals";
 import { withRetry } from "../../../src/types";
 
 describe("Retry Integration", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
   it("returns result on first successful call", async () => {
     const mockCall = jest
       .fn<() => Promise<{ number: number }>>()
@@ -24,12 +38,17 @@ describe("Retry Integration", () => {
       .mockRejectedValueOnce(new Error("Timeout"))
       .mockResolvedValueOnce({ number: 100 });
 
-    const result = await withRetry(mockCall, {
+    const promise = withRetry(mockCall, {
       maxRetries: 3,
       initialDelay: 100,
       backoffMultiplier: 2,
     });
 
+    // Advance through retry delays
+    await jest.advanceTimersByTimeAsync(100); // First retry
+    await jest.advanceTimersByTimeAsync(200); // Second retry
+
+    const result = await promise;
     expect(result).toEqual({ number: 100 });
     expect(mockCall).toHaveBeenCalledTimes(3);
   });
@@ -42,14 +61,18 @@ describe("Retry Integration", () => {
       .mockRejectedValue(new Error("Error 2"))
       .mockRejectedValue(lastError);
 
-    await expect(
-      withRetry(mockCall, {
-        maxRetries: 3,
-        initialDelay: 100,
-        backoffMultiplier: 2,
-      }),
-    ).rejects.toThrow(lastError);
+    const promise = withRetry(mockCall, {
+      maxRetries: 3,
+      initialDelay: 100,
+      backoffMultiplier: 2,
+    }).catch((e) => e);
 
+    // Advance through retry delays
+    await jest.advanceTimersByTimeAsync(100); // First retry
+    await jest.advanceTimersByTimeAsync(200); // Second retry
+
+    const error = await promise;
+    expect(error).toBe(lastError);
     expect(mockCall).toHaveBeenCalledTimes(3);
   });
 
@@ -60,17 +83,24 @@ describe("Retry Integration", () => {
       .mockRejectedValueOnce(new Error("Error 2"))
       .mockResolvedValueOnce({ number: 100 });
 
-    const startTime = Date.now();
-    await withRetry(mockCall, {
+    const promise = withRetry(mockCall, {
       maxRetries: 3,
       initialDelay: 100,
       backoffMultiplier: 2,
     });
-    const duration = Date.now() - startTime;
 
-    // Should take at least 300ms (100ms + 200ms delays)
-    expect(duration).toBeGreaterThanOrEqual(300);
+    // First attempt is immediate
+    expect(mockCall).toHaveBeenCalledTimes(1);
+
+    // Advance by 100ms for first retry
+    await jest.advanceTimersByTimeAsync(100);
+    expect(mockCall).toHaveBeenCalledTimes(2);
+
+    // Advance by 200ms for second retry (exponential backoff)
+    await jest.advanceTimersByTimeAsync(200);
     expect(mockCall).toHaveBeenCalledTimes(3);
+
+    await promise;
   });
 
   it("respects shouldRetry predicate", async () => {
@@ -82,14 +112,20 @@ describe("Retry Integration", () => {
       .mockRejectedValueOnce(retryableError)
       .mockRejectedValueOnce(nonRetryableError);
 
-    await expect(
-      withRetry(mockCall, {
-        maxRetries: 3,
-        initialDelay: 100,
-        shouldRetry: (error) => error.message !== "Do not retry",
-      }),
-    ).rejects.toThrow(nonRetryableError);
+    const promise = withRetry(mockCall, {
+      maxRetries: 3,
+      initialDelay: 100,
+      shouldRetry: (error) => error.message !== "Do not retry",
+    }).catch((e) => e);
 
+    // First attempt fails with retryable error
+    expect(mockCall).toHaveBeenCalledTimes(1);
+
+    // Advance timer for retry
+    await jest.advanceTimersByTimeAsync(100);
+
+    const error = await promise;
+    expect(error).toBe(nonRetryableError);
     // Should stop after second attempt due to shouldRetry returning false
     expect(mockCall).toHaveBeenCalledTimes(2);
   });
