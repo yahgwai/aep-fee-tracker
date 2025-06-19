@@ -19,7 +19,7 @@ export const MAX_UINT256 =
 
 // Test setup helpers
 export function setupFileManager(): FileManagerInterface {
-  return new FileManager();
+  return new FileManager("store");
 }
 
 export interface TestContext {
