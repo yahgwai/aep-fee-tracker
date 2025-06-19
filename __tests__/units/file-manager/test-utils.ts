@@ -2,7 +2,10 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { FileManager } from "../../../src/file-manager";
-import { FileManager as FileManagerInterface } from "../../../src/types";
+import {
+  FileManager as FileManagerInterface,
+  STORE_DIR,
+} from "../../../src/types";
 
 // Common test constants
 export const VALID_ADDRESS = "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9";
@@ -19,7 +22,7 @@ export const MAX_UINT256 =
 
 // Test setup helpers
 export function setupFileManager(): FileManagerInterface {
-  return new FileManager();
+  return new FileManager(STORE_DIR);
 }
 
 export interface TestContext {

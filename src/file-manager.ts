@@ -11,7 +11,6 @@ import {
   DistributorType,
   BalanceData,
   OutflowData,
-  STORE_DIR,
   DISTRIBUTORS_DIR,
 } from "./types";
 
@@ -40,28 +39,37 @@ const EXAMPLE_WEI_VALUE = "1230000000000000000000";
 const WEI_DECIMAL_REGEX = /^\d+$/;
 
 export class FileManager implements FileManagerInterface {
+  private readonly storeDirectory: string;
+
+  constructor(storeDirectory: string) {
+    this.storeDirectory = storeDirectory;
+  }
+
   readBlockNumbers(): BlockNumberData | undefined {
     return this.readJsonFileOrUndefined(
-      path.join(STORE_DIR, BLOCK_NUMBERS_FILE),
+      path.join(this.storeDirectory, BLOCK_NUMBERS_FILE),
     );
   }
 
   writeBlockNumbers(data: BlockNumberData): void {
     this.validateBlockNumberData(data);
     this.ensureStoreDirectory();
-    this.writeJsonFile(path.join(STORE_DIR, BLOCK_NUMBERS_FILE), data);
+    this.writeJsonFile(
+      path.join(this.storeDirectory, BLOCK_NUMBERS_FILE),
+      data,
+    );
   }
 
   readDistributors(): DistributorsData | undefined {
     return this.readJsonFileOrUndefined(
-      path.join(STORE_DIR, DISTRIBUTORS_FILE),
+      path.join(this.storeDirectory, DISTRIBUTORS_FILE),
     );
   }
 
   writeDistributors(data: DistributorsData): void {
     this.validateDistributorsData(data);
     this.ensureStoreDirectory();
-    this.writeJsonFile(path.join(STORE_DIR, DISTRIBUTORS_FILE), data);
+    this.writeJsonFile(path.join(this.storeDirectory, DISTRIBUTORS_FILE), data);
   }
 
   readDistributorBalances(address: Address): BalanceData | undefined {
@@ -99,8 +107,8 @@ export class FileManager implements FileManagerInterface {
   }
 
   ensureStoreDirectory(): void {
-    if (!fs.existsSync(STORE_DIR)) {
-      fs.mkdirSync(STORE_DIR, { recursive: true });
+    if (!fs.existsSync(this.storeDirectory)) {
+      fs.mkdirSync(this.storeDirectory, { recursive: true });
     }
   }
 
@@ -127,14 +135,14 @@ export class FileManager implements FileManagerInterface {
   }
 
   private ensureDistributorDirectory(address: Address): void {
-    const dirPath = path.join(STORE_DIR, DISTRIBUTORS_DIR, address);
+    const dirPath = path.join(this.storeDirectory, DISTRIBUTORS_DIR, address);
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
   }
 
   private getDistributorFilePath(address: Address, fileName: string): string {
-    return path.join(STORE_DIR, DISTRIBUTORS_DIR, address, fileName);
+    return path.join(this.storeDirectory, DISTRIBUTORS_DIR, address, fileName);
   }
 
   private readJsonFileOrUndefined<T>(filePath: string): T | undefined {
