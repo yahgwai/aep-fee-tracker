@@ -5,6 +5,7 @@ import {
   ALL_DISTRIBUTOR_METHOD_SIGNATURES,
   OWNER_ACTS_EVENT_ABI,
 } from "../../../src/constants/distributor-detector";
+import { CONTRACTS, DISTRIBUTOR_METHODS } from "../../../src/types";
 
 describe("Distributor Detector Constants", () => {
   describe("ARBOWNER_PRECOMPILE_ADDRESS", () => {
@@ -103,6 +104,25 @@ describe("Distributor Detector Constants", () => {
       expect(Object.isFrozen(DISTRIBUTOR_METHOD_SIGNATURES)).toBe(false);
       expect(Object.isFrozen(ALL_DISTRIBUTOR_METHOD_SIGNATURES)).toBe(false);
       expect(Object.isFrozen(OWNER_ACTS_EVENT_ABI)).toBe(false);
+    });
+  });
+
+  describe("Consistency with types", () => {
+    it("ARBOWNER_PRECOMPILE_ADDRESS should match CONTRACTS.ARB_OWNER", () => {
+      expect(ARBOWNER_PRECOMPILE_ADDRESS).toBe(CONTRACTS.ARB_OWNER);
+    });
+
+    it("DISTRIBUTOR_METHOD_SIGNATURES should match DISTRIBUTOR_METHODS", () => {
+      expect(DISTRIBUTOR_METHOD_SIGNATURES).toBe(DISTRIBUTOR_METHODS);
+      expect(DISTRIBUTOR_METHOD_SIGNATURES.L2_BASE_FEE).toBe(
+        DISTRIBUTOR_METHODS.L2_BASE_FEE,
+      );
+      expect(DISTRIBUTOR_METHOD_SIGNATURES.L2_SURPLUS_FEE).toBe(
+        DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
+      );
+      expect(DISTRIBUTOR_METHOD_SIGNATURES.L1_SURPLUS_FEE).toBe(
+        DISTRIBUTOR_METHODS.L1_SURPLUS_FEE,
+      );
     });
   });
 });
