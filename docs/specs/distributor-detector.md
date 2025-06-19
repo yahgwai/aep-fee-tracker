@@ -17,14 +17,12 @@ The Distributor Detector component discovers all reward distributor contracts cr
 ### Component Role
 
 - **Position**: Early stage component that provides distributor registry for all other components
-- **Dependencies**: File Manager, Block Finder data, Nova RPC provider
 - **Consumers**: Balance Fetcher, Event Scanner, Fee Calculator
 
 ## Dependencies
 
 - **File Manager**: For reading block numbers and writing distributor data
-- **Block Numbers**: Must have block mappings before scanning
-- **Nova RPC Provider**: For querying logs
+- **Nova RPC Provider**: For querying logs and chain ID
 - **ethers.js**: For RPC communication and address validation
 
 ## Data Flow
@@ -185,7 +183,7 @@ static async isRewardDistributor(
    - Read current distributors and last_scanned_block using `fileManager.readDistributors()`
    - If no last_scanned_block exists, start from block 0
    - Read block number for the end date using `fileManager.readBlockNumbers()`, throw error if not present in data
-   - If existing data has chain_id, verify it matches `(await provider.getNetwork()).chainId`
+   - If existing data has chain_id, verify it matches provider's chain ID
 
 2. **Determine scan range**
 
@@ -197,7 +195,6 @@ static async isRewardDistributor(
 
    - Query `OwnerActs` events from ArbOwner precompile
    - Filter by method signatures in topics
-   - Process in batches to handle RPC limits
 
 4. **Process events**
 
@@ -217,7 +214,7 @@ static async isRewardDistributor(
    - Add new distributors (skip if already known)
    - Update last_scanned_block to the end block
    - Preserve all existing distributor data
-   - Save updated registry using `fileManager.writeDistributors()` with chain_id from `(await provider.getNetwork()).chainId`
+   - Save updated registry using `fileManager.writeDistributors()` with chain_id from provider
 
 ### Event Filtering
 
@@ -278,9 +275,6 @@ const distributorAddress = ethers.AbiCoder.defaultAbiCoder().decode(
   ["address"],
   "0x" + eventData.substring(10), // Skip method selector in data
 )[0]; // "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
-
-// Checksum the address
-const checksummedAddress = ethers.getAddress(distributorAddress);
 ```
 
 ### Contract Verification
@@ -322,9 +316,9 @@ Returns a `DistributorsData` object (defined in `src/types/index.ts`):
 ```typescript
 interface DistributorsData {
   metadata: {
-    chain_id: number; // Retrieved from provider.getNetwork().chainId
-    arbowner_address: string; // Always "0x0000000000000000000000000000000000000070"
-    last_scanned_block?: number; // Updated after each scan
+    chain_id: number;
+    arbowner_address: string; // ArbOwner precompile address
+    last_scanned_block?: number; // Tracks scanning progress
   };
   distributors: {
     [address: string]: DistributorInfo;
@@ -337,7 +331,7 @@ interface DistributorInfo {
   date: string; // YYYY-MM-DD format (stored as string for consistency)
   tx_hash: string;
   method: string; // Method signature (e.g., "0x57f585db")
-  owner: string; // Always the ArbOwner address
+  owner: string;
   event_data: string; // Raw event data field
   is_reward_distributor: boolean; // True if deployed code matches expected reward distributor bytecode
 }
@@ -345,55 +339,7 @@ interface DistributorInfo {
 
 ## Error Handling
 
-### Error Types
-
-1. **RPC Errors**
-
-   - Connection failures
-   - Rate limiting
-   - Invalid responses
-   - Missing historical data
-
-2. **Data Errors**
-
-   - Missing block numbers
-   - Invalid event structure
-   - Malformed addresses
-   - Unknown method signatures
-   - Chain ID mismatch between provider and stored data
-
-3. **FileManager Errors**
-   - Unable to read data via FileManager
-   - Unable to write data via FileManager
-   - Data validation failures
-
-### Error Messages
-
-All errors must provide context and actionable information:
-
-```
-Error: Failed to query OwnerActs events
-  Block range: 12345678 to 12356789
-  Last scanned: 12345677
-  Target end date: 2024-01-15
-  RPC Error: rate limit exceeded
-  Suggestion: Reduce batch size or add delay between requests
-```
-
-```
-Error: Invalid distributor address in event
-  Transaction: 0xabc123...
-  Block: 12345678
-  Data field: 0x1234... (invalid length)
-  Expected: 32-byte padded address
-```
-
-```
-Error: Chain ID mismatch
-  Provider chain ID: 1
-  Stored chain ID: 42170
-  Suggestion: Ensure you're connected to Nova network (chain ID 42170)
-```
+All errors should contain context and actionable information to help developers debug and resolve issues. The implementation should handle errors gracefully and provide meaningful messages to assist with troubleshooting.
 
 ## Implementation Requirements
 
@@ -406,148 +352,45 @@ Error: Chain ID mismatch
 
 ### Performance Optimization
 
-1. **Batch Processing**
-
-   - Query multiple blocks in single RPC call where possible
-   - Use reasonable block range sizes (e.g., 10,000 blocks)
-   - Implement pagination for large result sets
-
-2. **Efficient Filtering**
+1. **Efficient Filtering**
 
    - Use topic filters to reduce data transfer
    - Only query specific method signatures
    - Skip processing if no new dates
 
-3. **Incremental Updates**
+2. **Incremental Updates**
    - Only scan from last_scanned_block + 1
    - Preserve existing distributor data
-   - Track progress to enable resume after interruption
 
 ### Retry Strategy
 
 The component should use the shared retry utility for all RPC calls to handle transient failures:
 
 ```typescript
-const MAX_BLOCK_RANGE = 10000; // Prevent overwhelming RPC
-
 // Use the shared retry utility for RPC calls
 const logs = await retryWithBackoff(() => provider.getLogs(filter));
 ```
 
-Configuration:
-
-- Maximum block range per query: 10,000 blocks
-- Retry behavior is handled by the shared utility
-- No custom retry logic needed in this component
+The retry behavior is handled by the shared utility. No custom retry logic is needed in this component.
 
 ### Validation Requirements
 
-1. **Chain ID Validation**
-
-   - Fetch chain ID from provider using `(await provider.getNetwork()).chainId`
-   - Verify chain ID matches stored metadata if data exists
-
-2. **Address Validation**
+1. **Address Validation**
 
    - All addresses must be checksummed using ethers.js
    - Reject zero address or invalid formats
    - Ensure addresses are 20 bytes
 
-3. **Event Validation**
+2. **Event Validation**
 
    - Verify event comes from ArbOwner precompile
    - Check method signature is recognized
    - Validate data field length and format
 
-4. **Data Consistency**
+3. **Data Consistency**
    - Never overwrite existing distributor data
    - Ensure date matches actual block date (formatted as YYYY-MM-DD)
    - Verify block numbers are within scanned range
-
-## Testing Requirements
-
-### Unit Tests
-
-1. **Event Parsing** (using static methods)
-
-   - Test `parseDistributorCreation()` with valid OwnerActs events
-   - Test rejection of malformed events
-   - Test `getDistributorType()` for all distributor types
-
-2. **Address Extraction** (via `parseDistributorCreation()`)
-
-   - Test extraction from properly padded data
-   - Test checksum validation
-   - Test invalid address formats
-
-3. **Block Range Scanning** (using `scanBlockRange()`)
-
-   - Test querying events in a specific range
-   - Test handling of empty ranges
-   - Test batch processing and pagination
-
-4. **Progress Tracking**
-   - Test resuming from last_scanned_block
-   - Test first run (no previous scan)
-   - Test when already up to date
-
-### Integration Tests
-
-1. **RPC Integration**
-
-   - Test with real Nova RPC endpoint
-   - Verify known historical distributors
-   - Test error handling when RPC calls fail after retries are exhausted
-
-2. **FileManager Integration**
-   - Test reading block numbers via FileManager
-   - Test updating distributor registry via FileManager
-   - Test preserving existing data
-
-### Test Scenarios
-
-1. **New Distributor Discovery**
-
-   - Scan range with known new distributor
-   - Verify correct extraction and storage
-   - Check all metadata fields
-
-2. **Incremental Updates**
-
-   - Run detector multiple times
-   - Verify it resumes from last_scanned_block
-   - Ensure no duplicates or missed blocks
-
-3. **Multiple Distributors**
-
-   - Scan range with multiple creation events
-   - Verify all are discovered
-   - Check correct type assignment
-
-4. **Edge Cases**
-   - Already up to date (last_scanned_block >= end_date_block)
-   - No events in range
-   - Very large block ranges
-   - Multiple distributors in same block
-
-## Security Considerations
-
-1. **Input Validation**
-
-   - Validate all dates before processing
-   - Ensure provider is connected
-   - Check file permissions before writing
-
-2. **Address Security**
-
-   - Always use checksummed addresses
-   - Validate against zero address
-   - Ensure addresses are properly formatted
-
-3. **Event Authenticity**
-   - Only process events from ArbOwner precompile
-   - Verify event structure matches expected format
-   - Validate method signatures are known
 
 ## Usage Example
 
