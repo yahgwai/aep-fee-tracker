@@ -33,5 +33,6 @@ module.exports = {
   verbose: true,
   clearMocks: true,
   restoreMocks: true,
-  testTimeout: 10000
+  testTimeout: 10000,
+  maxConcurrency: 10
 };

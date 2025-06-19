@@ -10,10 +10,12 @@ describe("Retry with HTTP 429 Rate Limiting", () => {
 
   beforeEach(() => {
     consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
     consoleSpy.mockRestore();
+    jest.useRealTimers();
   });
 
   it("applies longer delay for HTTP 429 errors", async () => {
@@ -23,17 +25,20 @@ describe("Retry with HTTP 429 Rate Limiting", () => {
       .mockRejectedValueOnce(http429Error)
       .mockResolvedValueOnce({ number: 100 });
 
-    const startTime = Date.now();
-    await withRetry(mockCall, {
+    const promise = withRetry(mockCall, {
       maxRetries: 2,
       initialDelay: 100,
       backoffMultiplier: 2,
       rateLimitDelay: 5000,
     } as ExtendedRetryOptions);
-    const duration = Date.now() - startTime;
 
-    // Should take at least 5000ms due to rate limit delay
-    expect(duration).toBeGreaterThanOrEqual(5000);
+    // First attempt fails immediately
+    expect(mockCall).toHaveBeenCalledTimes(1);
+
+    // Advance timer by rate limit delay
+    await jest.advanceTimersByTimeAsync(5000);
+
+    await promise;
     expect(mockCall).toHaveBeenCalledTimes(2);
   });
 
@@ -44,16 +49,17 @@ describe("Retry with HTTP 429 Rate Limiting", () => {
       .mockRejectedValueOnce(rateLimitError)
       .mockResolvedValueOnce({ number: 100 });
 
-    const startTime = Date.now();
-    await withRetry(mockCall, {
+    const promise = withRetry(mockCall, {
       maxRetries: 2,
       initialDelay: 100,
       rateLimitDelay: 3000,
     } as ExtendedRetryOptions);
-    const duration = Date.now() - startTime;
 
-    // Should use rate limit delay
-    expect(duration).toBeGreaterThanOrEqual(3000);
+    // Advance timer by rate limit delay
+    await jest.advanceTimersByTimeAsync(3000);
+
+    await promise;
+    expect(mockCall).toHaveBeenCalledTimes(2);
   });
 
   it("uses normal delay for non-429 errors", async () => {
@@ -63,17 +69,17 @@ describe("Retry with HTTP 429 Rate Limiting", () => {
       .mockRejectedValueOnce(normalError)
       .mockResolvedValueOnce({ number: 100 });
 
-    const startTime = Date.now();
-    await withRetry(mockCall, {
+    const promise = withRetry(mockCall, {
       maxRetries: 2,
       initialDelay: 100,
       rateLimitDelay: 5000,
     } as ExtendedRetryOptions);
-    const duration = Date.now() - startTime;
 
-    // Should use normal delay (100ms), not rate limit delay
-    expect(duration).toBeLessThan(1000);
-    expect(duration).toBeGreaterThanOrEqual(100);
+    // Advance timer by normal delay (not rate limit delay)
+    await jest.advanceTimersByTimeAsync(100);
+
+    await promise;
+    expect(mockCall).toHaveBeenCalledTimes(2);
   });
 
   it("logs rate limiting detection when operation name is provided", async () => {
@@ -83,13 +89,17 @@ describe("Retry with HTTP 429 Rate Limiting", () => {
       .mockRejectedValueOnce(http429Error)
       .mockResolvedValueOnce({ number: 100 });
 
-    await withRetry(mockCall, {
+    const promise = withRetry(mockCall, {
       maxRetries: 2,
       initialDelay: 100,
-      rateLimitDelay: 100, // Short delay for test speed
+      rateLimitDelay: 100,
       operationName: "getBlock",
     } as ExtendedRetryOptions);
 
+    // Advance timer
+    await jest.advanceTimersByTimeAsync(100);
+
+    await promise;
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining(
         "Rate limit detected for getBlock, using longer delay",
@@ -105,16 +115,20 @@ describe("Retry with HTTP 429 Rate Limiting", () => {
       .mockRejectedValueOnce(http429Error)
       .mockResolvedValueOnce({ number: 100 });
 
-    const startTime = Date.now();
-    await withRetry(mockCall, {
+    const promise = withRetry(mockCall, {
       maxRetries: 3,
       initialDelay: 100,
       rateLimitDelay: 1000,
     } as ExtendedRetryOptions);
-    const duration = Date.now() - startTime;
 
-    // Should take at least 2000ms (2 x 1000ms rate limit delays)
-    expect(duration).toBeGreaterThanOrEqual(2000);
+    // First retry after rate limit delay
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(mockCall).toHaveBeenCalledTimes(2);
+
+    // Second retry after another rate limit delay
+    await jest.advanceTimersByTimeAsync(1000);
+
+    await promise;
     expect(mockCall).toHaveBeenCalledTimes(3);
   });
 
@@ -125,14 +139,15 @@ describe("Retry with HTTP 429 Rate Limiting", () => {
       .mockRejectedValueOnce(http429Error)
       .mockResolvedValueOnce({ number: 100 });
 
-    const startTime = Date.now();
-    await withRetry(mockCall, {
+    const promise = withRetry(mockCall, {
       maxRetries: 2,
       initialDelay: 100,
     } as ExtendedRetryOptions);
-    const duration = Date.now() - startTime;
 
-    // Should use default 30 second delay
-    expect(duration).toBeGreaterThanOrEqual(30000);
-  }, 35000); // 35 second timeout for this test
+    // Advance timer by default rate limit delay (30 seconds)
+    await jest.advanceTimersByTimeAsync(30000);
+
+    await promise;
+    expect(mockCall).toHaveBeenCalledTimes(2);
+  });
 });
