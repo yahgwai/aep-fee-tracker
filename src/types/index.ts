@@ -8,6 +8,12 @@ export {
   REFERENCE_REWARD_DISTRIBUTOR_ADDRESS,
 } from "../constants/reward-distributor-bytecode";
 
+export {
+  ARBOWNER_ADDRESS,
+  OWNER_ACTS_EVENT_TOPIC,
+  DISTRIBUTOR_CREATION_METHODS,
+} from "../constants/distributor-detector";
+
 // Core Data Types
 
 export interface BlockNumberData {
