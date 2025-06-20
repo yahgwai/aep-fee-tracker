@@ -12,7 +12,7 @@ import {
   OWNER_ACTS_EVENT_ABI,
   ARBOWNER_PRECOMPILE_ADDRESS,
   OWNER_ACTS_EVENT_SIGNATURE,
-  ALL_DISTRIBUTOR_METHOD_SIGNATURES,
+  ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
 } from "./constants/distributor-detector";
 
 /**
@@ -173,7 +173,7 @@ export class DistributorDetector {
       address: ARBOWNER_PRECOMPILE_ADDRESS,
       topics: [
         OWNER_ACTS_EVENT_SIGNATURE,
-        [...ALL_DISTRIBUTOR_METHOD_SIGNATURES],
+        [...ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED],
       ],
       fromBlock,
       toBlock,
