@@ -214,6 +214,13 @@ interface EthBalanceResponse {
    - Distributor created mid-period
    - Zero balance distributor
    - Large balance distributor (testing decimal string handling)
+5. **Available Balance Data**: Test suite includes balance data files in `__tests__/test-data/distributor-detector/balance_data/` for 5 distributors:
+   - 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB (created 2022-07-12, Block 152)
+   - 0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce (created 2023-03-16, Block 3163115)
+   - 0x509386DbF5C0BE6fd68Df97A05fdB375136c32De (created 2023-03-16, Block 3163115)
+   - 0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f (created 2023-03-16, Block 3163115)
+   - 0xdff90519a9DE6ad469D4f9839a9220C5D340B792 (created 2022-08-09, Block 684)
+   - Note: Test data includes balances for all dates regardless of creation date for testing purposes
 
 ### Data Sources
 

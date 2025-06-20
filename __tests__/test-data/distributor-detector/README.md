@@ -2,6 +2,15 @@
 
 This directory contains test data files used by the distributor detector test suite. All data is derived from real Arbitrum Nova blockchain events to ensure accurate testing.
 
+## Overview
+
+This test data directory provides comprehensive data for testing the distributor detection and balance fetching functionality. The data includes:
+
+- Raw distributor creation events from Arbitrum Nova
+- Historical balance snapshots for multiple distributors
+- Block number mappings for date-based lookups
+- Reference bytecode for contract verification
+
 ## Files
 
 ### distributor-creation-events-raw.json
@@ -32,6 +41,8 @@ The blocks in this file are specifically chosen to cover the date ranges when di
 
 Generated using BlockFinder to ensure consistency with production data formats.
 
+**Important**: The logs in the raw creation events can be parsed using the `DistributorDetector.parseDistributorCreation()` static function. This function extracts the distributor address and type from the raw event data.
+
 ### reward-distributor-bytecode.json
 
 Reference bytecode for the reward distributor contract. Contains:
@@ -39,6 +50,100 @@ Reference bytecode for the reward distributor contract. Contains:
 - **Contract**: RewardDistributor implementation
 - **Format**: Deployed bytecode (not creation bytecode)
 - **Usage**: Verifying deployed distributor contracts match expected implementation
+
+### balance_data/ Directory
+
+Contains historical balance snapshots for distributors. Each distributor has its own JSON file with balance data across multiple dates.
+
+**Available Distributors with Balance Data**:
+
+1. **0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB.json**
+
+   - L2_BASE_FEE distributor
+   - Created: 2022-07-12 (Block 152)
+   - Has balance data for all 9 test dates
+
+2. **0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce.json**
+
+   - L1_SURPLUS_FEE distributor
+   - Created: 2023-03-16 (Block 3163115)
+   - Has balance data for all 9 test dates
+
+3. **0x509386DbF5C0BE6fd68Df97A05fdB375136c32De.json**
+
+   - L2_SURPLUS_FEE distributor
+   - Created: 2023-03-16 (Block 3163115)
+   - Has balance data for all 9 test dates
+
+4. **0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f.json**
+
+   - L2_BASE_FEE distributor
+   - Created: 2023-03-16 (Block 3163115)
+   - Has balance data for all 9 test dates
+
+5. **0xdff90519a9DE6ad469D4f9839a9220C5D340B792.json**
+   - L2_SURPLUS_FEE distributor
+   - Created: 2022-08-09 (Block 684)
+   - Has balance data for all 9 test dates
+
+**Balance Data Format**:
+
+```json
+{
+  "metadata": {
+    "chain_id": 42170,
+    "reward_distributor": "0x..."
+  },
+  "balances": {
+    "YYYY-MM-DD": {
+      "block_number": 12345,
+      "balance_wei": "1234567890000000000"
+    }
+  }
+}
+```
+
+**Test Note**: The balance data includes entries for all dates regardless of distributor creation date. This simplified approach is used for testing purposes only. In production, distributors only have balance data from their creation date onward.
+
+## Parsing Raw Events
+
+The raw distributor creation events in `distributor-creation-events-raw.json` can be parsed using the `DistributorDetector.parseDistributorCreation()` static function. This function:
+
+- Accepts a raw event log object from the JSON file
+- Extracts the distributor address and type from the event data
+- Returns structured distributor information
+
+**Usage Example**:
+
+```typescript
+import { DistributorDetector } from "../../src/distributor-detector";
+import rawEvents from "./distributor-creation-events-raw.json";
+
+// Parse a single event
+const event = rawEvents.events[0];
+const distributorInfo = DistributorDetector.parseDistributorCreation(event);
+// Returns: { address: '0x...', type: 'L2_BASE_FEE' }
+```
+
+The function handles all three distributor types:
+
+- L2_BASE_FEE (method selector: 0x3137b3de)
+- L2_SURPLUS_FEE (method selector: 0x95e6405f)
+- L1_SURPLUS_FEE (method selector: 0xfc66d5f3)
+
+## Test Dates Coverage
+
+The test data covers 9 specific dates from 2022-07-11 to 2023-03-17:
+
+1. **2022-07-11** - Day before first distributor creation
+2. **2022-08-08** - Between first and second distributor creation
+3. **2022-09-05** - After second distributor creation
+4. **2022-10-03** - Mid-period data point
+5. **2022-10-31** - Mid-period data point
+6. **2022-11-28** - Mid-period data point
+7. **2022-12-26** - Mid-period data point
+8. **2023-01-23** - Mid-period data point
+9. **2023-03-17** - Day after last three distributor creations
 
 ## Data Sources
 
@@ -54,3 +159,4 @@ All test data is sourced from:
 
 - Distributor Detector specification: `/docs/specs/distributor-detector.md`
 - BlockFinder specification: `/docs/specs/block-finder.md`
+- BalanceFetcher specification: `/docs/specs/balance-fetcher.md`
