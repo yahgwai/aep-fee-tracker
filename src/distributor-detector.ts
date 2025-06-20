@@ -15,6 +15,9 @@ import {
   ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
 } from "./constants/distributor-detector";
 
+// Maximum block range for RPC providers (e.g., Alchemy limit)
+const DEFAULT_BLOCK_CHUNK_SIZE = 10000;
+
 /**
  * Creates a new DistributorDetector instance with the specified dependencies.
  *
@@ -167,14 +170,25 @@ export class DistributorDetector {
     provider: ethers.Provider,
     fromBlock: number,
     toBlock: number,
+    chunkSize: number = DEFAULT_BLOCK_CHUNK_SIZE,
   ): Promise<DistributorInfo[]> {
-    const CHUNK_SIZE = 10000;
+    const totalBlocks = toBlock - fromBlock + 1;
+    const needsChunking = totalBlocks > chunkSize;
+
+    if (needsChunking) {
+      const totalChunks = Math.ceil(totalBlocks / chunkSize);
+      console.log(
+        `Scanning ${totalBlocks} blocks in ${totalChunks} chunks of up to ${chunkSize} blocks each`,
+      );
+    }
+
     const allLogs: ethers.Log[] = [];
+    let chunksProcessed = 0;
 
     // Split range into chunks
     let currentBlock = fromBlock;
     while (currentBlock <= toBlock) {
-      const endBlock = Math.min(currentBlock + CHUNK_SIZE - 1, toBlock);
+      const endBlock = Math.min(currentBlock + chunkSize - 1, toBlock);
 
       // Construct filter with OR logic for method signatures
       const filter = {
@@ -194,6 +208,18 @@ export class DistributorDetector {
       });
 
       allLogs.push(...logs);
+
+      // Log progress for multi-chunk operations
+      if (needsChunking) {
+        chunksProcessed++;
+        const progress = Math.round(
+          (chunksProcessed / Math.ceil(totalBlocks / chunkSize)) * 100,
+        );
+        console.log(
+          `Progress: ${progress}% (chunk ${chunksProcessed}/${Math.ceil(totalBlocks / chunkSize)}, blocks ${currentBlock}-${endBlock})`,
+        );
+      }
+
       currentBlock = endBlock + 1;
     }
 
