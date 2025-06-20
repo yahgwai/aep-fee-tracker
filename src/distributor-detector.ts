@@ -282,9 +282,14 @@ export class DistributorDetector {
     newDistributors: DistributorInfo[],
     lastScannedBlock: number,
   ): Promise<DistributorsData> {
-    // Get chain ID from provider
-    const network = await this.provider.getNetwork();
-    const chainId = Number(network.chainId);
+    // Get chain ID - use existing if available, otherwise get from provider
+    let chainId: number;
+    if (existingData?.metadata.chain_id !== undefined) {
+      chainId = existingData.metadata.chain_id;
+    } else {
+      const network = await this.provider.getNetwork();
+      chainId = Number(network.chainId);
+    }
 
     // Initialize with existing distributors or empty object
     const updatedData: DistributorsData = {

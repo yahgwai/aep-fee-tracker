@@ -346,10 +346,10 @@ describe("DistributorDetector.detectDistributors", () => {
       await detector.detectDistributors(endDate);
 
       // Assert
-      expect(mockProvider.getNetwork).toHaveBeenCalledTimes(1);
+      expect(mockProvider.getNetwork).not.toHaveBeenCalled();
       const writtenData = mockFileManager.writeDistributors.mock
         .calls[0]![0] as DistributorsData;
-      expect(writtenData.metadata.chain_id).toBe(42170);
+      expect(writtenData.metadata.chain_id).toBe(99999);
     });
   });
 
