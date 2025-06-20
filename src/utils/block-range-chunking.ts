@@ -8,6 +8,10 @@ export function chunkBlockRange(
   toBlock: number,
   chunkSize: number,
 ): BlockRangeChunk[] {
+  if (chunkSize <= 0) {
+    throw new Error("Invalid chunk size: must be greater than 0");
+  }
+
   if (fromBlock > toBlock) {
     throw new Error(
       `Invalid block range: fromBlock (${fromBlock}) must be less than or equal to toBlock (${toBlock})`,

@@ -24,7 +24,7 @@ describe("chunkBlockRange", () => {
 
   it("throws error when chunk size is zero", () => {
     expect(() => chunkBlockRange(100, 200, 0)).toThrow(
-      "Invalid chunk size: must be greater than 0"
+      "Invalid chunk size: must be greater than 0",
     );
   });
 });
