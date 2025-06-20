@@ -50,5 +50,42 @@ describe("BalanceFetcher", () => {
         155,
       );
     });
+
+    it("fetches balances at all block numbers for one distributor", async () => {
+      const mockProvider = {
+        getBalance: jest
+          .fn()
+          .mockResolvedValueOnce(BigInt("1000000000000000000"))
+          .mockResolvedValueOnce(BigInt("2000000000000000000"))
+          .mockResolvedValueOnce(BigInt("3000000000000000000")),
+      };
+
+      const blockNumbers = [120, 155, 189];
+      const balances = await BalanceFetcher.fetchBalancesForDistributor(
+        mockProvider as unknown as import("ethers").Provider,
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        blockNumbers,
+      );
+
+      expect(balances).toEqual({
+        "120": "1000000000000000000",
+        "155": "2000000000000000000",
+        "189": "3000000000000000000",
+      });
+
+      expect(mockProvider.getBalance).toHaveBeenCalledTimes(3);
+      expect(mockProvider.getBalance).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        120,
+      );
+      expect(mockProvider.getBalance).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        155,
+      );
+      expect(mockProvider.getBalance).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        189,
+      );
+    });
   });
 });
