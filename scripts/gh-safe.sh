@@ -90,10 +90,10 @@ if is_pr_comment_fetch "$@"; then
     echo "   Example: ./scripts/collect-pr-comments.sh yahgwai aep-fee-tracker 127"
     echo ""
     echo "2. For EVERY SINGLE comment returned, create a todo using TodoWrite:"
-    echo '   Format: "{first 20 chars}..." - MUST visit: {url}'
+    echo '   Format: "{first 20 chars}..." - MUST execute: {command}'
     echo ""
-    echo "   Example todo: \"Fix type error in...\" - MUST visit: https://github.com/..."
-    echo "   Each todo REQUIRES visiting the URL to complete it."
+    echo "   Example todo: \"Fix type error in...\" - MUST execute: gh api repos/owner/repo/pulls/comments/123"
+    echo "   Each todo REQUIRES executing the command to complete it."
     echo ""
     echo "   Example: If the script returns 17 comments, you MUST create 17 todos."
     echo "   Each comment needs its own todo - do not skip any!"
