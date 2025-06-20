@@ -45,7 +45,10 @@ export class DistributorDetector {
     address: string,
   ): Promise<boolean> {
     try {
-      const deployedCode = await provider.getCode(address);
+      const deployedCode = await withRetry(() => provider.getCode(address), {
+        maxRetries: 3,
+        operationName: `isRewardDistributor.getCode(${address})`,
+      });
       return deployedCode === REWARD_DISTRIBUTOR_BYTECODE;
     } catch {
       return false;
