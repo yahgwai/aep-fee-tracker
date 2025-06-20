@@ -6,4 +6,13 @@ describe("chunkBlockRange", () => {
 
     expect(result).toEqual([{ fromBlock: 100, toBlock: 199 }]);
   });
+
+  it("splits range into multiple chunks when exceeding chunk size", () => {
+    const result = chunkBlockRange(100, 299, 100);
+
+    expect(result).toEqual([
+      { fromBlock: 100, toBlock: 199 },
+      { fromBlock: 200, toBlock: 299 },
+    ]);
+  });
 });
