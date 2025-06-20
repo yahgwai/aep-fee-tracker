@@ -27,4 +27,28 @@ describe("chunkBlockRange", () => {
       "Invalid chunk size: must be greater than 0",
     );
   });
+
+  it("handles single block range", () => {
+    const result = chunkBlockRange(100, 100, 1000);
+    
+    expect(result).toEqual([
+      { fromBlock: 100, toBlock: 100 }
+    ]);
+  });
+
+  it("handles non-divisible ranges", () => {
+    const result = chunkBlockRange(0, 250, 100);
+    
+    expect(result).toEqual([
+      { fromBlock: 0, toBlock: 99 },
+      { fromBlock: 100, toBlock: 199 },
+      { fromBlock: 200, toBlock: 250 }
+    ]);
+  });
+
+  it("throws error when block numbers are negative", () => {
+    expect(() => chunkBlockRange(-10, 100, 50)).toThrow(
+      "Invalid block range: block numbers must be non-negative"
+    );
+  });
 });
