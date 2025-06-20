@@ -119,4 +119,75 @@ describe("BalanceFetcher", () => {
       expect(mockProvider.getBalance).toHaveBeenCalledTimes(4);
     });
   });
+
+  describe("saveBalanceData", () => {
+    it("saves balance data for each distributor using FileManager", async () => {
+      const mockFileManager = {
+        writeDistributorBalances: jest.fn(),
+      };
+
+      const balanceData = {
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "120": "1000000000000000000",
+          "155": "2000000000000000000",
+        },
+        "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": {
+          "189": "3000000000000000000",
+        },
+      };
+
+      const blockNumbersData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 120,
+          "2022-07-12": 155,
+          "2022-07-13": 189,
+        },
+      };
+
+      await BalanceFetcher.saveBalanceData(
+        mockFileManager as unknown as import("../../src/types").FileManager,
+        balanceData,
+        blockNumbersData,
+      );
+
+      expect(mockFileManager.writeDistributorBalances).toHaveBeenCalledTimes(2);
+
+      expect(mockFileManager.writeDistributorBalances).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        {
+          metadata: {
+            chain_id: 42170,
+            reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+          balances: {
+            "2022-07-11": {
+              block_number: 120,
+              balance_wei: "1000000000000000000",
+            },
+            "2022-07-12": {
+              block_number: 155,
+              balance_wei: "2000000000000000000",
+            },
+          },
+        },
+      );
+
+      expect(mockFileManager.writeDistributorBalances).toHaveBeenCalledWith(
+        "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
+        {
+          metadata: {
+            chain_id: 42170,
+            reward_distributor: "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
+          },
+          balances: {
+            "2022-07-13": {
+              block_number: 189,
+              balance_wei: "3000000000000000000",
+            },
+          },
+        },
+      );
+    });
+  });
 });
