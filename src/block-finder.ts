@@ -18,6 +18,8 @@ const RETRY_CONFIG = {
 };
 
 export class BlockFinder {
+  private blockCache: Map<number, ethers.Block> = new Map();
+
   constructor(
     private readonly fileManager: FileManager,
     private readonly provider: ethers.Provider,
@@ -28,6 +30,9 @@ export class BlockFinder {
     endDate: Date,
   ): Promise<BlockNumberData> {
     this.validateDateRange(startDate, endDate);
+
+    // Clear cache at the beginning of each search to avoid memory issues
+    this.blockCache.clear();
 
     const result = await this.initializeResult();
     const safeCurrentBlock = await this.getSafeCurrentBlock();
@@ -140,14 +145,21 @@ export class BlockFinder {
       existingBlocks &&
       Object.values(existingBlocks.blocks).includes(lowerBound);
 
-    // Fetch upper block (always needed)
-    const upperBlock = await withRetry(
-      () => this.provider.getBlock(upperBound),
-      {
-        ...RETRY_CONFIG,
-        operationName: `getBlock(${upperBound})`,
-      },
-    );
+    // Fetch upper block (always needed) - check cache first
+    let upperBlock = this.blockCache.get(upperBound);
+    if (!upperBlock) {
+      const fetchedBlock = await withRetry(
+        () => this.provider.getBlock(upperBound),
+        {
+          ...RETRY_CONFIG,
+          operationName: `getBlock(${upperBound})`,
+        },
+      );
+      if (fetchedBlock) {
+        upperBlock = fetchedBlock;
+        this.blockCache.set(upperBound, upperBlock);
+      }
+    }
 
     const context = {
       date: this.formatDateString(date),
@@ -164,13 +176,20 @@ export class BlockFinder {
 
     // Only fetch and validate lower block if it's not a known end-of-day block
     if (!isLowerBoundKnown) {
-      const lowerBlock = await withRetry(
-        () => this.provider.getBlock(lowerBound),
-        {
-          ...RETRY_CONFIG,
-          operationName: `getBlock(${lowerBound})`,
-        },
-      );
+      let lowerBlock = this.blockCache.get(lowerBound);
+      if (!lowerBlock) {
+        const fetchedBlock = await withRetry(
+          () => this.provider.getBlock(lowerBound),
+          {
+            ...RETRY_CONFIG,
+            operationName: `getBlock(${lowerBound})`,
+          },
+        );
+        if (fetchedBlock) {
+          lowerBlock = fetchedBlock;
+          this.blockCache.set(lowerBound, lowerBlock);
+        }
+      }
 
       if (!lowerBlock) {
         throw new BlockFinderError(
@@ -228,6 +247,8 @@ export class BlockFinder {
       lowerBound,
       upperBound,
       targetTimestamp,
+      date,
+      existingBlocks,
     );
 
     return lastValidBlock;
@@ -237,12 +258,38 @@ export class BlockFinder {
     low: number,
     high: number,
     targetTimestamp: number,
+    date: Date,
+    existingBlocks?: BlockNumberData,
   ): Promise<number> {
     let lastValidBlock = -1;
     let lastCheckedBlock: { number: number; timestamp: number } | undefined;
 
+    // If we have tight bounds from known blocks, make a better initial guess
+    let mid = Math.floor((low + high) / 2);
+    if (existingBlocks && high - low > 1000) {
+      const prevDateStr = this.formatDateString(
+        new Date(date.getTime() - 24 * 60 * 60 * 1000),
+      );
+      const nextDateStr = this.formatDateString(
+        new Date(date.getTime() + 24 * 60 * 60 * 1000),
+      );
+
+      const prevBlock = existingBlocks.blocks[prevDateStr];
+      const nextBlock = existingBlocks.blocks[nextDateStr];
+
+      if (prevBlock && nextBlock && nextBlock > prevBlock) {
+        // Estimate based on average blocks per day
+        const blocksPerDay = nextBlock - prevBlock;
+        // Target is end of current day, so close to next day's block
+        const estimatedBlock = nextBlock - Math.floor(blocksPerDay * 0.05);
+        // Ensure estimate is within bounds
+        if (estimatedBlock > low && estimatedBlock < high) {
+          mid = estimatedBlock;
+        }
+      }
+    }
+
     while (low <= high) {
-      const mid = Math.floor((low + high) / 2);
       const block = await this.getBlockForSearch(
         mid,
         low,
@@ -259,6 +306,8 @@ export class BlockFinder {
       } else {
         high = mid - 1;
       }
+
+      mid = Math.floor((low + high) / 2);
     }
 
     return lastValidBlock === -1 ? low - 1 : lastValidBlock;
@@ -271,6 +320,12 @@ export class BlockFinder {
     targetTimestamp: number,
     lastCheckedBlock?: { number: number; timestamp: number },
   ): Promise<ethers.Block> {
+    // Check cache first
+    const cachedBlock = this.blockCache.get(blockNumber);
+    if (cachedBlock) {
+      return cachedBlock;
+    }
+
     const context = this.createSearchContext(
       low,
       high,
@@ -290,6 +345,8 @@ export class BlockFinder {
           context,
         );
       }
+      // Cache the block for future use
+      this.blockCache.set(blockNumber, block);
       return block;
     } catch (error) {
       if (error instanceof BlockFinderError) throw error;
@@ -356,8 +413,14 @@ export class BlockFinder {
   ): [number, number] {
     const dateStr = this.formatDateString(date);
     const lowerBound = this.findMostRecentBlock(dateStr, existingBlocks);
+    const upperBound = this.findNextKnownBlock(dateStr, existingBlocks);
 
-    return [Math.max(MINIMUM_VALID_BLOCK, lowerBound), safeCurrentBlock];
+    return [
+      Math.max(MINIMUM_VALID_BLOCK, lowerBound),
+      upperBound !== -1
+        ? Math.min(upperBound, safeCurrentBlock)
+        : safeCurrentBlock,
+    ];
   }
 
   // Find the most recent known block before the target date
@@ -374,6 +437,22 @@ export class BlockFinder {
     }
 
     return mostRecent;
+  }
+
+  // Find the next known block after the target date
+  private findNextKnownBlock(
+    targetDate: string,
+    existingBlocks: BlockNumberData,
+  ): number {
+    const dates = Object.keys(existingBlocks.blocks).sort();
+
+    for (const date of dates) {
+      if (date > targetDate) {
+        return existingBlocks.blocks[date]!;
+      }
+    }
+
+    return -1;
   }
 
   private validateDateRange(startDate: Date, endDate: Date): void {
