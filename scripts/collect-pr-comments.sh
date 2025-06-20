@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to collect all PR comments (direct and review comments) for a given PR
+# Script to collect all PR comments (direct and review comments) for a given PR and generate gh cli commands
 # Usage: ./collect-pr-comments.sh <owner> <repo> <pr_number>
 # Example: ./collect-pr-comments.sh yahgwai aep-fee-tracker 127
 
@@ -16,23 +16,26 @@ OWNER=$1
 REPO=$2
 PR_NUMBER=$3
 
-# Get PR comments
+# Get PR comments and generate gh commands
 echo "Fetching PR comments..." >&2
-pr_comments=$(gh api "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments" --paginate | jq '[.[] | {url: .html_url, body: .body}]')
+pr_commands=$(gh api "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments" --paginate | jq -r --arg owner "$OWNER" --arg repo "$REPO" '.[] | "gh api repos/\($owner)/\($repo)/pulls/comments/\(.id)"')
 
-# Get review comments
+# Get review comments and generate gh commands
 echo "Fetching review comments..." >&2
 review_ids=$(gh api "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews" --paginate | jq -r '.[].id')
 
-review_comments="[]"
+review_commands=""
 if [ -n "$review_ids" ]; then
-    review_comments=$(echo "$review_ids" | while read -r review_id; do
+    review_commands=$(echo "$review_ids" | while read -r review_id; do
         if [ -n "$review_id" ]; then
-            gh api "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews/$review_id/comments" 2>/dev/null | jq '[.[] | {url: .html_url, body: .body}]' || echo "[]"
+            gh api "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews/$review_id/comments" 2>/dev/null | jq -r --arg owner "$OWNER" --arg repo "$REPO" '.[] | "gh api repos/\($owner)/\($repo)/pulls/comments/\(.id)"' || true
         fi
-    done | jq -s 'add // []')
+    done)
 fi
 
-# Combine and output
-echo "Combining results..." >&2
-echo "$pr_comments" "$review_comments" | jq -s 'add | sort_by(.url) | unique_by(.url)'
+# Combine all commands and remove duplicates
+echo "Combining commands..." >&2
+{
+    echo "$pr_commands"
+    echo "$review_commands"
+} | grep -v '^$' | sort -u
