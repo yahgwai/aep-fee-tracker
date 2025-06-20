@@ -4,6 +4,7 @@ import {
   DistributorType,
   DISTRIBUTOR_METHODS,
   DistributorInfo,
+  DistributorsData,
   withRetry,
 } from "./types";
 import { REWARD_DISTRIBUTOR_BYTECODE } from "./constants/reward-distributor-bytecode";
@@ -188,5 +189,125 @@ export class DistributorDetector {
 
     // Sort by block number
     return processedResults.sort((a, b) => a.block - b.block);
+  }
+
+  /**
+   * Detects new distributors up to a specified end date by scanning blockchain events.
+   * Performs incremental scanning from the last processed block.
+   *
+   * @param endDate - The date to scan up to (inclusive)
+   * @returns Complete DistributorsData object with all known distributors
+   * @throws Error if end date not found in block numbers data
+   */
+  async detectDistributors(endDate: Date): Promise<DistributorsData> {
+    // Load existing data and determine scan range
+    const existingData = this.fileManager.readDistributors();
+    const endBlock = this.getBlockForDate(endDate);
+    const scanRange = this.calculateScanRange(existingData, endBlock);
+
+    // Check if scanning is needed
+    if (!this.isScanningNeeded(scanRange)) {
+      return existingData!;
+    }
+
+    // Scan for new distributors and build updated data
+    const newDistributors = await DistributorDetector.scanBlockRange(
+      this.provider,
+      scanRange.fromBlock,
+      scanRange.toBlock,
+    );
+
+    const updatedData = await this.buildUpdatedData(
+      existingData,
+      newDistributors,
+      scanRange.toBlock,
+    );
+
+    // Persist and return updated data
+    this.fileManager.writeDistributors(updatedData);
+    return updatedData;
+  }
+
+  /**
+   * Gets the block number for a given date from block numbers data.
+   * @private
+   */
+  private getBlockForDate(date: Date): number {
+    const blockNumbersData = this.fileManager.readBlockNumbers();
+    if (!blockNumbersData) {
+      throw new Error("Block numbers data not found");
+    }
+
+    const dateString = date.toISOString().split("T")[0]!;
+    const blockNumber = blockNumbersData.blocks[dateString];
+
+    if (blockNumber === undefined) {
+      throw new Error(`Block number not found for date ${dateString}`);
+    }
+
+    return blockNumber;
+  }
+
+  /**
+   * Calculates the block range to scan based on existing data and target block.
+   * @private
+   */
+  private calculateScanRange(
+    existingData: DistributorsData | undefined,
+    endBlock: number,
+  ): { fromBlock: number; toBlock: number } {
+    const lastScannedBlock = existingData?.metadata.last_scanned_block;
+    const fromBlock = lastScannedBlock !== undefined ? lastScannedBlock + 1 : 0;
+
+    return { fromBlock, toBlock: endBlock };
+  }
+
+  /**
+   * Determines if scanning is needed based on the calculated range.
+   * @private
+   */
+  private isScanningNeeded(scanRange: {
+    fromBlock: number;
+    toBlock: number;
+  }): boolean {
+    return scanRange.fromBlock <= scanRange.toBlock;
+  }
+
+  /**
+   * Builds the updated distributors data by merging existing and new distributors.
+   * @private
+   */
+  private async buildUpdatedData(
+    existingData: DistributorsData | undefined,
+    newDistributors: DistributorInfo[],
+    lastScannedBlock: number,
+  ): Promise<DistributorsData> {
+    // Get chain ID - use existing if available, otherwise get from provider
+    let chainId: number;
+    if (existingData?.metadata.chain_id !== undefined) {
+      chainId = existingData.metadata.chain_id;
+    } else {
+      const network = await this.provider.getNetwork();
+      chainId = Number(network.chainId);
+    }
+
+    // Initialize with existing distributors or empty object
+    const updatedData: DistributorsData = {
+      metadata: {
+        chain_id: chainId,
+        arbowner_address: ARBOWNER_PRECOMPILE_ADDRESS,
+        last_scanned_block: lastScannedBlock,
+      },
+      distributors: { ...(existingData?.distributors || {}) },
+    };
+
+    // Add new distributors (skip if already known)
+    for (const distributor of newDistributors) {
+      if (!updatedData.distributors[distributor.distributor_address]) {
+        updatedData.distributors[distributor.distributor_address] = distributor;
+      }
+    }
+
+    return updatedData;
   }
 }
