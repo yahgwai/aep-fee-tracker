@@ -238,6 +238,187 @@ describe("DistributorDetector.scanBlockRange", () => {
     });
   });
 
+  describe("block range chunking", () => {
+    it("should split large block ranges into chunks of 10,000 blocks", async () => {
+      // Arrange
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      // Act
+      await DistributorDetector.scanBlockRange(mockProvider, 0, 25000);
+
+      // Assert - should make 3 calls: 0-9999, 10000-19999, 20000-25000
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(1, {
+        address: ARBOWNER_PRECOMPILE_ADDRESS,
+        topics: [
+          OWNER_ACTS_EVENT_SIGNATURE,
+          ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
+        ],
+        fromBlock: 0,
+        toBlock: 9999,
+      });
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(2, {
+        address: ARBOWNER_PRECOMPILE_ADDRESS,
+        topics: [
+          OWNER_ACTS_EVENT_SIGNATURE,
+          ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
+        ],
+        fromBlock: 10000,
+        toBlock: 19999,
+      });
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(3, {
+        address: ARBOWNER_PRECOMPILE_ADDRESS,
+        topics: [
+          OWNER_ACTS_EVENT_SIGNATURE,
+          ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
+        ],
+        fromBlock: 20000,
+        toBlock: 25000,
+      });
+    });
+
+    it("should handle exactly 10,000 blocks without chunking", async () => {
+      // Arrange
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      // Act
+      await DistributorDetector.scanBlockRange(mockProvider, 1000, 10999);
+
+      // Assert - exactly 10,000 blocks (10999 - 1000 + 1 = 10000)
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(1);
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: ARBOWNER_PRECOMPILE_ADDRESS,
+        topics: [
+          OWNER_ACTS_EVENT_SIGNATURE,
+          ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
+        ],
+        fromBlock: 1000,
+        toBlock: 10999,
+      });
+    });
+
+    it("should aggregate results from multiple chunks", async () => {
+      // Arrange - create events spread across chunks
+      const chunk1Events = testData.events.slice(0, 2); // blocks 152-153
+      const chunk2Events = testData.events.slice(2, 3); // block 684
+
+      const chunk1Logs = chunk1Events.map(
+        (event) =>
+          ({
+            blockNumber: event.blockNumber,
+            blockHash: "0x" + "0".repeat(64),
+            transactionIndex: event.transactionIndex,
+            removed: false,
+            address: event.address,
+            data: event.data,
+            topics: event.topics as string[],
+            transactionHash: event.transactionHash,
+            index: event.logIndex,
+          }) as unknown as ethers.Log,
+      );
+
+      const chunk2Logs = chunk2Events.map(
+        (event) =>
+          ({
+            blockNumber: event.blockNumber,
+            blockHash: "0x" + "0".repeat(64),
+            transactionIndex: event.transactionIndex,
+            removed: false,
+            address: event.address,
+            data: event.data,
+            topics: event.topics as string[],
+            transactionHash: event.transactionHash,
+            index: event.logIndex,
+          }) as unknown as ethers.Log,
+      );
+
+      // Mock different results for different chunks
+      mockProvider.getLogs
+        .mockResolvedValueOnce(chunk1Logs)
+        .mockResolvedValueOnce(chunk2Logs);
+
+      // Mock blocks and code
+      mockProvider.getBlock.mockImplementation(async (blockNumber) => {
+        const event = testData.events.find(
+          (e) => e.blockNumber === blockNumber,
+        );
+        return {
+          timestamp: event?.blockTimestamp || 0,
+        } as ethers.Block;
+      });
+      mockProvider.getCode.mockResolvedValue("0x1234");
+
+      // Act - scan range that will be split into 2 chunks
+      const result = await DistributorDetector.scanBlockRange(
+        mockProvider,
+        0,
+        15000,
+      );
+
+      // Assert - should aggregate results from both chunks
+      expect(result).toHaveLength(3);
+      expect(result[0]!.block).toBe(152);
+      expect(result[1]!.block).toBe(153);
+      expect(result[2]!.block).toBe(684);
+    });
+
+    it("should maintain sort order when aggregating chunks", async () => {
+      // Arrange - create events in reverse order across chunks
+      const event1 = { ...testData.events[2]!, blockNumber: 15000 }; // Higher block in chunk 2
+      const event2 = { ...testData.events[0]!, blockNumber: 5000 }; // Lower block in chunk 1
+
+      const chunk1Log = {
+        blockNumber: event2.blockNumber,
+        blockHash: "0x" + "0".repeat(64),
+        transactionIndex: event2.transactionIndex,
+        removed: false,
+        address: event2.address,
+        data: event2.data,
+        topics: event2.topics as string[],
+        transactionHash: event2.transactionHash,
+        index: event2.logIndex,
+      } as unknown as ethers.Log;
+
+      const chunk2Log = {
+        blockNumber: event1.blockNumber,
+        blockHash: "0x" + "0".repeat(64),
+        transactionIndex: event1.transactionIndex,
+        removed: false,
+        address: event1.address,
+        data: event1.data,
+        topics: event1.topics as string[],
+        transactionHash: event1.transactionHash,
+        index: event1.logIndex,
+      } as unknown as ethers.Log;
+
+      mockProvider.getLogs
+        .mockResolvedValueOnce([chunk1Log])
+        .mockResolvedValueOnce([chunk2Log])
+        .mockResolvedValueOnce([]); // Third chunk (20000-20000) is empty
+
+      mockProvider.getBlock.mockImplementation(async (blockNumber) => {
+        if (blockNumber === 5000)
+          return { timestamp: event2.blockTimestamp } as ethers.Block;
+        if (blockNumber === 15000)
+          return { timestamp: event1.blockTimestamp } as ethers.Block;
+        return null;
+      });
+      mockProvider.getCode.mockResolvedValue("0x1234");
+
+      // Act
+      const result = await DistributorDetector.scanBlockRange(
+        mockProvider,
+        0,
+        20000,
+      );
+
+      // Assert - results should be sorted by block number
+      expect(result).toHaveLength(2);
+      expect(result[0]!.block).toBe(5000);
+      expect(result[1]!.block).toBe(15000);
+    });
+  });
+
   describe("integration with existing methods", () => {
     it("should properly integrate with parseDistributorCreation", async () => {
       // Arrange

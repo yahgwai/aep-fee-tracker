@@ -14,6 +14,10 @@ import {
   OWNER_ACTS_EVENT_SIGNATURE,
   ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
 } from "./constants/distributor-detector";
+import { chunkBlockRange } from "./utils/block-range-chunking";
+
+// Maximum block range for RPC providers (e.g., Alchemy limit)
+const DEFAULT_BLOCK_CHUNK_SIZE = 10000;
 
 /**
  * Creates a new DistributorDetector instance with the specified dependencies.
@@ -167,27 +171,36 @@ export class DistributorDetector {
     provider: ethers.Provider,
     fromBlock: number,
     toBlock: number,
+    chunkSize: number = DEFAULT_BLOCK_CHUNK_SIZE,
   ): Promise<DistributorInfo[]> {
-    // Construct filter with OR logic for method signatures
-    const filter = {
-      address: ARBOWNER_PRECOMPILE_ADDRESS,
-      topics: [
-        OWNER_ACTS_EVENT_SIGNATURE,
-        [...ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED],
-      ],
-      fromBlock,
-      toBlock,
-    };
+    const allLogs: ethers.Log[] = [];
+    const chunks = chunkBlockRange(fromBlock, toBlock, chunkSize);
 
-    // Query events with retry logic
-    const logs = await withRetry(() => provider.getLogs(filter), {
-      maxRetries: 3,
-      operationName: "scanBlockRange.getLogs",
-    });
+    // Process each chunk
+    for (const chunk of chunks) {
+      // Construct filter with OR logic for method signatures
+      const filter = {
+        address: ARBOWNER_PRECOMPILE_ADDRESS,
+        topics: [
+          OWNER_ACTS_EVENT_SIGNATURE,
+          [...ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED],
+        ],
+        fromBlock: chunk.fromBlock,
+        toBlock: chunk.toBlock,
+      };
+
+      // Query events with retry logic
+      const logs = await withRetry(() => provider.getLogs(filter), {
+        maxRetries: 3,
+        operationName: "scanBlockRange.getLogs",
+      });
+
+      allLogs.push(...logs);
+    }
 
     // Process all logs in parallel for better performance
     const processedResults = await Promise.all(
-      logs.map((log) => this.processLogEvent(log, provider)),
+      allLogs.map((log) => this.processLogEvent(log, provider)),
     );
 
     // Sort by block number
