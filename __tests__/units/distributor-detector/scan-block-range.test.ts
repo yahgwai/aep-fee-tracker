@@ -393,7 +393,8 @@ describe("DistributorDetector.scanBlockRange", () => {
 
       mockProvider.getLogs
         .mockResolvedValueOnce([chunk1Log])
-        .mockResolvedValueOnce([chunk2Log]);
+        .mockResolvedValueOnce([chunk2Log])
+        .mockResolvedValueOnce([]); // Third chunk (20000-20000) is empty
 
       mockProvider.getBlock.mockImplementation(async (blockNumber) => {
         if (blockNumber === 5000)

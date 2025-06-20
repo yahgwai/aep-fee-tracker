@@ -168,26 +168,38 @@ export class DistributorDetector {
     fromBlock: number,
     toBlock: number,
   ): Promise<DistributorInfo[]> {
-    // Construct filter with OR logic for method signatures
-    const filter = {
-      address: ARBOWNER_PRECOMPILE_ADDRESS,
-      topics: [
-        OWNER_ACTS_EVENT_SIGNATURE,
-        [...ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED],
-      ],
-      fromBlock,
-      toBlock,
-    };
+    const CHUNK_SIZE = 10000;
+    const allLogs: ethers.Log[] = [];
 
-    // Query events with retry logic
-    const logs = await withRetry(() => provider.getLogs(filter), {
-      maxRetries: 3,
-      operationName: "scanBlockRange.getLogs",
-    });
+    // Split range into chunks
+    let currentBlock = fromBlock;
+    while (currentBlock <= toBlock) {
+      const endBlock = Math.min(currentBlock + CHUNK_SIZE - 1, toBlock);
+
+      // Construct filter with OR logic for method signatures
+      const filter = {
+        address: ARBOWNER_PRECOMPILE_ADDRESS,
+        topics: [
+          OWNER_ACTS_EVENT_SIGNATURE,
+          [...ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED],
+        ],
+        fromBlock: currentBlock,
+        toBlock: endBlock,
+      };
+
+      // Query events with retry logic
+      const logs = await withRetry(() => provider.getLogs(filter), {
+        maxRetries: 3,
+        operationName: "scanBlockRange.getLogs",
+      });
+
+      allLogs.push(...logs);
+      currentBlock = endBlock + 1;
+    }
 
     // Process all logs in parallel for better performance
     const processedResults = await Promise.all(
-      logs.map((log) => this.processLogEvent(log, provider)),
+      allLogs.map((log) => this.processLogEvent(log, provider)),
     );
 
     // Sort by block number
