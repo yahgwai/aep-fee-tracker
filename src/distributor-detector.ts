@@ -9,15 +9,7 @@ import { FileManager } from "./file-manager";
  */
 export class DistributorDetector {
   constructor(
-    private readonly fileManager: FileManager,
-    private readonly provider: ethers.Provider,
+    public readonly fileManager: FileManager,
+    public readonly provider: ethers.Provider,
   ) {}
-
-  // TODO: Implement detect method in future issue
-  async detect(): Promise<void> {
-    // Method stub to satisfy TypeScript compiler
-    // Will be implemented when handling distributor detection logic
-    void this.fileManager;
-    void this.provider;
-  }
 }
