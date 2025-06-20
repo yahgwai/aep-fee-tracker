@@ -34,5 +34,6 @@ module.exports = {
   clearMocks: true,
   restoreMocks: true,
   testTimeout: 10000,
-  maxConcurrency: 10
+  maxConcurrency: 10,
+  setupFiles: ['<rootDir>/jest.setup.js']
 };
