@@ -130,6 +130,37 @@ export class DistributorDetector {
   }
 
   /**
+   * Processes a single log event to extract distributor information.
+   * @private
+   */
+  private static async processLogEvent(
+    log: ethers.Log,
+    provider: ethers.Provider,
+  ): Promise<DistributorInfo | null> {
+    try {
+      // Get block timestamp with retry logic
+      const block = await withRetry(() => provider.getBlock(log.blockNumber), {
+        maxRetries: 3,
+        operationName: `scanBlockRange.getBlock(${log.blockNumber})`,
+      });
+
+      if (!block) {
+        return null;
+      }
+
+      // Parse the event and create DistributorInfo
+      return await this.parseDistributorCreation(
+        log,
+        block.timestamp,
+        provider,
+      );
+    } catch {
+      // Skip invalid events
+      return null;
+    }
+  }
+
+  /**
    * Scans a block range for distributor creation events and returns discovered distributors.
    *
    * @param provider - The ethers provider to query blockchain data
@@ -159,32 +190,14 @@ export class DistributorDetector {
       operationName: "scanBlockRange.getLogs",
     });
 
-    // Process each log to extract distributor info
-    const distributorInfos: DistributorInfo[] = [];
+    // Process all logs in parallel for better performance
+    const processedResults = await Promise.all(
+      logs.map((log) => this.processLogEvent(log, provider)),
+    );
 
-    for (const log of logs) {
-      try {
-        // Get block timestamp
-        const block = await provider.getBlock(log.blockNumber);
-        if (!block) {
-          continue;
-        }
-
-        // Parse the event and create DistributorInfo
-        const distributorInfo = await this.parseDistributorCreation(
-          log,
-          block.timestamp,
-          provider,
-        );
-
-        distributorInfos.push(distributorInfo);
-      } catch {
-        // Skip invalid events
-        continue;
-      }
-    }
-
-    // Sort by block number
-    return distributorInfos.sort((a, b) => a.block - b.block);
+    // Filter out null results and sort by block number
+    return processedResults
+      .filter((info): info is DistributorInfo => info !== null)
+      .sort((a, b) => a.block - b.block);
   }
 }
