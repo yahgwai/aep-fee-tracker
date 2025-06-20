@@ -98,6 +98,7 @@ if is_pr_comment_fetch "$@"; then
     echo "   Example: If the script returns 17 comments, you MUST create 17 todos."
     echo "   Each comment needs its own todo - do not skip any!"
     echo "   DO NOT execute these commands now, just create todos for them"
+    echo "   After creating the todos address them ONE BY ONE not all together"
     echo ""
     echo "This ensures ALL comments are tracked and NONE are missed."
     exit 1
