@@ -1,16 +1,16 @@
-import { DistributorType } from "./types";
+import { DistributorType, DISTRIBUTOR_METHODS } from "./types";
 
 export class DistributorDetector {
   static getDistributorType(methodSignature: string): DistributorType | null {
-    if (methodSignature === "0x57f585db") {
-      return DistributorType.L2_BASE_FEE;
+    switch (methodSignature) {
+      case DISTRIBUTOR_METHODS.L2_BASE_FEE:
+        return DistributorType.L2_BASE_FEE;
+      case DISTRIBUTOR_METHODS.L2_SURPLUS_FEE:
+        return DistributorType.L2_SURPLUS_FEE;
+      case DISTRIBUTOR_METHODS.L1_SURPLUS_FEE:
+        return DistributorType.L1_SURPLUS_FEE;
+      default:
+        return null;
     }
-    if (methodSignature === "0xfcdde2b4") {
-      return DistributorType.L2_SURPLUS_FEE;
-    }
-    if (methodSignature === "0x934be07d") {
-      return DistributorType.L1_SURPLUS_FEE;
-    }
-    return null;
   }
 }
