@@ -46,6 +46,7 @@ export interface DistributorInfo {
   owner: string;
   event_data: string;
   is_reward_distributor: boolean;
+  distributor_address: string;
 }
 
 export interface BalanceData {

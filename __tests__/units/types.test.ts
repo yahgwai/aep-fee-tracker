@@ -62,6 +62,7 @@ describe("Core Types", () => {
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
             is_reward_distributor: true,
+            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
           },
         },
       };
