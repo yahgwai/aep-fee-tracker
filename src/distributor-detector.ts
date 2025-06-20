@@ -2,7 +2,9 @@ import { DistributorType } from "./types";
 
 export class DistributorDetector {
   static getDistributorType(methodSignature: string): DistributorType | null {
-    void methodSignature; // Minimal implementation - ignore parameter for now
-    return DistributorType.L2_BASE_FEE;
+    if (methodSignature === "0x57f585db") {
+      return DistributorType.L2_BASE_FEE;
+    }
+    return DistributorType.L2_SURPLUS_FEE;
   }
 }
