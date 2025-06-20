@@ -1,8 +1,21 @@
+/**
+ * Represents a chunk of block range
+ */
 export interface BlockRangeChunk {
   fromBlock: number;
   toBlock: number;
 }
 
+/**
+ * Splits a block range into smaller chunks for processing.
+ * This is useful when dealing with RPC providers that have limits on block range queries.
+ *
+ * @param fromBlock - Starting block number (inclusive)
+ * @param toBlock - Ending block number (inclusive)
+ * @param chunkSize - Maximum number of blocks per chunk
+ * @returns Array of block range chunks
+ * @throws Error if parameters are invalid
+ */
 export function chunkBlockRange(
   fromBlock: number,
   toBlock: number,
