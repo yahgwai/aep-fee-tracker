@@ -1,6 +1,7 @@
 #!/bin/bash
 # ABOUTME: Safe wrapper for GitHub CLI that prevents merges and Claude/AI references
 # ABOUTME: Checks all text content before executing gh commands
+# ABOUTME: Redirects PR comment fetching to use collect-pr-comments.sh + TodoWrite process
 
 set -e
 
@@ -53,10 +54,53 @@ is_merge_command() {
     return 1
 }
 
+# Function to check if command is trying to fetch PR comments
+is_pr_comment_fetch() {
+    # Check for pr view with comments
+    if [[ "$1" == "pr" && "$2" == "view" ]] && echo "${@:3}" | grep -E "comment|review" > /dev/null 2>&1; then
+        return 0
+    fi
+    
+    # Check for pr comment list
+    if [[ "$1" == "pr" && "$2" == "comment" && "$3" == "list" ]]; then
+        return 0
+    fi
+    
+    # Don't block gh api calls - those are needed for scripts
+    # Don't block issue commands - we're only handling PR comments
+    
+    return 1
+}
+
 # Check if it's a merge command
 if is_merge_command "$@"; then
     echo -e "${RED}Error: Merge operations are not allowed${NC}"
     echo "Please use the GitHub web interface or ask a human to perform merges"
+    exit 1
+fi
+
+# Check if it's a PR comment fetch command
+if is_pr_comment_fetch "$@"; then
+    echo -e "${RED}Error: Direct PR comment fetching is not allowed${NC}"
+    echo ""
+    echo "To properly handle PR comments, you MUST follow this process:"
+    echo ""
+    echo "1. Run the collection script:"
+    echo "   ./scripts/collect-pr-comments.sh <owner> <repo> <pr_number>"
+    echo "   Example: ./scripts/collect-pr-comments.sh yahgwai aep-fee-tracker 127"
+    echo ""
+    echo "2. For EVERY SINGLE comment returned, create a todo using TodoWrite:"
+    echo '   Format: "{first 20 chars}..." - MUST execute: {command}'
+    echo ""
+    echo "   Example todo: \"Fix type error in...\" - MUST execute: gh api repos/owner/repo/pulls/comments/123"
+    echo "   Each todo REQUIRES executing the command to complete it."
+    echo ""
+    echo "   Example: If the script returns 17 comments, you MUST create 17 todos."
+    echo "   Each comment needs its own todo - do not skip any!"
+    echo "   DO NOT execute these commands now, just create todos for them"
+    echo "   After creating the todos address them ONE BY ONE not all together"
+    echo ""
+    echo "This ensures ALL comments are tracked and NONE are missed."
     exit 1
 fi
 
