@@ -5,6 +5,9 @@ export class DistributorDetector {
     if (methodSignature === "0x57f585db") {
       return DistributorType.L2_BASE_FEE;
     }
-    return DistributorType.L2_SURPLUS_FEE;
+    if (methodSignature === "0xfcdde2b4") {
+      return DistributorType.L2_SURPLUS_FEE;
+    }
+    return DistributorType.L1_SURPLUS_FEE;
   }
 }
