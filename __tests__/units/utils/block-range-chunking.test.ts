@@ -21,4 +21,10 @@ describe("chunkBlockRange", () => {
       "Invalid block range: fromBlock (200) must be less than or equal to toBlock (100)",
     );
   });
+
+  it("throws error when chunk size is zero", () => {
+    expect(() => chunkBlockRange(100, 200, 0)).toThrow(
+      "Invalid chunk size: must be greater than 0"
+    );
+  });
 });
