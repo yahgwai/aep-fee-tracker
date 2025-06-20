@@ -63,4 +63,29 @@ export class BalanceFetcher {
       {} as Record<string, string>,
     );
   }
+
+  static async fetchAllDistributorBalances(
+    provider: ethers.Provider,
+    addresses: string[],
+    blockNumbers: number[],
+  ): Promise<Record<string, Record<string, string>>> {
+    const distributorPromises = addresses.map(async (address) => ({
+      address,
+      balances: await this.fetchBalancesForDistributor(
+        provider,
+        address,
+        blockNumbers,
+      ),
+    }));
+
+    const results = await Promise.all(distributorPromises);
+
+    return results.reduce(
+      (acc, { address, balances }) => {
+        acc[address] = balances;
+        return acc;
+      },
+      {} as Record<string, Record<string, string>>,
+    );
+  }
 }

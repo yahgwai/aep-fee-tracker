@@ -87,5 +87,36 @@ describe("BalanceFetcher", () => {
         189,
       );
     });
+
+    it("fetches balances for all distributors", async () => {
+      const mockProvider = {
+        getBalance: jest.fn().mockResolvedValue(BigInt("1234567890000000000")),
+      };
+
+      const addresses = [
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
+      ];
+      const blockNumbers = [120, 155];
+
+      const allBalances = await BalanceFetcher.fetchAllDistributorBalances(
+        mockProvider as unknown as import("ethers").Provider,
+        addresses,
+        blockNumbers,
+      );
+
+      expect(allBalances).toEqual({
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "120": "1234567890000000000",
+          "155": "1234567890000000000",
+        },
+        "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": {
+          "120": "1234567890000000000",
+          "155": "1234567890000000000",
+        },
+      });
+
+      expect(mockProvider.getBalance).toHaveBeenCalledTimes(4);
+    });
   });
 });
