@@ -31,4 +31,24 @@ describe("BalanceFetcher", () => {
       expect(addresses[0]).toBe("0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB");
     });
   });
+
+  describe("fetchBalance", () => {
+    it("fetches ETH balance for a single address at a specific block", async () => {
+      const mockProvider = {
+        getBalance: jest.fn().mockResolvedValue(BigInt("1234567890000000000")),
+      };
+
+      const balance = await BalanceFetcher.fetchBalance(
+        mockProvider as unknown as import("ethers").Provider,
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        155,
+      );
+
+      expect(balance).toBe("1234567890000000000");
+      expect(mockProvider.getBalance).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        155,
+      );
+    });
+  });
 });

@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { withRetry } from "./types";
 
 interface RawEvent {
   data: string;
@@ -25,5 +26,20 @@ export class BalanceFetcher {
     }
 
     return addresses;
+  }
+
+  static async fetchBalance(
+    provider: ethers.Provider,
+    address: string,
+    blockNumber: number,
+  ): Promise<string> {
+    const balance = await withRetry(
+      () => provider.getBalance(address, blockNumber),
+      {
+        maxRetries: 3,
+        operationName: `fetchBalance(${address}, ${blockNumber})`,
+      },
+    );
+    return balance.toString();
   }
 }
