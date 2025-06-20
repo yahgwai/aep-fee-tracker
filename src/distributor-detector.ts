@@ -11,8 +11,12 @@ export class DistributorDetector {
   constructor(
     private readonly fileManager: FileManager,
     private readonly provider: ethers.Provider,
-  ) {
-    // Parameters are stored for future use
+  ) {}
+
+  // TODO: Implement detect method in future issue
+  async detect(): Promise<void> {
+    // Method stub to satisfy TypeScript compiler
+    // Will be implemented when handling distributor detection logic
     void this.fileManager;
     void this.provider;
   }
