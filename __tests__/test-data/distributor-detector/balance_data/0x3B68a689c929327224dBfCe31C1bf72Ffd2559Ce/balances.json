@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "chain_id": 42170,
+    "reward_distributor": "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce"
+  },
+  "balances": {
+    "2022-07-11": {
+      "block_number": 120,
+      "balance_wei": "0"
+    },
+    "2022-07-12": {
+      "block_number": 155,
+      "balance_wei": "0"
+    },
+    "2022-07-13": {
+      "block_number": 189,
+      "balance_wei": "0"
+    },
+    "2022-08-07": {
+      "block_number": 654,
+      "balance_wei": "0"
+    },
+    "2022-08-08": {
+      "block_number": 672,
+      "balance_wei": "0"
+    },
+    "2022-08-09": {
+      "block_number": 3584,
+      "balance_wei": "0"
+    },
+    "2023-03-15": {
+      "block_number": 3141957,
+      "balance_wei": "0"
+    },
+    "2023-03-16": {
+      "block_number": 3166694,
+      "balance_wei": "1903120000000"
+    },
+    "2023-03-17": {
+      "block_number": 3187362,
+      "balance_wei": "6924840000000"
+    }
+  }
+}
