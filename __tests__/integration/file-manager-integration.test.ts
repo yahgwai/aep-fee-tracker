@@ -72,6 +72,7 @@ describe("FileManager - Integration Tests", () => {
               event: "DistributorCreated",
             }),
             is_reward_distributor: false,
+            distributor_address: distributor1Address,
           },
           [distributor2Address]: {
             type: DistributorType.L2_SURPLUS_FEE,
@@ -85,6 +86,7 @@ describe("FileManager - Integration Tests", () => {
               event: "DistributorCreated",
             }),
             is_reward_distributor: true,
+            distributor_address: distributor2Address,
           },
         },
       };
@@ -364,6 +366,7 @@ describe("FileManager - Integration Tests", () => {
             owner: CONTRACTS.ARB_OWNER,
             event_data: "{}",
             is_reward_distributor: true,
+            distributor_address: addrA,
           },
           [addrB]: {
             type: DistributorType.L2_SURPLUS_FEE,
@@ -374,6 +377,7 @@ describe("FileManager - Integration Tests", () => {
             owner: CONTRACTS.ARB_OWNER,
             event_data: "{}",
             is_reward_distributor: true,
+            distributor_address: addrB,
           },
           [addrC]: {
             type: DistributorType.L1_BASE_FEE,
@@ -384,6 +388,7 @@ describe("FileManager - Integration Tests", () => {
             owner: CONTRACTS.ARB_OWNER,
             event_data: "{}",
             is_reward_distributor: false,
+            distributor_address: addrC,
           },
         },
       };
@@ -449,6 +454,7 @@ describe("FileManager - Integration Tests", () => {
               factory: getAddress("0x5000000000000000000000000000000000000005"),
             }),
             is_reward_distributor: true,
+            distributor_address: addrD,
           };
           fileManager.writeDistributors(currentDistributors);
         },

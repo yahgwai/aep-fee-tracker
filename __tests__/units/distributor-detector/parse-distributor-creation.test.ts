@@ -47,6 +47,7 @@ describe("DistributorDetector.parseDistributorCreation", () => {
         owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
         event_data: event.data,
         is_reward_distributor: false,
+        distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
       });
 
       expect(mockProvider.getCode).toHaveBeenCalledWith(
@@ -87,6 +88,7 @@ describe("DistributorDetector.parseDistributorCreation", () => {
         owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
         event_data: event.data,
         is_reward_distributor: true,
+        distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
       });
     });
 
@@ -123,6 +125,7 @@ describe("DistributorDetector.parseDistributorCreation", () => {
         owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
         event_data: event.data,
         is_reward_distributor: false,
+        distributor_address: "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
       });
     });
   });
@@ -233,6 +236,9 @@ describe("DistributorDetector.parseDistributorCreation", () => {
 
       // Should successfully decode zero address
       expect(result).toBeDefined();
+      expect(result.distributor_address).toBe(
+        "0x0000000000000000000000000000000000000000",
+      );
       expect(mockProvider.getCode).toHaveBeenCalledWith(
         "0x0000000000000000000000000000000000000000",
       );

@@ -115,6 +115,7 @@ export class DistributorDetector {
       owner: owner,
       event_data: log.data,
       is_reward_distributor: isRewardDistributor,
+      distributor_address: distributorAddress,
     };
   }
 }

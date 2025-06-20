@@ -46,6 +46,7 @@ function createDistributorInfo(
     owner: string;
     event_data: string;
     is_reward_distributor: boolean;
+    distributor_address: string;
   }>,
 ): {
   type: DistributorType;
@@ -56,6 +57,7 @@ function createDistributorInfo(
   owner: string;
   event_data: string;
   is_reward_distributor: boolean;
+  distributor_address: string;
 } {
   return {
     type: DistributorType.L2_BASE_FEE,
@@ -67,6 +69,7 @@ function createDistributorInfo(
     event_data:
       "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
     is_reward_distributor: true,
+    distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
     ...overrides,
   };
 }
@@ -101,6 +104,7 @@ describe("FileManager - Distributors", () => {
             method: "0xfcdde2b4",
             event_data:
               "0x0000000000000000000000001234567890123456789012345678901234567890",
+            distributor_address: INVALID_ADDRESS,
           }),
           "0x2234567890123456789012345678901234567890": createDistributorInfo({
             type: DistributorType.L1_SURPLUS_FEE,
@@ -111,6 +115,7 @@ describe("FileManager - Distributors", () => {
             method: "0x934be07d",
             event_data:
               "0x000000000000000000000000abcdef1234567890abcdef1234567890abcdef12",
+            distributor_address: "0x2234567890123456789012345678901234567890",
           }),
         },
       });
@@ -183,6 +188,7 @@ describe("FileManager - Distributors", () => {
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
             is_reward_distributor: true,
+            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
           },
         },
       };
@@ -209,6 +215,7 @@ describe("FileManager - Distributors", () => {
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
             is_reward_distributor: true,
+            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
           },
         },
       };
@@ -236,6 +243,7 @@ describe("FileManager - Distributors", () => {
             event_data:
               "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
             is_reward_distributor: true,
+            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
           },
         },
       };
