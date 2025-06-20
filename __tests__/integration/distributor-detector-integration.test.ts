@@ -20,7 +20,7 @@ import { ARBOWNER_PRECOMPILE_ADDRESS } from "../../src/constants/distributor-det
 
 // Network configuration for Nova RPC
 const ARBITRUM_NOVA_CHAIN_ID = 42170;
-const ARBITRUM_NOVA_RPC_URL = "https://nova.arbitrum.io/rpc";
+const ARBITRUM_NOVA_RPC_URL = process.env["ARBITRUM_NOVA_RPC_URL"] as string;
 const NETWORK_CONFIG = {
   chainId: ARBITRUM_NOVA_CHAIN_ID,
   name: "arbitrum-nova",

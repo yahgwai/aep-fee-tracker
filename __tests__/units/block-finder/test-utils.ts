@@ -4,7 +4,9 @@ import { BlockFinder } from "../../../src/block-finder";
 
 // Network configuration
 export const ARBITRUM_NOVA_CHAIN_ID = 42170;
-export const ARBITRUM_NOVA_RPC_URL = "https://nova.arbitrum.io/rpc";
+export const ARBITRUM_NOVA_RPC_URL = process.env[
+  "ARBITRUM_NOVA_RPC_URL"
+] as string;
 export const NETWORK_CONFIG = {
   chainId: ARBITRUM_NOVA_CHAIN_ID,
   name: "arbitrum-nova",
@@ -16,7 +18,7 @@ export const LOCALHOST_RPC = "http://localhost:9999";
 
 // Provider creation helpers
 export function createProvider(
-  rpcUrl: string = ARBITRUM_NOVA_RPC_URL,
+  rpcUrl: string = process.env["ARBITRUM_NOVA_RPC_URL"] as string,
 ): ethers.JsonRpcProvider {
   const network = ethers.Network.from(NETWORK_CONFIG);
   return new ethers.JsonRpcProvider(rpcUrl, network, {
@@ -25,7 +27,7 @@ export function createProvider(
 }
 
 export function createMockProvider(
-  rpcUrl: string = ARBITRUM_NOVA_RPC_URL,
+  rpcUrl: string = process.env["ARBITRUM_NOVA_RPC_URL"] as string,
 ): ethers.JsonRpcProvider {
   return createProvider(rpcUrl);
 }
