@@ -24,4 +24,11 @@ describe("DistributorDetector.getDistributorType", () => {
       expect(result).toBe(DistributorType.L1_SURPLUS_FEE);
     });
   });
+
+  describe("Unknown signatures", () => {
+    it("returns null for unknown method signature", () => {
+      const result = DistributorDetector.getDistributorType("0x12345678");
+      expect(result).toBeNull();
+    });
+  });
 });
