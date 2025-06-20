@@ -12,6 +12,10 @@ export function chunkBlockRange(
     throw new Error("Invalid chunk size: must be greater than 0");
   }
 
+  if (fromBlock < 0 || toBlock < 0) {
+    throw new Error("Invalid block range: block numbers must be non-negative");
+  }
+
   if (fromBlock > toBlock) {
     throw new Error(
       `Invalid block range: fromBlock (${fromBlock}) must be less than or equal to toBlock (${toBlock})`,
