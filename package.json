@@ -20,7 +20,8 @@
     "release:minor": "npm run prerelease && npm test && npm run clean && standard-version --release-as minor && ./publish.sh",
     "release:major": "npm run prerelease && npm test && npm run clean && standard-version --release-as major && ./publish.sh",
     "release:first": "npm run prerelease && npm test && npm run clean && standard-version --first-release && ./publish.sh",
-    "postinstall": "./scripts/postinstall.sh"
+    "postinstall": "./scripts/postinstall.sh",
+    "fetch:test-balance-data": "ts-node scripts/fetch-test-balance-data.ts"
   },
   "author": "",
   "repository": {
