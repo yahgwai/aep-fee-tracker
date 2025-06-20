@@ -9,9 +9,10 @@ The Balance Fetcher is a critical component in the AEP Fee Calculator system tha
 ### Primary Objectives
 
 - Retrieve end-of-day ETH balances for all tracked reward distributors
-- Store historical balance data in a consistent, accessible format
+- Store historical balance data in a consistent, accessible format using FileManager
 - Support incremental processing to handle new dates efficiently
 - Handle distributors created mid-period by only fetching balances from their creation date onward
+- Fetch balance at the distributor creation time as well
 
 ### Component Responsibilities
 
@@ -49,10 +50,12 @@ The Balance Fetcher is a critical component in the AEP Fee Calculator system tha
 
 ### Input Flow
 
-1. Read distributor addresses from `store/distributors.json`
+All input data is read through the FileManager component:
+
+1. Use FileManager to read distributor addresses from storage
 2. For each distributor:
-   - Read master block numbers from `store/block_numbers.json`
-   - Load existing balance data from `store/distributors/{address}/balances.json` (if exists)
+   - Use FileManager to read master block numbers
+   - Use FileManager to load existing balance data (if exists)
    - Determine which dates need balance queries
 
 ### Process Flow
@@ -68,9 +71,9 @@ The Balance Fetcher is a critical component in the AEP Fee Calculator system tha
 
 ### Output Flow
 
-- Balance data written to `store/distributors/{address}/balances.json`
+- Balance data written using FileManager to distributor's balance file
 - Each file contains complete balance history for that distributor
-- File updates are atomic (write to temp file, then rename)
+- FileManager handles atomic file updates internally
 
 ## 5. Public API
 
@@ -78,24 +81,24 @@ The Balance Fetcher is a critical component in the AEP Fee Calculator system tha
 
 ```typescript
 interface BalanceFetcher {
-  fetchBalances(options?: FetchOptions): Promise<FetchResult>;
+  fetchBalances(): Promise<void>;
 }
 ```
 
 ### Method Signatures
 
 ```typescript
-fetchBalances(options?: FetchOptions): Promise<FetchResult>
+fetchBalances(): Promise<void>
 ```
 
 - **Purpose**: Fetch balances for all distributors at all tracked dates
-- **Parameters**: Optional configuration for controlling fetch behavior
-- **Returns**: Summary of fetch operation including success/failure counts
+- **Parameters**: None
+- **Returns**: Promise that resolves when all balances are fetched successfully
 - **Behavior**:
-  - Reads distributor list and block numbers
+  - Reads distributor list and block numbers using FileManager
   - Fetches missing balances for each distributor
-  - Handles partial failures gracefully
-  - Returns comprehensive result summary
+  - Throws error on any failure
+  - Completes successfully only when all balances are fetched
 
 ## 6. Algorithm Details
 
@@ -108,32 +111,27 @@ fetchBalances(options?: FetchOptions): Promise<FetchResult>
    - Load existing balance data (if any)
    - Load master block numbers list
    - Filter blocks to only include dates >= creation date
+   - Add distributor creation block/date if not already present
    - Identify missing balance entries
-   - For each missing date:
+   - For each missing date (including creation date):
      - Call `eth_getBalance` with distributor address and block number
      - Convert balance from hex to decimal string
      - Store in balance map
    - Merge new balances with existing data
-   - Write updated balance file atomically
+   - Write updated balance file using FileManager
 
 ### Error Handling
 
 - RPC failures trigger exponential backoff retry (up to 3 attempts)
-- Individual distributor failures don't stop processing of others
-- Failed fetches are logged and reported in result summary
-- Partial data is never written - updates are atomic
+- After retry exhaustion, errors are thrown (not logged and swallowed)
+- Any distributor failure causes the entire process to fail
+- FileManager ensures atomic updates - partial data is never written
 
 ## 7. Data Structures
 
 ### Input Types
 
 ```typescript
-interface FetchOptions {
-  distributors?: string[]; // Optional list of specific distributors to process
-  dates?: string[]; // Optional list of specific dates to process
-  forceRefresh?: boolean; // Force re-fetch even if data exists
-}
-
 interface DistributorInfo {
   address: string;
   metadata: {
@@ -150,19 +148,6 @@ interface BlockNumbers {
 ### Output Types
 
 ```typescript
-interface FetchResult {
-  success: boolean;
-  distributorsProcessed: number;
-  balancesFetched: number;
-  errors: FetchError[];
-}
-
-interface FetchError {
-  distributor: string;
-  date: string;
-  error: string;
-}
-
 interface BalanceData {
   metadata: {
     chain_id: number;
@@ -209,21 +194,19 @@ interface EthBalanceResponse {
 1. **RPC Security**:
 
    - Use HTTPS endpoints only
-   - Implement request rate limiting
    - Handle RPC errors without exposing sensitive information
 
 2. **Data Integrity**:
-   - Atomic file writes to prevent corruption
+   - FileManager ensures atomic file writes to prevent corruption
    - Validate all RPC responses before storage
-   - Maintain backup of existing data before updates
 
 ## 9. Test Data Requirements
 
 ### Minimum Test Data
 
-1. **Distributor List**: At least 3 distributor addresses with different creation dates
-2. **Block Numbers**: At least 7 days of block numbers spanning distributor lifetimes
-3. **RPC Responses**: Mock responses for `eth_getBalance` calls
+1. **Distributor List**: Use actual reward distributors from `__tests__/test-data/distributor-detector/distributor-creation-events-raw.json`
+2. **Block Numbers**: Available in `__tests__/test-data/distributor-detector/block_numbers.json` with 9 dates spanning from 2022-07-11 to 2023-03-17
+3. **RPC Responses**: Make actual RPC calls to Arbitrum Nova (no mocking)
 4. **Edge Cases**:
    - Distributor created mid-period
    - Zero balance distributor
@@ -231,9 +214,11 @@ interface EthBalanceResponse {
 
 ### Data Sources
 
-- Use actual Arbitrum Nova distributor addresses from production
-- Query real block numbers for test dates
-- Generate realistic balance values based on actual distributor behavior
+Test data is available in the `__tests__/test-data` directory:
+
+- Distributor addresses extracted from actual Arbitrum Nova events
+- Real block numbers for test dates already available
+- Balance values fetched from actual blockchain state
 
 ## 10. Examples
 
@@ -241,10 +226,8 @@ interface EthBalanceResponse {
 
 ```typescript
 const fetcher = new BalanceFetcher(fileManager, rpcProvider);
-const result = await fetcher.fetchBalances();
-
-console.log(`Processed ${result.distributorsProcessed} distributors`);
-console.log(`Fetched ${result.balancesFetched} new balances`);
+await fetcher.fetchBalances();
+// Completes successfully or throws error
 ```
 
 ### Sample Input/Output
