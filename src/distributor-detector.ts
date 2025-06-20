@@ -14,6 +14,7 @@ import {
   OWNER_ACTS_EVENT_SIGNATURE,
   ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
 } from "./constants/distributor-detector";
+import { chunkBlockRange } from "./utils/block-range-chunking";
 
 // Maximum block range for RPC providers (e.g., Alchemy limit)
 const DEFAULT_BLOCK_CHUNK_SIZE = 10000;
@@ -172,24 +173,11 @@ export class DistributorDetector {
     toBlock: number,
     chunkSize: number = DEFAULT_BLOCK_CHUNK_SIZE,
   ): Promise<DistributorInfo[]> {
-    const totalBlocks = toBlock - fromBlock + 1;
-    const needsChunking = totalBlocks > chunkSize;
-
-    if (needsChunking) {
-      const totalChunks = Math.ceil(totalBlocks / chunkSize);
-      console.log(
-        `Scanning ${totalBlocks} blocks in ${totalChunks} chunks of up to ${chunkSize} blocks each`,
-      );
-    }
-
     const allLogs: ethers.Log[] = [];
-    let chunksProcessed = 0;
+    const chunks = chunkBlockRange(fromBlock, toBlock, chunkSize);
 
-    // Split range into chunks
-    let currentBlock = fromBlock;
-    while (currentBlock <= toBlock) {
-      const endBlock = Math.min(currentBlock + chunkSize - 1, toBlock);
-
+    // Process each chunk
+    for (const chunk of chunks) {
       // Construct filter with OR logic for method signatures
       const filter = {
         address: ARBOWNER_PRECOMPILE_ADDRESS,
@@ -197,8 +185,8 @@ export class DistributorDetector {
           OWNER_ACTS_EVENT_SIGNATURE,
           [...ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED],
         ],
-        fromBlock: currentBlock,
-        toBlock: endBlock,
+        fromBlock: chunk.fromBlock,
+        toBlock: chunk.toBlock,
       };
 
       // Query events with retry logic
@@ -208,19 +196,6 @@ export class DistributorDetector {
       });
 
       allLogs.push(...logs);
-
-      // Log progress for multi-chunk operations
-      if (needsChunking) {
-        chunksProcessed++;
-        const progress = Math.round(
-          (chunksProcessed / Math.ceil(totalBlocks / chunkSize)) * 100,
-        );
-        console.log(
-          `Progress: ${progress}% (chunk ${chunksProcessed}/${Math.ceil(totalBlocks / chunkSize)}, blocks ${currentBlock}-${endBlock})`,
-        );
-      }
-
-      currentBlock = endBlock + 1;
     }
 
     // Process all logs in parallel for better performance
