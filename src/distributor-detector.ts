@@ -1,8 +1,18 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
-import { DistributorType, DISTRIBUTOR_METHODS, DistributorInfo } from "./types";
+import {
+  DistributorType,
+  DISTRIBUTOR_METHODS,
+  DistributorInfo,
+  withRetry,
+} from "./types";
 import { REWARD_DISTRIBUTOR_BYTECODE } from "./constants/reward-distributor-bytecode";
-import { OWNER_ACTS_EVENT_ABI } from "./constants/distributor-detector";
+import {
+  OWNER_ACTS_EVENT_ABI,
+  ARBOWNER_PRECOMPILE_ADDRESS,
+  OWNER_ACTS_EVENT_SIGNATURE,
+  ALL_DISTRIBUTOR_METHOD_SIGNATURES,
+} from "./constants/distributor-detector";
 
 /**
  * Creates a new DistributorDetector instance with the specified dependencies.
@@ -117,5 +127,64 @@ export class DistributorDetector {
       is_reward_distributor: isRewardDistributor,
       distributor_address: distributorAddress,
     };
+  }
+
+  /**
+   * Scans a block range for distributor creation events and returns discovered distributors.
+   *
+   * @param provider - The ethers provider to query blockchain data
+   * @param fromBlock - Starting block number (inclusive)
+   * @param toBlock - Ending block number (inclusive)
+   * @returns Array of DistributorInfo objects for discovered distributors
+   */
+  static async scanBlockRange(
+    provider: ethers.Provider,
+    fromBlock: number,
+    toBlock: number,
+  ): Promise<DistributorInfo[]> {
+    // Construct filter with OR logic for method signatures
+    const filter = {
+      address: ARBOWNER_PRECOMPILE_ADDRESS,
+      topics: [
+        OWNER_ACTS_EVENT_SIGNATURE,
+        [...ALL_DISTRIBUTOR_METHOD_SIGNATURES],
+      ],
+      fromBlock,
+      toBlock,
+    };
+
+    // Query events with retry logic
+    const logs = await withRetry(() => provider.getLogs(filter), {
+      maxRetries: 3,
+      operationName: "scanBlockRange.getLogs",
+    });
+
+    // Process each log to extract distributor info
+    const distributorInfos: DistributorInfo[] = [];
+
+    for (const log of logs) {
+      try {
+        // Get block timestamp
+        const block = await provider.getBlock(log.blockNumber);
+        if (!block) {
+          continue;
+        }
+
+        // Parse the event and create DistributorInfo
+        const distributorInfo = await this.parseDistributorCreation(
+          log,
+          block.timestamp,
+          provider,
+        );
+
+        distributorInfos.push(distributorInfo);
+      } catch {
+        // Skip invalid events
+        continue;
+      }
+    }
+
+    // Sort by block number
+    return distributorInfos.sort((a, b) => a.block - b.block);
   }
 }
