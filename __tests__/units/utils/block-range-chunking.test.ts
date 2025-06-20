@@ -18,7 +18,7 @@ describe("chunkBlockRange", () => {
 
   it("throws error when fromBlock is greater than toBlock", () => {
     expect(() => chunkBlockRange(200, 100, 50)).toThrow(
-      "Invalid block range: fromBlock (200) must be less than or equal to toBlock (100)"
+      "Invalid block range: fromBlock (200) must be less than or equal to toBlock (100)",
     );
   });
 });
