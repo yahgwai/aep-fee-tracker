@@ -3,7 +3,7 @@ import { DistributorType } from "../../../src/types";
 import {
   OWNER_ACTS_EVENT_SIGNATURE,
   ARBOWNER_PRECOMPILE_ADDRESS,
-  ALL_DISTRIBUTOR_METHOD_SIGNATURES,
+  ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
 } from "../../../src/constants/distributor-detector";
 import { ethers } from "ethers";
 import testData from "../../test-data/distributor-detector/distributor-creation-events-raw.json";
@@ -96,7 +96,10 @@ describe("DistributorDetector.scanBlockRange", () => {
       // Assert
       expect(mockProvider.getLogs).toHaveBeenCalledWith({
         address: ARBOWNER_PRECOMPILE_ADDRESS,
-        topics: [OWNER_ACTS_EVENT_SIGNATURE, ALL_DISTRIBUTOR_METHOD_SIGNATURES],
+        topics: [
+          OWNER_ACTS_EVENT_SIGNATURE,
+          ALL_DISTRIBUTOR_METHOD_SIGNATURES_PADDED,
+        ],
         fromBlock: 100,
         toBlock: 200,
       });
