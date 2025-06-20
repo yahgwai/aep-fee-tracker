@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
 import { DistributorType, DISTRIBUTOR_METHODS } from "./types";
+import { REWARD_DISTRIBUTOR_BYTECODE } from "./constants/reward-distributor-bytecode";
 
 /**
  * Creates a new DistributorDetector instance with the specified dependencies.
@@ -24,6 +25,18 @@ export class DistributorDetector {
         return DistributorType.L1_SURPLUS_FEE;
       default:
         return null;
+    }
+  }
+
+  static async isRewardDistributor(
+    provider: ethers.Provider,
+    address: string,
+  ): Promise<boolean> {
+    try {
+      const deployedCode = await provider.getCode(address);
+      return deployedCode === REWARD_DISTRIBUTOR_BYTECODE;
+    } catch {
+      return false;
     }
   }
 }
