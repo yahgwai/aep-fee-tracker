@@ -20,7 +20,8 @@ import { ARBOWNER_PRECOMPILE_ADDRESS } from "../../src/constants/distributor-det
 
 // Network configuration for Nova RPC
 const ARBITRUM_NOVA_CHAIN_ID = 42170;
-const ARBITRUM_NOVA_RPC_URL = "https://nova.arbitrum.io/rpc";
+// RPC URL must be set via ARBITRUM_NOVA_RPC_URL environment variable
+const ARBITRUM_NOVA_RPC_URL = process.env["ARBITRUM_NOVA_RPC_URL"]!;
 const NETWORK_CONFIG = {
   chainId: ARBITRUM_NOVA_CHAIN_ID,
   name: "arbitrum-nova",
@@ -28,6 +29,9 @@ const NETWORK_CONFIG = {
 
 // Helper to create Nova provider
 function createNovaProvider(): ethers.JsonRpcProvider {
+  if (!ARBITRUM_NOVA_RPC_URL) {
+    throw new Error("ARBITRUM_NOVA_RPC_URL environment variable must be set");
+  }
   const network = ethers.Network.from(NETWORK_CONFIG);
   return new ethers.JsonRpcProvider(ARBITRUM_NOVA_RPC_URL, network, {
     staticNetwork: network,

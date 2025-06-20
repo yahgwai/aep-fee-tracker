@@ -4,7 +4,8 @@ import { BlockFinder } from "../../../src/block-finder";
 
 // Network configuration
 export const ARBITRUM_NOVA_CHAIN_ID = 42170;
-export const ARBITRUM_NOVA_RPC_URL = "https://nova.arbitrum.io/rpc";
+// RPC URL must be set via ARBITRUM_NOVA_RPC_URL environment variable
+export const ARBITRUM_NOVA_RPC_URL = process.env["ARBITRUM_NOVA_RPC_URL"]!;
 export const NETWORK_CONFIG = {
   chainId: ARBITRUM_NOVA_CHAIN_ID,
   name: "arbitrum-nova",
@@ -15,19 +16,21 @@ export const INVALID_RPC = "https://invalid-rpc-url.com";
 export const LOCALHOST_RPC = "http://localhost:9999";
 
 // Provider creation helpers
-export function createProvider(
-  rpcUrl: string = ARBITRUM_NOVA_RPC_URL,
-): ethers.JsonRpcProvider {
+export function createProvider(rpcUrl?: string): ethers.JsonRpcProvider {
+  const url = rpcUrl || ARBITRUM_NOVA_RPC_URL;
+  if (!url) {
+    throw new Error(
+      "RPC URL must be provided or ARBITRUM_NOVA_RPC_URL environment variable must be set",
+    );
+  }
   const network = ethers.Network.from(NETWORK_CONFIG);
-  return new ethers.JsonRpcProvider(rpcUrl, network, {
+  return new ethers.JsonRpcProvider(url, network, {
     staticNetwork: network,
   });
 }
 
-export function createMockProvider(
-  rpcUrl: string = ARBITRUM_NOVA_RPC_URL,
-): ethers.JsonRpcProvider {
-  return createProvider(rpcUrl);
+export function createMockProvider(rpcUrl?: string): ethers.JsonRpcProvider {
+  return createProvider(rpcUrl || ARBITRUM_NOVA_RPC_URL);
 }
 
 // BlockFinder creation helpers
