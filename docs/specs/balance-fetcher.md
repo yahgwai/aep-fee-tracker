@@ -81,22 +81,24 @@ All input data is read through the FileManager component:
 
 ```typescript
 interface BalanceFetcher {
-  fetchBalances(): Promise<void>;
+  fetchBalances(distributorAddress?: string): Promise<void>;
 }
 ```
 
 ### Method Signatures
 
 ```typescript
-fetchBalances(): Promise<void>
+fetchBalances(distributorAddress?: string): Promise<void>
 ```
 
-- **Purpose**: Fetch balances for all distributors at all tracked dates
-- **Parameters**: None
+- **Purpose**: Fetch balances for all distributors or a specific distributor at all tracked dates
+- **Parameters**:
+  - `distributorAddress` (optional): If provided, only fetch balances for this specific distributor
 - **Returns**: Promise that resolves when all balances are fetched successfully
 - **Behavior**:
   - Reads distributor list and block numbers using FileManager
-  - Fetches missing balances for each distributor
+  - If distributorAddress is provided, filters to only process that distributor
+  - Fetches missing balances for each distributor to be processed
   - Throws error on any failure
   - Completes successfully only when all balances are fetched
 
@@ -106,7 +108,8 @@ fetchBalances(): Promise<void>
 
 1. **Initialize**: Create RPC provider connection and file manager instance
 2. **Load Distributors**: Read distributor list from storage
-3. **For Each Distributor**:
+3. **Filter Distributors**: If distributorAddress parameter is provided, filter to only that distributor
+4. **For Each Distributor**:
    - Load distributor metadata to get creation date
    - Load existing balance data (if any)
    - Load master block numbers list
@@ -226,8 +229,12 @@ Test data is available in the `__tests__/test-data` directory:
 
 ```typescript
 const fetcher = new BalanceFetcher(fileManager, rpcProvider);
+
+// Fetch balances for all distributors
 await fetcher.fetchBalances();
-// Completes successfully or throws error
+
+// Fetch balances for a specific distributor
+await fetcher.fetchBalances("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
 ```
 
 ### Sample Input/Output
