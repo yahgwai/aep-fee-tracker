@@ -9,5 +9,12 @@ describe("DistributorDetector.getDistributorType", () => {
       );
       expect(result).toBe(DistributorType.L2_BASE_FEE);
     });
+
+    it("returns L2_SURPLUS_FEE for setL2SurplusFeeRewardRecipient signature", () => {
+      const result = DistributorDetector.getDistributorType(
+        DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
+      );
+      expect(result).toBe(DistributorType.L2_SURPLUS_FEE);
+    });
   });
 });
