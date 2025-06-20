@@ -8,6 +8,17 @@ export function chunkBlockRange(
   toBlock: number,
   chunkSize: number,
 ): BlockRangeChunk[] {
-  void chunkSize; // Acknowledge parameter exists
-  return [{ fromBlock, toBlock }];
+  const chunks: BlockRangeChunk[] = [];
+  let currentBlock = fromBlock;
+
+  while (currentBlock <= toBlock) {
+    const endBlock = Math.min(currentBlock + chunkSize - 1, toBlock);
+    chunks.push({
+      fromBlock: currentBlock,
+      toBlock: endBlock,
+    });
+    currentBlock = endBlock + 1;
+  }
+
+  return chunks;
 }
