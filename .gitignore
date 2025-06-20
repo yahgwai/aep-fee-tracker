@@ -59,3 +59,7 @@ UPDATES.md
 
 # NPM packages
 *.tgz
+
+# Auth config and scripts
+auth_config_snapshots/
+capture-auth-changes.sh
