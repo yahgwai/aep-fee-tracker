@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "chain_id": 42170,
+    "distributor_address": "0x37daa99b1caae0c22670963e103a66ca2c5db2db",
+    "distributor_type": "L1_SURPLUS_FEE",
+    "fetched_at": "2025-06-20T12:20:32.925Z"
+  },
+  "balances": {
+    "2022-07-12": {
+      "block_number": 155,
+      "balance_wei": "0"
+    },
+    "2022-07-13": {
+      "block_number": 189,
+      "balance_wei": "0"
+    },
+    "2022-08-07": {
+      "block_number": 654,
+      "balance_wei": "0"
+    },
+    "2022-08-08": {
+      "block_number": 672,
+      "balance_wei": "0"
+    },
+    "2022-08-09": {
+      "block_number": 3584,
+      "balance_wei": "0"
+    },
+    "2023-03-15": {
+      "block_number": 3141957,
+      "balance_wei": "0"
+    },
+    "2023-03-16": {
+      "block_number": 3166694,
+      "balance_wei": "0"
+    },
+    "2023-03-17": {
+      "block_number": 3187362,
+      "balance_wei": "0"
+    }
+  }
+}

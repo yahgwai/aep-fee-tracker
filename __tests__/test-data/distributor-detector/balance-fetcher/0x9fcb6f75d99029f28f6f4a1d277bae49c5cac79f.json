@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "chain_id": 42170,
+    "distributor_address": "0x9fcb6f75d99029f28f6f4a1d277bae49c5cac79f",
+    "distributor_type": "L2_BASE_FEE",
+    "fetched_at": "2025-06-20T12:21:14.148Z"
+  },
+  "balances": {
+    "2023-03-16": {
+      "block_number": 3166694,
+      "balance_wei": "0"
+    },
+    "2023-03-17": {
+      "block_number": 3187362,
+      "balance_wei": "0"
+    }
+  }
+}

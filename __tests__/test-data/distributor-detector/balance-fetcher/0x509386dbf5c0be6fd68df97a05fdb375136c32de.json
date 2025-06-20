@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "chain_id": 42170,
+    "distributor_address": "0x509386dbf5c0be6fd68df97a05fdb375136c32de",
+    "distributor_type": "L1_SURPLUS_FEE",
+    "fetched_at": "2025-06-20T12:21:21.002Z"
+  },
+  "balances": {
+    "2023-03-16": {
+      "block_number": 3166694,
+      "balance_wei": "0"
+    },
+    "2023-03-17": {
+      "block_number": 3187362,
+      "balance_wei": "0"
+    }
+  }
+}
