@@ -139,7 +139,7 @@ describe("DistributorDetector.scanBlockRange", () => {
       );
     });
 
-    it("should skip events that fail parseDistributorCreation", async () => {
+    it("should throw error when events fail parseDistributorCreation", async () => {
       // Arrange
       const validEvent = testData.events[0]!;
       const invalidEvent = {
@@ -180,21 +180,13 @@ describe("DistributorDetector.scanBlockRange", () => {
       } as ethers.Block);
       mockProvider.getCode.mockResolvedValue("0x1234");
 
-      // Act
-      const result = await DistributorDetector.scanBlockRange(
-        mockProvider,
-        150,
-        200,
-      );
-
-      // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
-        distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-      });
+      // Act & Assert
+      await expect(
+        DistributorDetector.scanBlockRange(mockProvider, 150, 200),
+      ).rejects.toThrow();
     });
 
-    it("should handle getBlock failures gracefully", async () => {
+    it("should throw error when getBlock fails", async () => {
       // Arrange
       const event = testData.events[0]!;
       const ethersLog = {
@@ -212,15 +204,34 @@ describe("DistributorDetector.scanBlockRange", () => {
       mockProvider.getLogs.mockResolvedValue([ethersLog]);
       mockProvider.getBlock.mockRejectedValue(new Error("Block not found"));
 
-      // Act
-      const result = await DistributorDetector.scanBlockRange(
-        mockProvider,
-        150,
-        200,
-      );
+      // Act & Assert
+      await expect(
+        DistributorDetector.scanBlockRange(mockProvider, 150, 200),
+      ).rejects.toThrow("Block not found");
+    });
 
-      // Assert
-      expect(result).toEqual([]);
+    it("should throw error when getBlock returns null", async () => {
+      // Arrange
+      const event = testData.events[0]!;
+      const ethersLog = {
+        blockNumber: event.blockNumber,
+        blockHash: "0x" + "0".repeat(64),
+        transactionIndex: event.transactionIndex,
+        removed: false,
+        address: event.address,
+        data: event.data,
+        topics: event.topics as string[],
+        transactionHash: event.transactionHash,
+        index: event.logIndex,
+      } as unknown as ethers.Log;
+
+      mockProvider.getLogs.mockResolvedValue([ethersLog]);
+      mockProvider.getBlock.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        DistributorDetector.scanBlockRange(mockProvider, 150, 200),
+      ).rejects.toThrow(`Block ${event.blockNumber} not found`);
     });
   });
 

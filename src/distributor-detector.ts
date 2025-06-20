@@ -136,28 +136,19 @@ export class DistributorDetector {
   private static async processLogEvent(
     log: ethers.Log,
     provider: ethers.Provider,
-  ): Promise<DistributorInfo | null> {
-    try {
-      // Get block timestamp with retry logic
-      const block = await withRetry(() => provider.getBlock(log.blockNumber), {
-        maxRetries: 3,
-        operationName: `scanBlockRange.getBlock(${log.blockNumber})`,
-      });
+  ): Promise<DistributorInfo> {
+    // Get block timestamp with retry logic
+    const block = await withRetry(() => provider.getBlock(log.blockNumber), {
+      maxRetries: 3,
+      operationName: `scanBlockRange.getBlock(${log.blockNumber})`,
+    });
 
-      if (!block) {
-        return null;
-      }
-
-      // Parse the event and create DistributorInfo
-      return await this.parseDistributorCreation(
-        log,
-        block.timestamp,
-        provider,
-      );
-    } catch {
-      // Skip invalid events
-      return null;
+    if (!block) {
+      throw new Error(`Block ${log.blockNumber} not found`);
     }
+
+    // Parse the event and create DistributorInfo
+    return await this.parseDistributorCreation(log, block.timestamp, provider);
   }
 
   /**
@@ -195,9 +186,7 @@ export class DistributorDetector {
       logs.map((log) => this.processLogEvent(log, provider)),
     );
 
-    // Filter out null results and sort by block number
-    return processedResults
-      .filter((info): info is DistributorInfo => info !== null)
-      .sort((a, b) => a.block - b.block);
+    // Sort by block number
+    return processedResults.sort((a, b) => a.block - b.block);
   }
 }
