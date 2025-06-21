@@ -268,6 +268,44 @@ describe("BalanceFetcher", () => {
         );
       });
     });
+
+    it("skips distributors with future creation dates entirely", async () => {
+      const futureDate = new Date();
+      futureDate.setFullYear(futureDate.getFullYear() + 1);
+      const year = futureDate.getFullYear();
+      const month = String(futureDate.getMonth() + 1).padStart(2, "0");
+      const day = String(futureDate.getDate()).padStart(2, "0");
+      const futureDateString = `${year}-${month}-${day}`;
+
+      const distributorsWithFutureDate = {
+        metadata: mockDistributorsData.metadata,
+        distributors: {
+          "0xFutureDistributor": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 9999999,
+            date: futureDateString,
+            tx_hash:
+              "0x0000000000000000000000000000000000000000000000000000000000000000",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0xFutureDistributor",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(
+        distributorsWithFutureDate,
+      );
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumberData);
+      mockFileManager.readDistributorBalances.mockReturnValue(undefined);
+
+      await fetcher.fetchBalances();
+
+      // Should not fetch any balances for future distributors
+      expect(mockProvider.getBalance).not.toHaveBeenCalled();
+    });
   });
 
   describe("fetchBalances - filtering distributors", () => {
