@@ -19,5 +19,10 @@ describe("BalanceFetcher", () => {
       expect(fetcher).toBeDefined();
       expect(fetcher).toBeInstanceOf(BalanceFetcher);
     });
+
+    it("stores FileManager as readonly property", () => {
+      const fetcher = new BalanceFetcher(mockFileManager, mockProvider);
+      expect(fetcher.fileManager).toBe(mockFileManager);
+    });
   });
 });
