@@ -1,11 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-export class BalanceFetcher {
-  fileManager: any;
-  provider: any;
+import { ethers } from "ethers";
+import { FileManager } from "./file-manager";
 
-  constructor(_fileManager: any, _provider: any) {
-    this.fileManager = _fileManager;
-    this.provider = _provider;
-  }
+/**
+ * Creates a new BalanceFetcher instance with the specified dependencies.
+ *
+ * @param fileManager - File manager instance for data persistence
+ * @param provider - Nova provider for RPC calls
+ */
+export class BalanceFetcher {
+  constructor(
+    public readonly fileManager: FileManager,
+    public readonly provider: ethers.Provider,
+  ) {}
 }
