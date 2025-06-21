@@ -14,10 +14,11 @@ export class BalanceFetcher {
   ) {}
 
   /**
-   * Fetch balances for all distributors or a specific distributor at all tracked dates.
+   * Fetches missing balances for all distributors or a specific distributor.
+   * Uses incremental processing to only fetch balances for dates that haven't been fetched yet.
    *
    * @param distributorAddress - If provided, only fetch balances for this specific distributor
-   * @returns Promise that resolves when all balances are fetched successfully
+   * @returns Promise that resolves when all missing balances are fetched successfully
    * @throws Error on any failure
    */
   async fetchBalances(distributorAddress?: string): Promise<void> {
