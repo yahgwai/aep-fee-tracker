@@ -191,5 +191,16 @@ describe("BalanceFetcher", () => {
       // In the future, this test will verify that only the specified distributor is processed
       // For now, it just ensures the method completes without error
     });
+
+    it("throws error when specified distributor is not found", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      const nonExistentAddress = "0x1234567890123456789012345678901234567890";
+
+      await expect(fetcher.fetchBalances(nonExistentAddress)).rejects.toThrow(
+        `Distributor not found: ${nonExistentAddress}`,
+      );
+
+      expect(mockFileManager.readDistributors).toHaveBeenCalledTimes(1);
+    });
   });
 });

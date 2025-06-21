@@ -22,7 +22,22 @@ export class BalanceFetcher {
    * @throws Error on any failure
    */
   async fetchBalances(distributorAddress?: string): Promise<void> {
-    void distributorAddress; // Satisfy linter
-    this.fileManager.readDistributors();
+    const distributorsData = this.fileManager.readDistributors();
+
+    // Early return if no distributors data
+    if (
+      !distributorsData ||
+      Object.keys(distributorsData.distributors).length === 0
+    ) {
+      return;
+    }
+
+    // If specific distributor requested, validate it exists
+    if (distributorAddress) {
+      // Check if the distributor exists in the data
+      if (!distributorsData.distributors[distributorAddress]) {
+        throw new Error(`Distributor not found: ${distributorAddress}`);
+      }
+    }
   }
 }
