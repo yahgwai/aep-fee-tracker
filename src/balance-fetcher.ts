@@ -23,6 +23,6 @@ export class BalanceFetcher {
    */
   async fetchBalances(distributorAddress?: string): Promise<void> {
     void distributorAddress; // Satisfy linter
-    throw new Error("Not implemented");
+    this.fileManager.readDistributors();
   }
 }
