@@ -39,5 +39,8 @@ export class BalanceFetcher {
         throw new Error(`Distributor not found: ${distributorAddress}`);
       }
     }
+
+    // Load block numbers
+    this.fileManager.readBlockNumbers();
   }
 }

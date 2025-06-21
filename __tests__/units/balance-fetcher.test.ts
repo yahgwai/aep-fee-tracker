@@ -65,6 +65,7 @@ describe("BalanceFetcher", () => {
         readDistributors: jest.fn(),
         readDistributorBalances: jest.fn(),
         writeDistributorBalances: jest.fn(),
+        readBlockNumbers: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       mockProvider = {} as jest.Mocked<ethers.Provider>;
       fetcher = new BalanceFetcher(mockFileManager, mockProvider);
@@ -186,6 +187,7 @@ describe("BalanceFetcher", () => {
         readDistributors: jest.fn(),
         readDistributorBalances: jest.fn(),
         writeDistributorBalances: jest.fn(),
+        readBlockNumbers: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       mockProvider = {} as jest.Mocked<ethers.Provider>;
       fetcher = new BalanceFetcher(mockFileManager, mockProvider);
