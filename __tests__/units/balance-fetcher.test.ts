@@ -428,7 +428,7 @@ describe("BalanceFetcher", () => {
       mockDistributorsData = {
         metadata: {
           chain_id: 42170,
-          arbowner_address: "0x0000000000000000000000000000000000000070",
+          arbowner_address: "0x0000000000000000000000000000000000000000000070",
           last_scanned_block: 1000,
         },
         distributors: {
@@ -480,6 +480,35 @@ describe("BalanceFetcher", () => {
       expect(creationBlock1Position).toBeGreaterThanOrEqual(0);
       expect(endOfDayBlock2Position).toBeGreaterThanOrEqual(0);
       expect(creationBlock1Position).toBeLessThan(endOfDayBlock2Position);
+    });
+
+    it("correctly sorts ISO date strings chronologically", () => {
+      // This test demonstrates that localeCompare works correctly for ISO date strings
+      const dates = [
+        "2023-03-16",
+        "2022-08-10",
+        "2022-07-12",
+        "2023-12-31",
+        "2022-01-01",
+      ];
+
+      // Sort using localeCompare (as in our implementation)
+      const sortedWithLocaleCompare = [...dates].sort((a, b) =>
+        a.localeCompare(b),
+      );
+
+      // Sort using regular string comparison
+      const sortedWithStringCompare = [...dates].sort();
+
+      // Both should produce the same result for ISO date strings
+      expect(sortedWithLocaleCompare).toEqual([
+        "2022-01-01",
+        "2022-07-12",
+        "2022-08-10",
+        "2023-03-16",
+        "2023-12-31",
+      ]);
+      expect(sortedWithStringCompare).toEqual(sortedWithLocaleCompare);
     });
   });
 
