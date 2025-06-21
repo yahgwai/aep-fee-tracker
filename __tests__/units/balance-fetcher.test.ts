@@ -24,5 +24,10 @@ describe("BalanceFetcher", () => {
       const fetcher = new BalanceFetcher(mockFileManager, mockProvider);
       expect(fetcher.fileManager).toBe(mockFileManager);
     });
+
+    it("stores provider as readonly property", () => {
+      const fetcher = new BalanceFetcher(mockFileManager, mockProvider);
+      expect(fetcher.provider).toBe(mockProvider);
+    });
   });
 });
