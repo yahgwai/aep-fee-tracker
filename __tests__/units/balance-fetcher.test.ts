@@ -30,4 +30,38 @@ describe("BalanceFetcher", () => {
       expect(fetcher.provider).toBe(mockProvider);
     });
   });
+
+  describe("fetchBalances", () => {
+    let fetcher: BalanceFetcher;
+
+    beforeEach(() => {
+      fetcher = new BalanceFetcher(mockFileManager, mockProvider);
+    });
+
+    it("exists as a method on BalanceFetcher instance", () => {
+      expect(fetcher.fetchBalances).toBeDefined();
+      expect(typeof fetcher.fetchBalances).toBe("function");
+    });
+
+    it("accepts optional distributorAddress parameter", () => {
+      expect(fetcher.fetchBalances.length).toBeLessThanOrEqual(1);
+    });
+
+    it("returns a Promise", () => {
+      const result = fetcher.fetchBalances();
+      expect(result).toBeInstanceOf(Promise);
+      result.catch(() => {}); // Prevent unhandled promise rejection
+    });
+
+    it("throws 'Not implemented' error when called without parameters", async () => {
+      await expect(fetcher.fetchBalances()).rejects.toThrow("Not implemented");
+    });
+
+    it("throws 'Not implemented' error when called with distributorAddress", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      await expect(fetcher.fetchBalances(distributorAddress)).rejects.toThrow(
+        "Not implemented",
+      );
+    });
+  });
 });

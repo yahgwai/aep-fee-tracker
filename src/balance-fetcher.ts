@@ -12,4 +12,16 @@ export class BalanceFetcher {
     public readonly fileManager: FileManager,
     public readonly provider: ethers.Provider,
   ) {}
+
+  /**
+   * Fetch balances for all distributors or a specific distributor at all tracked dates.
+   *
+   * @param distributorAddress - If provided, only fetch balances for this specific distributor
+   * @returns Promise that resolves when all balances are fetched successfully
+   * @throws Error on any failure
+   */
+  async fetchBalances(distributorAddress?: string): Promise<void> {
+    void distributorAddress; // Satisfy linter
+    throw new Error("Not implemented");
+  }
 }
