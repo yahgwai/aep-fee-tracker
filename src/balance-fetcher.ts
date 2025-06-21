@@ -62,26 +62,31 @@ export class BalanceFetcher {
       distributorsToProcess,
     )) {
       if (!distributorInfo) continue;
+
       const creationDate = distributorInfo.date;
       const creationBlock = distributorInfo.block;
 
-      // Filter block numbers to only include dates >= creation date
-      let applicableDates = Object.entries(blockNumbersData.blocks).filter(
+      // Get all block numbers from creation date onward
+      const endOfDayBlocks = Object.entries(blockNumbersData.blocks).filter(
         ([date]) => date >= creationDate,
       );
 
-      // Add creation block if creation date is not already in the list
-      const hasCreationDate = applicableDates.some(
-        ([date]) => date === creationDate,
-      );
-      if (!hasCreationDate && applicableDates.length > 0) {
-        // Only add creation block if there are other applicable dates
-        // This prevents adding blocks for distributors created in the future
-        applicableDates.push([creationDate, creationBlock]);
+      // Skip future distributors (no applicable blocks to fetch)
+      if (endOfDayBlocks.length === 0) {
+        continue;
       }
 
-      // Add to collection
-      for (const [date, block] of applicableDates) {
+      // Include creation block if its date doesn't have an end-of-day block
+      const creationDateHasEndOfDayBlock = endOfDayBlocks.some(
+        ([date]) => date === creationDate,
+      );
+
+      if (!creationDateHasEndOfDayBlock) {
+        endOfDayBlocks.push([creationDate, creationBlock]);
+      }
+
+      // Collect all blocks for this distributor
+      for (const [date, block] of endOfDayBlocks) {
         allFetches.push({ address, date, block });
       }
     }
