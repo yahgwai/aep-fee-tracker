@@ -1,7 +1,11 @@
 import { ethers } from "ethers";
 import { FileManager } from "../../src/file-manager";
 import { BalanceFetcher } from "../../src/balance-fetcher";
-import { DistributorType, DistributorsData } from "../../src/types";
+import {
+  DistributorType,
+  DistributorsData,
+  BlockNumberData,
+} from "../../src/types";
 
 jest.mock("../../src/file-manager");
 
@@ -175,6 +179,94 @@ describe("BalanceFetcher", () => {
       await fetcher.fetchBalances();
 
       expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("fetchBalances - filtering by creation date", () => {
+    let fetcher: BalanceFetcher;
+    let mockDistributorsData: DistributorsData;
+    let mockBlockNumberData: BlockNumberData;
+
+    beforeEach(() => {
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readDistributorBalances: jest.fn(),
+        writeDistributorBalances: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      mockProvider = {
+        getBalance: jest.fn(),
+      } as unknown as jest.Mocked<ethers.Provider>;
+      fetcher = new BalanceFetcher(mockFileManager, mockProvider);
+
+      mockBlockNumberData = {
+        metadata: {
+          chain_id: 42170,
+        },
+        blocks: {
+          "2022-07-11": 120,
+          "2022-07-12": 155,
+          "2022-07-13": 189,
+          "2022-08-07": 654,
+          "2022-08-08": 672,
+          "2022-08-09": 3584,
+          "2023-03-15": 3141957,
+          "2023-03-16": 3166694,
+          "2023-03-17": 3187362,
+        },
+      };
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 672,
+            date: "2022-08-08",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
+          },
+        },
+      };
+    });
+
+    it("only processes block numbers from distributor creation date onward", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumberData);
+      mockFileManager.readDistributorBalances.mockReturnValue(undefined);
+      mockProvider.getBalance.mockResolvedValue(BigInt("1000000000000000000"));
+
+      await fetcher.fetchBalances();
+
+      // Should only fetch balances for dates >= 2022-08-08
+      const expectedDates = [
+        "2022-08-08",
+        "2022-08-09",
+        "2023-03-15",
+        "2023-03-16",
+        "2023-03-17",
+      ];
+      expect(mockProvider.getBalance).toHaveBeenCalledTimes(
+        expectedDates.length,
+      );
+
+      // Verify each call was made with the correct block number
+      expectedDates.forEach((date, index) => {
+        expect(mockProvider.getBalance).toHaveBeenNthCalledWith(
+          index + 1,
+          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
+          mockBlockNumberData.blocks[date],
+        );
+      });
     });
   });
 
