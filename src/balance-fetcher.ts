@@ -54,21 +54,49 @@ export class BalanceFetcher {
         }
       : distributorsData.distributors;
 
+    // Collect all address/date/block combinations
+    const allFetches: Array<{ address: string; date: string; block: number }> =
+      [];
+
     for (const [address, distributorInfo] of Object.entries(
       distributorsToProcess,
     )) {
       if (!distributorInfo) continue;
+
       const creationDate = distributorInfo.date;
+      const creationBlock = distributorInfo.block;
 
-      // Filter block numbers to only include dates >= creation date
-      const applicableDates = Object.entries(blockNumbersData.blocks)
-        .filter(([date]) => date >= creationDate)
-        .sort(([a], [b]) => a.localeCompare(b));
+      // Get all block numbers from creation date onward
+      const endOfDayBlocks = Object.entries(blockNumbersData.blocks).filter(
+        ([date]) => date >= creationDate,
+      );
 
-      // Fetch balance for each applicable date
-      for (const [, blockNumber] of applicableDates) {
-        await this.provider.getBalance(address, blockNumber);
+      // Skip future distributors (no applicable blocks to fetch)
+      if (endOfDayBlocks.length === 0) {
+        continue;
       }
+
+      // Include creation block if its date doesn't have an end-of-day block
+      const creationDateHasEndOfDayBlock = endOfDayBlocks.some(
+        ([date]) => date === creationDate,
+      );
+
+      if (!creationDateHasEndOfDayBlock) {
+        endOfDayBlocks.push([creationDate, creationBlock]);
+      }
+
+      // Collect all blocks for this distributor
+      for (const [date, block] of endOfDayBlocks) {
+        allFetches.push({ address, date, block });
+      }
+    }
+
+    // Sort all fetches chronologically by date
+    allFetches.sort((a, b) => a.date.localeCompare(b.date));
+
+    // Fetch balances in chronological order
+    for (const { address, block } of allFetches) {
+      await this.provider.getBalance(address, block);
     }
   }
 }
