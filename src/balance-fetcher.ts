@@ -54,21 +54,44 @@ export class BalanceFetcher {
         }
       : distributorsData.distributors;
 
+    // Collect all address/date/block combinations
+    const allFetches: Array<{ address: string; date: string; block: number }> =
+      [];
+
     for (const [address, distributorInfo] of Object.entries(
       distributorsToProcess,
     )) {
       if (!distributorInfo) continue;
       const creationDate = distributorInfo.date;
+      const creationBlock = distributorInfo.block;
 
       // Filter block numbers to only include dates >= creation date
-      const applicableDates = Object.entries(blockNumbersData.blocks)
-        .filter(([date]) => date >= creationDate)
-        .sort(([a], [b]) => a.localeCompare(b));
+      let applicableDates = Object.entries(blockNumbersData.blocks).filter(
+        ([date]) => date >= creationDate,
+      );
 
-      // Fetch balance for each applicable date
-      for (const [, blockNumber] of applicableDates) {
-        await this.provider.getBalance(address, blockNumber);
+      // Add creation block if creation date is not already in the list
+      const hasCreationDate = applicableDates.some(
+        ([date]) => date === creationDate,
+      );
+      if (!hasCreationDate && applicableDates.length > 0) {
+        // Only add creation block if there are other applicable dates
+        // This prevents adding blocks for distributors created in the future
+        applicableDates.push([creationDate, creationBlock]);
       }
+
+      // Add to collection
+      for (const [date, block] of applicableDates) {
+        allFetches.push({ address, date, block });
+      }
+    }
+
+    // Sort all fetches chronologically by date
+    allFetches.sort((a, b) => a.date.localeCompare(b.date));
+
+    // Fetch balances in chronological order
+    for (const { address, block } of allFetches) {
+      await this.provider.getBalance(address, block);
     }
   }
 }

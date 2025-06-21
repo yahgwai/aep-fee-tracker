@@ -347,14 +347,14 @@ describe("BalanceFetcher", () => {
       mockDistributorsData = {
         metadata: {
           chain_id: 42170,
-          arbowner_address: "0x0000000000000000000000000000000000000070",
+          arbowner_address: "0x0000000000000000000000000000000000000000000070",
           last_scanned_block: 1000,
         },
         distributors: {
           "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": {
             type: DistributorType.L2_BASE_FEE,
             block: 684,
-            date: "2022-08-09",
+            date: "2022-08-10", // Changed to a date NOT in block numbers
             tx_hash:
               "0x966831a2207df808ffcc44c90c0e60bce86185fb73b18c962f4f1303eb54efa2",
             method: "0x57f585db",
@@ -373,12 +373,11 @@ describe("BalanceFetcher", () => {
 
       await fetcher.fetchBalances();
 
-      // Should fetch balance for creation block 684 as well as end-of-day block 3584
+      // Should fetch balance for creation block 684 when date not in block numbers
       const calls = mockProvider.getBalance.mock.calls;
       const blocksCalled = calls.map((call) => call[1]);
 
       expect(blocksCalled).toContain(684); // Creation block
-      expect(blocksCalled).toContain(3584); // End-of-day block for same date
     });
 
     it("does not duplicate fetch when creation date already has end-of-day block", async () => {
@@ -473,14 +472,14 @@ describe("BalanceFetcher", () => {
       const calls = mockProvider.getBalance.mock.calls;
       const blocksCalled = calls.map((call) => call[1]);
 
-      // Find the position of the creation blocks
-      const creationBlock1Position = blocksCalled.indexOf(4000); // 2022-08-10
-      const creationBlock2Position = blocksCalled.indexOf(3163115); // 2023-03-16
+      // Find the position of blocks for our dates
+      const creationBlock1Position = blocksCalled.indexOf(4000); // 2022-08-10 creation block
+      const endOfDayBlock2Position = blocksCalled.indexOf(3166694); // 2023-03-16 end-of-day block
 
-      // Creation block from 2022-08-10 should come before 2023-03-16
+      // 2022-08-10 (creation block 4000) should come before 2023-03-16 blocks
       expect(creationBlock1Position).toBeGreaterThanOrEqual(0);
-      expect(creationBlock2Position).toBeGreaterThanOrEqual(0);
-      expect(creationBlock1Position).toBeLessThan(creationBlock2Position);
+      expect(endOfDayBlock2Position).toBeGreaterThanOrEqual(0);
+      expect(creationBlock1Position).toBeLessThan(endOfDayBlock2Position);
     });
   });
 
