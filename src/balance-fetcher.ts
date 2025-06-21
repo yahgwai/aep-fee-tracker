@@ -41,6 +41,34 @@ export class BalanceFetcher {
     }
 
     // Load block numbers
-    this.fileManager.readBlockNumbers();
+    const blockNumbersData = this.fileManager.readBlockNumbers();
+    if (!blockNumbersData) {
+      return;
+    }
+
+    // Process distributors
+    const distributorsToProcess = distributorAddress
+      ? {
+          [distributorAddress]:
+            distributorsData.distributors[distributorAddress],
+        }
+      : distributorsData.distributors;
+
+    for (const [address, distributorInfo] of Object.entries(
+      distributorsToProcess,
+    )) {
+      if (!distributorInfo) continue;
+      const creationDate = distributorInfo.date;
+
+      // Filter block numbers to only include dates >= creation date
+      const applicableDates = Object.entries(blockNumbersData.blocks)
+        .filter(([date]) => date >= creationDate)
+        .sort(([a], [b]) => a.localeCompare(b));
+
+      // Fetch balance for each applicable date
+      for (const [, blockNumber] of applicableDates) {
+        await this.provider.getBalance(address, blockNumber);
+      }
+    }
   }
 }
