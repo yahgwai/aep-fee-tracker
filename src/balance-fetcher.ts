@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
-import { withRetry } from "./types";
+import { withRetry, BalanceData } from "./types";
 
 // Retry configuration for RPC calls
 const RPC_RETRY_CONFIG = {
@@ -18,6 +18,43 @@ export class BalanceFetcher {
     public readonly fileManager: FileManager,
     public readonly provider: ethers.Provider,
   ) {}
+
+  /**
+   * Creates balance data structure for a distributor with metadata and balances.
+   * @private
+   */
+  private createBalanceData(
+    address: string,
+    existingData: BalanceData | undefined,
+    newBalances: Record<string, string>,
+    allFetches: Array<{ address: string; date: string; block: number }>,
+    chainId: number,
+  ): BalanceData {
+    const balanceData: BalanceData = {
+      metadata: {
+        chain_id: existingData?.metadata.chain_id || chainId,
+        reward_distributor: address,
+      },
+      balances: {
+        // Merge existing balances (if any)
+        ...(existingData?.balances || {}),
+      },
+    };
+
+    // Add new balances with block numbers
+    for (const [date, balanceWei] of Object.entries(newBalances)) {
+      const blockNumber = allFetches.find(
+        (f) => f.address === address && f.date === date,
+      )!.block;
+
+      balanceData.balances[date] = {
+        block_number: blockNumber,
+        balance_wei: balanceWei,
+      };
+    }
+
+    return balanceData;
+  }
 
   /**
    * Fetches missing balances for all distributors or a specific distributor.
@@ -62,6 +99,12 @@ export class BalanceFetcher {
         }
       : distributorsData.distributors;
 
+    // Map to track existing balances per distributor for merging
+    const existingBalancesByDistributor: Record<
+      string,
+      BalanceData | undefined
+    > = {};
+
     // Collect all address/date/block combinations
     const allFetches: Array<{ address: string; date: string; block: number }> =
       [];
@@ -77,6 +120,7 @@ export class BalanceFetcher {
       // Load existing balance data for this distributor
       const existingBalances =
         this.fileManager.readDistributorBalances(address);
+      existingBalancesByDistributor[address] = existingBalances;
 
       // Get all block numbers from creation date onward
       const endOfDayBlocks = Object.entries(blockNumbersData.blocks).filter(
@@ -132,6 +176,23 @@ export class BalanceFetcher {
         collectedBalances[address] = {};
       }
       collectedBalances[address][date] = balance.toString();
+    }
+
+    // Get chain ID from provider for new balance data
+    const network = await this.provider.getNetwork();
+    const chainId = Number(network.chainId);
+
+    // Save balance data for each distributor
+    for (const [address, newBalances] of Object.entries(collectedBalances)) {
+      const existingData = existingBalancesByDistributor[address];
+      const balanceData = this.createBalanceData(
+        address,
+        existingData,
+        newBalances,
+        allFetches,
+        chainId,
+      );
+      this.fileManager.writeDistributorBalances(address, balanceData);
     }
 
     return collectedBalances;

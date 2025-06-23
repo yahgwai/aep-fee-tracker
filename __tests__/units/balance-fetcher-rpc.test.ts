@@ -29,6 +29,9 @@ describe("BalanceFetcher - RPC Balance Fetching", () => {
     } as unknown as jest.Mocked<FileManager>;
     mockProvider = {
       getBalance: jest.fn(),
+      getNetwork: jest
+        .fn()
+        .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
     } as unknown as jest.Mocked<ethers.Provider>;
     fetcher = new BalanceFetcher(mockFileManager, mockProvider);
     mockWithRetry = withRetry as jest.MockedFunction<typeof withRetry>;
