@@ -89,7 +89,7 @@ export class BalanceFetcher {
         endOfDayBlocks.push([creationDate, creationBlock]);
       }
 
-      // Collect all blocks for this distributor
+      // Collect all blocks for this distributor (incremental processing)
       for (const [date, block] of endOfDayBlocks) {
         // Only fetch if balance doesn't already exist
         if (!existingBalances?.balances[date]) {
