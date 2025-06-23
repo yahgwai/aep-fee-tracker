@@ -20,6 +20,42 @@ export class BalanceFetcher {
   ) {}
 
   /**
+   * Creates balance data structure for a distributor with metadata and balances.
+   * @private
+   */
+  private createBalanceData(
+    address: string,
+    existingData: BalanceData | undefined,
+    newBalances: Record<string, string>,
+    allFetches: Array<{ address: string; date: string; block: number }>,
+  ): BalanceData {
+    const balanceData: BalanceData = {
+      metadata: {
+        chain_id: CHAIN_IDS.ARBITRUM_NOVA,
+        reward_distributor: address,
+      },
+      balances: {
+        // Merge existing balances (if any)
+        ...(existingData?.balances || {}),
+      },
+    };
+
+    // Add new balances with block numbers
+    for (const [date, balanceWei] of Object.entries(newBalances)) {
+      const blockNumber = allFetches.find(
+        (f) => f.address === address && f.date === date,
+      )!.block;
+
+      balanceData.balances[date] = {
+        block_number: blockNumber,
+        balance_wei: balanceWei,
+      };
+    }
+
+    return balanceData;
+  }
+
+  /**
    * Fetches missing balances for all distributors or a specific distributor.
    * Uses incremental processing to only fetch balances for dates that haven't been fetched yet.
    *
@@ -144,32 +180,12 @@ export class BalanceFetcher {
     // Save balance data for each distributor
     for (const [address, newBalances] of Object.entries(collectedBalances)) {
       const existingData = existingBalancesByDistributor[address];
-
-      // Create balance data structure
-      const balanceData: BalanceData = {
-        metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
-          reward_distributor: address,
-        },
-        balances: {
-          // Merge existing balances (if any) with new balances
-          ...(existingData?.balances || {}),
-        },
-      };
-
-      // Add new balances with block numbers
-      for (const [date, balanceWei] of Object.entries(newBalances)) {
-        const blockNumber = allFetches.find(
-          (f) => f.address === address && f.date === date,
-        )!.block;
-
-        balanceData.balances[date] = {
-          block_number: blockNumber,
-          balance_wei: balanceWei,
-        };
-      }
-
-      // Write balance data
+      const balanceData = this.createBalanceData(
+        address,
+        existingData,
+        newBalances,
+        allFetches,
+      );
       this.fileManager.writeDistributorBalances(address, balanceData);
     }
 
