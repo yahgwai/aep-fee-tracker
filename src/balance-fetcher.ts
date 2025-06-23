@@ -66,6 +66,9 @@ export class BalanceFetcher {
       const creationDate = distributorInfo.date;
       const creationBlock = distributorInfo.block;
 
+      // Load existing balance data for this distributor
+      this.fileManager.readDistributorBalances(address);
+
       // Get all block numbers from creation date onward
       const endOfDayBlocks = Object.entries(blockNumbersData.blocks).filter(
         ([date]) => date >= creationDate,
