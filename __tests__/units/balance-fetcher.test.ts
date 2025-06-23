@@ -17,7 +17,11 @@ describe("BalanceFetcher", () => {
     mockFileManager = {
       readDistributors: jest.fn(),
     } as unknown as jest.Mocked<FileManager>;
-    mockProvider = {} as jest.Mocked<ethers.Provider>;
+    mockProvider = {
+      getNetwork: jest
+        .fn()
+        .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
+    } as unknown as jest.Mocked<ethers.Provider>;
   });
 
   describe("constructor", () => {
@@ -71,7 +75,11 @@ describe("BalanceFetcher", () => {
         writeDistributorBalances: jest.fn(),
         readBlockNumbers: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
-      mockProvider = {} as jest.Mocked<ethers.Provider>;
+      mockProvider = {
+        getNetwork: jest
+          .fn()
+          .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
+      } as unknown as jest.Mocked<ethers.Provider>;
       fetcher = new BalanceFetcher(mockFileManager, mockProvider);
     });
 
@@ -147,7 +155,11 @@ describe("BalanceFetcher", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
-      mockProvider = {} as jest.Mocked<ethers.Provider>;
+      mockProvider = {
+        getNetwork: jest
+          .fn()
+          .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
+      } as unknown as jest.Mocked<ethers.Provider>;
       fetcher = new BalanceFetcher(mockFileManager, mockProvider);
 
       mockDistributorsData = {
@@ -196,6 +208,9 @@ describe("BalanceFetcher", () => {
       } as unknown as jest.Mocked<FileManager>;
       mockProvider = {
         getBalance: jest.fn(),
+        getNetwork: jest
+          .fn()
+          .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
       } as unknown as jest.Mocked<ethers.Provider>;
       fetcher = new BalanceFetcher(mockFileManager, mockProvider);
 
@@ -322,6 +337,9 @@ describe("BalanceFetcher", () => {
       } as unknown as jest.Mocked<FileManager>;
       mockProvider = {
         getBalance: jest.fn(),
+        getNetwork: jest
+          .fn()
+          .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
       } as unknown as jest.Mocked<ethers.Provider>;
       fetcher = new BalanceFetcher(mockFileManager, mockProvider);
 
@@ -523,7 +541,11 @@ describe("BalanceFetcher", () => {
         writeDistributorBalances: jest.fn(),
         readBlockNumbers: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
-      mockProvider = {} as jest.Mocked<ethers.Provider>;
+      mockProvider = {
+        getNetwork: jest
+          .fn()
+          .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
+      } as unknown as jest.Mocked<ethers.Provider>;
       fetcher = new BalanceFetcher(mockFileManager, mockProvider);
 
       mockDistributorsData = {

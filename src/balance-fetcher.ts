@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
-import { withRetry, BalanceData, CHAIN_IDS } from "./types";
+import { withRetry, BalanceData } from "./types";
 
 // Retry configuration for RPC calls
 const RPC_RETRY_CONFIG = {
@@ -28,10 +28,11 @@ export class BalanceFetcher {
     existingData: BalanceData | undefined,
     newBalances: Record<string, string>,
     allFetches: Array<{ address: string; date: string; block: number }>,
+    chainId: number,
   ): BalanceData {
     const balanceData: BalanceData = {
       metadata: {
-        chain_id: CHAIN_IDS.ARBITRUM_NOVA,
+        chain_id: existingData?.metadata.chain_id || chainId,
         reward_distributor: address,
       },
       balances: {
@@ -177,6 +178,10 @@ export class BalanceFetcher {
       collectedBalances[address][date] = balance.toString();
     }
 
+    // Get chain ID from provider for new balance data
+    const network = await this.provider.getNetwork();
+    const chainId = Number(network.chainId);
+
     // Save balance data for each distributor
     for (const [address, newBalances] of Object.entries(collectedBalances)) {
       const existingData = existingBalancesByDistributor[address];
@@ -185,6 +190,7 @@ export class BalanceFetcher {
         existingData,
         newBalances,
         allFetches,
+        chainId,
       );
       this.fileManager.writeDistributorBalances(address, balanceData);
     }

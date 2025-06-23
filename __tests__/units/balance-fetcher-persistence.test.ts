@@ -56,6 +56,9 @@ describe("BalanceFetcher - persistence", () => {
 
     mockProvider = {
       getBalance: jest.fn(),
+      getNetwork: jest
+        .fn()
+        .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
     } as unknown as jest.Mocked<ethers.Provider>;
 
     fetcher = new BalanceFetcher(mockFileManager, mockProvider);
@@ -282,6 +285,74 @@ describe("BalanceFetcher - persistence", () => {
             },
           },
         },
+      );
+    });
+
+    it("gets chain ID from provider when creating new balance data", async () => {
+      // Arrange
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readDistributorBalances.mockReturnValue(undefined);
+
+      const mockBalance = ethers.toBigInt("1500000000000000000000");
+      mockProvider.getBalance.mockResolvedValue(mockBalance);
+      mockProvider.getNetwork.mockResolvedValue({
+        chainId: 1234n,
+      } as unknown as ethers.Network);
+
+      // Act
+      await fetcher.fetchBalances();
+
+      // Assert
+      expect(mockProvider.getNetwork).toHaveBeenCalled();
+      expect(mockFileManager.writeDistributorBalances).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            chain_id: 1234,
+          }),
+        }),
+      );
+    });
+
+    it("preserves existing chain ID when balance data already exists", async () => {
+      // Arrange
+      const existingBalanceData = {
+        metadata: {
+          chain_id: 9999,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 152,
+            balance_wei: "1000000000000000000000",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readDistributorBalances.mockReturnValue(
+        existingBalanceData,
+      );
+
+      const mockBalance = ethers.toBigInt("1500000000000000000000");
+      mockProvider.getBalance.mockResolvedValue(mockBalance);
+      mockProvider.getNetwork.mockResolvedValue({
+        chainId: 42170n,
+      } as unknown as ethers.Network);
+
+      // Act
+      await fetcher.fetchBalances();
+
+      // Assert
+      expect(mockFileManager.writeDistributorBalances).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            chain_id: 9999, // Should preserve existing chain ID
+          }),
+        }),
       );
     });
   });
