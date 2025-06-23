@@ -8,15 +8,6 @@ const RPC_RETRY_CONFIG = {
 } as const;
 
 /**
- * Converts a BigInt balance to a hex string with 0x prefix.
- * @param balance - The balance as a BigInt
- * @returns Hex string representation with 0x prefix
- */
-function toHexString(balance: bigint): string {
-  return "0x" + balance.toString(16);
-}
-
-/**
  * Creates a new BalanceFetcher instance with the specified dependencies.
  *
  * @param fileManager - File manager instance for data persistence
@@ -33,12 +24,12 @@ export class BalanceFetcher {
    * Uses incremental processing to only fetch balances for dates that haven't been fetched yet.
    *
    * @param distributorAddress - If provided, only fetch balances for this specific distributor
-   * @returns Promise that resolves with collected hex balances by distributor and date
+   * @returns Promise that resolves with collected bigint balances by distributor and date
    * @throws Error on any failure
    */
   async fetchBalances(
     distributorAddress?: string,
-  ): Promise<Record<string, Record<string, string>> | undefined> {
+  ): Promise<Record<string, Record<string, bigint>> | undefined> {
     const distributorsData = this.fileManager.readDistributors();
 
     // Early return if no distributors data
@@ -124,7 +115,7 @@ export class BalanceFetcher {
     }
 
     // Collect balances by distributor and date
-    const collectedBalances: Record<string, Record<string, string>> = {};
+    const collectedBalances: Record<string, Record<string, bigint>> = {};
 
     // Fetch balances in chronological order
     for (const { address, date, block } of allFetches) {
@@ -136,11 +127,11 @@ export class BalanceFetcher {
         },
       );
 
-      // Store raw hex balance
+      // Store balance as bigint
       if (!collectedBalances[address]) {
         collectedBalances[address] = {};
       }
-      collectedBalances[address][date] = toHexString(balance);
+      collectedBalances[address][date] = balance;
     }
 
     return collectedBalances;
