@@ -605,4 +605,152 @@ describe("BalanceFetcher", () => {
       expect(mockFileManager.readDistributors).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("fetchBalances - return empty record instead of undefined", () => {
+    let fetcher: BalanceFetcher;
+
+    beforeEach(() => {
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readDistributorBalances: jest.fn(),
+        writeDistributorBalances: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      mockProvider = {
+        getBalance: jest.fn(),
+        getNetwork: jest
+          .fn()
+          .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
+      } as unknown as jest.Mocked<ethers.Provider>;
+      fetcher = new BalanceFetcher(mockFileManager, mockProvider);
+    });
+
+    it("returns empty record when no distributors data exists", async () => {
+      mockFileManager.readDistributors.mockReturnValue(undefined);
+
+      const result = await fetcher.fetchBalances();
+
+      expect(result).toEqual({});
+      expect(result).not.toBeUndefined();
+      expect(mockFileManager.readDistributors).toHaveBeenCalledTimes(1);
+      expect(mockFileManager.readBlockNumbers).not.toHaveBeenCalled();
+    });
+
+    it("returns empty record when distributors object is empty", async () => {
+      const emptyDistributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {},
+      };
+      mockFileManager.readDistributors.mockReturnValue(emptyDistributorsData);
+
+      const result = await fetcher.fetchBalances();
+
+      expect(result).toEqual({});
+      expect(result).not.toBeUndefined();
+      expect(mockFileManager.readDistributors).toHaveBeenCalledTimes(1);
+      expect(mockFileManager.readBlockNumbers).not.toHaveBeenCalled();
+    });
+
+    it("returns empty record when no block numbers data exists", async () => {
+      const mockDistributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(undefined);
+
+      const result = await fetcher.fetchBalances();
+
+      expect(result).toEqual({});
+      expect(result).not.toBeUndefined();
+      expect(mockFileManager.readDistributors).toHaveBeenCalledTimes(1);
+      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns empty record when all balances are already fetched", async () => {
+      const mockDistributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      const mockBlockNumberData: BlockNumberData = {
+        metadata: {
+          chain_id: 42170,
+        },
+        blocks: {
+          "2022-07-12": 155,
+          "2022-07-13": 189,
+        },
+      };
+
+      // Mock that all balances are already fetched
+      const existingBalances = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 155,
+            balance_wei: "1000000000000000000",
+          },
+          "2022-07-13": {
+            block_number: 189,
+            balance_wei: "2000000000000000000",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumberData);
+      mockFileManager.readDistributorBalances.mockReturnValue(existingBalances);
+
+      const result = await fetcher.fetchBalances();
+
+      expect(result).toEqual({});
+      expect(result).not.toBeUndefined();
+      expect(mockFileManager.readDistributors).toHaveBeenCalledTimes(1);
+      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
+      expect(mockFileManager.readDistributorBalances).toHaveBeenCalledTimes(1);
+      expect(mockProvider.getBalance).not.toHaveBeenCalled();
+    });
+  });
 });
