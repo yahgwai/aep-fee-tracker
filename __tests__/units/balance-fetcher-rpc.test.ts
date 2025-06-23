@@ -128,7 +128,7 @@ describe("BalanceFetcher - RPC Balance Fetching", () => {
     });
   });
 
-  describe("storing bigint balance responses", () => {
+  describe("storing decimal string balance responses", () => {
     let mockDistributorsData: DistributorsData;
     let mockBlockNumberData: BlockNumberData;
 
@@ -170,7 +170,7 @@ describe("BalanceFetcher - RPC Balance Fetching", () => {
       mockFileManager.readDistributorBalances.mockReturnValue(undefined);
     });
 
-    it("returns collected bigint balances", async () => {
+    it("returns collected decimal string balances", async () => {
       // Set up different balances for different dates
       const balances = {
         "2022-07-12": BigInt("0x3635c9adc5dea00000"), // 1000 ETH in hex
@@ -185,11 +185,11 @@ describe("BalanceFetcher - RPC Balance Fetching", () => {
 
       const result = await fetcher.fetchBalances();
 
-      // Verify the returned structure contains bigint values
+      // Verify the returned structure contains decimal string values
       expect(result).toEqual({
         "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-          "2022-07-12": BigInt("0x3635c9adc5dea00000"),
-          "2022-07-13": BigInt("0x6c6b935b8bbd400000"),
+          "2022-07-12": "1000000000000000000000",
+          "2022-07-13": "2000000000000000000000",
         },
       });
     });
@@ -225,12 +225,12 @@ describe("BalanceFetcher - RPC Balance Fetching", () => {
 
       expect(result).toEqual({
         "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-          "2022-07-12": BigInt("0x3635c9adc5dea00000"),
-          "2022-07-13": BigInt("0x3635c9adc5dea00000"),
+          "2022-07-12": "1000000000000000000000",
+          "2022-07-13": "1000000000000000000000",
         },
         "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": {
-          "2022-07-12": BigInt("0x1bc16d674ec80000"),
-          "2022-07-13": BigInt("0x1bc16d674ec80000"),
+          "2022-07-12": "2000000000000000000",
+          "2022-07-13": "2000000000000000000",
         },
       });
     });
