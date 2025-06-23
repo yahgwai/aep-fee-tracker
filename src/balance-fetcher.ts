@@ -1,5 +1,11 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
+import { withRetry } from "./types";
+
+// Retry configuration for RPC calls
+const RPC_RETRY_CONFIG = {
+  maxRetries: 3,
+} as const;
 
 /**
  * Creates a new BalanceFetcher instance with the specified dependencies.
@@ -18,10 +24,12 @@ export class BalanceFetcher {
    * Uses incremental processing to only fetch balances for dates that haven't been fetched yet.
    *
    * @param distributorAddress - If provided, only fetch balances for this specific distributor
-   * @returns Promise that resolves when all missing balances are fetched successfully
+   * @returns Promise that resolves with collected bigint balances by distributor and date
    * @throws Error on any failure
    */
-  async fetchBalances(distributorAddress?: string): Promise<void> {
+  async fetchBalances(
+    distributorAddress?: string,
+  ): Promise<Record<string, Record<string, bigint>> | undefined> {
     const distributorsData = this.fileManager.readDistributors();
 
     // Early return if no distributors data
@@ -101,9 +109,31 @@ export class BalanceFetcher {
     // Sort all fetches chronologically by date
     allFetches.sort((a, b) => a.date.localeCompare(b.date));
 
-    // Fetch balances in chronological order
-    for (const { address, block } of allFetches) {
-      await this.provider.getBalance(address, block);
+    // Return undefined if no fetches needed
+    if (allFetches.length === 0) {
+      return undefined;
     }
+
+    // Collect balances by distributor and date
+    const collectedBalances: Record<string, Record<string, bigint>> = {};
+
+    // Fetch balances in chronological order
+    for (const { address, date, block } of allFetches) {
+      const balance = await withRetry(
+        () => this.provider.getBalance(address, block),
+        {
+          ...RPC_RETRY_CONFIG,
+          operationName: `getBalance(${address}, ${block})`,
+        },
+      );
+
+      // Store balance as bigint
+      if (!collectedBalances[address]) {
+        collectedBalances[address] = {};
+      }
+      collectedBalances[address][date] = balance;
+    }
+
+    return collectedBalances;
   }
 }
