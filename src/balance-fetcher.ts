@@ -24,12 +24,12 @@ export class BalanceFetcher {
    * Uses incremental processing to only fetch balances for dates that haven't been fetched yet.
    *
    * @param distributorAddress - If provided, only fetch balances for this specific distributor
-   * @returns Promise that resolves with collected bigint balances by distributor and date
+   * @returns Promise that resolves with collected decimal string balances by distributor and date
    * @throws Error on any failure
    */
   async fetchBalances(
     distributorAddress?: string,
-  ): Promise<Record<string, Record<string, bigint>> | undefined> {
+  ): Promise<Record<string, Record<string, string>> | undefined> {
     const distributorsData = this.fileManager.readDistributors();
 
     // Early return if no distributors data
@@ -115,7 +115,7 @@ export class BalanceFetcher {
     }
 
     // Collect balances by distributor and date
-    const collectedBalances: Record<string, Record<string, bigint>> = {};
+    const collectedBalances: Record<string, Record<string, string>> = {};
 
     // Fetch balances in chronological order
     for (const { address, date, block } of allFetches) {
@@ -127,11 +127,11 @@ export class BalanceFetcher {
         },
       );
 
-      // Store balance as bigint
+      // Store balance as decimal string
       if (!collectedBalances[address]) {
         collectedBalances[address] = {};
       }
-      collectedBalances[address][date] = balance;
+      collectedBalances[address][date] = balance.toString();
     }
 
     return collectedBalances;

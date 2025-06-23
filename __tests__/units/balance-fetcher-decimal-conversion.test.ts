@@ -151,7 +151,7 @@ describe("BalanceFetcher - Decimal String Conversion", () => {
     it("converts multiple different balances correctly", async () => {
       const balances = {
         155: BigInt("0x5d21dba000"), // 400000000000
-        189: BigInt("0x402dcd2fc8000"), // 1131212312000000
+        189: BigInt("0x402dcd2fc8000"), // 1129047362666496
       };
 
       mockProvider.getBalance.mockImplementation(async (_address, block) => {
@@ -163,7 +163,7 @@ describe("BalanceFetcher - Decimal String Conversion", () => {
       expect(result).toEqual({
         "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
           "2022-07-12": "400000000000",
-          "2022-07-13": "1131212312000000",
+          "2022-07-13": "1129047362666496",
         },
       });
     });
