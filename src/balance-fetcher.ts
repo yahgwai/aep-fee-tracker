@@ -67,7 +67,8 @@ export class BalanceFetcher {
       const creationBlock = distributorInfo.block;
 
       // Load existing balance data for this distributor
-      this.fileManager.readDistributorBalances(address);
+      const existingBalances =
+        this.fileManager.readDistributorBalances(address);
 
       // Get all block numbers from creation date onward
       const endOfDayBlocks = Object.entries(blockNumbersData.blocks).filter(
@@ -90,7 +91,10 @@ export class BalanceFetcher {
 
       // Collect all blocks for this distributor
       for (const [date, block] of endOfDayBlocks) {
-        allFetches.push({ address, date, block });
+        // Only fetch if balance doesn't already exist
+        if (!existingBalances?.balances[date]) {
+          allFetches.push({ address, date, block });
+        }
       }
     }
 
