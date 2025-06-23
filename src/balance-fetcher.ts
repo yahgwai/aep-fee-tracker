@@ -2,6 +2,20 @@ import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
 import { withRetry } from "./types";
 
+// Retry configuration for RPC calls
+const RPC_RETRY_CONFIG = {
+  maxRetries: 3,
+} as const;
+
+/**
+ * Converts a BigInt balance to a hex string with 0x prefix.
+ * @param balance - The balance as a BigInt
+ * @returns Hex string representation with 0x prefix
+ */
+function toHexString(balance: bigint): string {
+  return "0x" + balance.toString(16);
+}
+
 /**
  * Creates a new BalanceFetcher instance with the specified dependencies.
  *
@@ -117,7 +131,7 @@ export class BalanceFetcher {
       const balance = await withRetry(
         () => this.provider.getBalance(address, block),
         {
-          maxRetries: 3,
+          ...RPC_RETRY_CONFIG,
           operationName: `getBalance(${address}, ${block})`,
         },
       );
@@ -126,8 +140,7 @@ export class BalanceFetcher {
       if (!collectedBalances[address]) {
         collectedBalances[address] = {};
       }
-      // Convert BigInt to hex string
-      collectedBalances[address][date] = "0x" + balance.toString(16);
+      collectedBalances[address][date] = toHexString(balance);
     }
 
     return collectedBalances;
