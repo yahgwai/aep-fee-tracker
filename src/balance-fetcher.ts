@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
-import { withRetry } from "./types";
+import { withRetry, BalanceData, CHAIN_IDS } from "./types";
 
 // Retry configuration for RPC calls
 const RPC_RETRY_CONFIG = {
@@ -62,6 +62,12 @@ export class BalanceFetcher {
         }
       : distributorsData.distributors;
 
+    // Map to track existing balances per distributor for merging
+    const existingBalancesByDistributor: Record<
+      string,
+      BalanceData | undefined
+    > = {};
+
     // Collect all address/date/block combinations
     const allFetches: Array<{ address: string; date: string; block: number }> =
       [];
@@ -77,6 +83,7 @@ export class BalanceFetcher {
       // Load existing balance data for this distributor
       const existingBalances =
         this.fileManager.readDistributorBalances(address);
+      existingBalancesByDistributor[address] = existingBalances;
 
       // Get all block numbers from creation date onward
       const endOfDayBlocks = Object.entries(blockNumbersData.blocks).filter(
@@ -132,6 +139,38 @@ export class BalanceFetcher {
         collectedBalances[address] = {};
       }
       collectedBalances[address][date] = balance.toString();
+    }
+
+    // Save balance data for each distributor
+    for (const [address, newBalances] of Object.entries(collectedBalances)) {
+      const existingData = existingBalancesByDistributor[address];
+
+      // Create balance data structure
+      const balanceData: BalanceData = {
+        metadata: {
+          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
+          reward_distributor: address,
+        },
+        balances: {
+          // Merge existing balances (if any) with new balances
+          ...(existingData?.balances || {}),
+        },
+      };
+
+      // Add new balances with block numbers
+      for (const [date, balanceWei] of Object.entries(newBalances)) {
+        const blockNumber = allFetches.find(
+          (f) => f.address === address && f.date === date,
+        )!.block;
+
+        balanceData.balances[date] = {
+          block_number: blockNumber,
+          balance_wei: balanceWei,
+        };
+      }
+
+      // Write balance data
+      this.fileManager.writeDistributorBalances(address, balanceData);
     }
 
     return collectedBalances;
