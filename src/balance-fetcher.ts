@@ -74,7 +74,7 @@ export class BalanceFetcher {
       !distributorsData ||
       Object.keys(distributorsData.distributors).length === 0
     ) {
-      return;
+      return {};
     }
 
     // If specific distributor requested, validate it exists
@@ -88,7 +88,7 @@ export class BalanceFetcher {
     // Load block numbers
     const blockNumbersData = this.fileManager.readBlockNumbers();
     if (!blockNumbersData) {
-      return;
+      return {};
     }
 
     // Process distributors
@@ -153,9 +153,9 @@ export class BalanceFetcher {
     // Sort all fetches chronologically by date
     allFetches.sort((a, b) => a.date.localeCompare(b.date));
 
-    // Return undefined if no fetches needed
+    // Return empty record if no fetches needed
     if (allFetches.length === 0) {
-      return undefined;
+      return {};
     }
 
     // Collect balances by distributor and date
