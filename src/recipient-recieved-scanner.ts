@@ -128,68 +128,132 @@ export class RecipientRecievedScanner {
       : distributorsData.distributors;
 
     // Only apply error isolation when processing multiple distributors
-    if (distributorAddress) {
-      // Single distributor - no error isolation
-      for (const [address, distributorInfo] of Object.entries(
-        distributorsToProcess,
-      )) {
-        if (!distributorInfo) continue;
+    const distributorCount = Object.keys(distributorsToProcess).length;
 
+    if (distributorAddress || distributorCount === 1) {
+      // Single distributor - no error isolation
+      await this.processSingleDistributor(
+        distributorsToProcess,
+        blockNumbersData,
+        yesterdayStr,
+      );
+    } else {
+      // Multiple distributors - apply error isolation
+      await this.processMultipleDistributors(
+        distributorsToProcess,
+        blockNumbersData,
+        yesterdayStr,
+      );
+    }
+  }
+
+  /**
+   * Processes a single distributor without error isolation.
+   * @private
+   */
+  private async processSingleDistributor(
+    distributorsToProcess: Record<string, DistributorInfo | undefined>,
+    blockNumbersData: BlockNumberData,
+    yesterdayStr: string,
+  ): Promise<void> {
+    for (const [address, distributorInfo] of Object.entries(
+      distributorsToProcess,
+    )) {
+      if (!distributorInfo) continue;
+
+      await this.processDistributor(
+        address,
+        distributorInfo,
+        blockNumbersData,
+        yesterdayStr,
+      );
+    }
+  }
+
+  /**
+   * Processes multiple distributors with error isolation.
+   * @private
+   */
+  private async processMultipleDistributors(
+    distributorsToProcess: Record<string, DistributorInfo | undefined>,
+    blockNumbersData: BlockNumberData,
+    yesterdayStr: string,
+  ): Promise<void> {
+    let successCount = 0;
+    let failureCount = 0;
+
+    // Sort distributor addresses for consistent processing order
+    const sortedAddresses = Object.keys(distributorsToProcess).sort();
+
+    for (const address of sortedAddresses) {
+      const distributorInfo = distributorsToProcess[address];
+      if (!distributorInfo) continue;
+
+      try {
         await this.processDistributor(
           address,
           distributorInfo,
           blockNumbersData,
           yesterdayStr,
         );
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to scan distributor ${address}:`, error);
+        failureCount++;
       }
-    } else {
-      // Multiple distributors - apply error isolation
-      let successCount = 0;
-      let failureCount = 0;
+    }
 
-      // Sort distributor addresses for consistent processing order
-      const sortedAddresses = Object.keys(distributorsToProcess).sort();
+    this.logScanSummary(successCount, failureCount);
 
-      for (const address of sortedAddresses) {
-        const distributorInfo = distributorsToProcess[address];
-        if (!distributorInfo) continue;
+    // Check for critical errors
+    if (
+      this.isAllDistributorsFailed(
+        successCount,
+        failureCount,
+        sortedAddresses.length,
+      )
+    ) {
+      await this.checkAndThrowCriticalError();
+    }
+  }
 
-        try {
-          await this.processDistributor(
-            address,
-            distributorInfo,
-            blockNumbersData,
-            yesterdayStr,
-          );
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to scan distributor ${address}:`, error);
-          failureCount++;
-        }
-      }
+  /**
+   * Logs the scan summary.
+   * @private
+   */
+  private logScanSummary(successCount: number, failureCount: number): void {
+    if (successCount > 0) {
+      console.log(`Scanned ${successCount} distributors successfully`);
+    }
+    if (failureCount > 0) {
+      console.log(`Failed to scan ${failureCount} distributors`);
+    }
+  }
 
-      // Log summary
-      if (successCount > 0) {
-        console.log(`Scanned ${successCount} distributors successfully`);
-      }
-      if (failureCount > 0) {
-        console.log(`Failed to scan ${failureCount} distributors`);
-      }
+  /**
+   * Checks if all distributors failed.
+   * @private
+   */
+  private isAllDistributorsFailed(
+    successCount: number,
+    failureCount: number,
+    totalCount: number,
+  ): boolean {
+    return (
+      failureCount > 0 && successCount === 0 && totalCount === failureCount
+    );
+  }
 
-      // If all distributors failed and we have a connection error, throw
-      if (
-        failureCount > 0 &&
-        successCount === 0 &&
-        sortedAddresses.length === failureCount
-      ) {
-        // Check if it's a connection issue by trying getNetwork
-        try {
-          await this.provider.getNetwork();
-        } catch (networkError) {
-          // Connection issue detected, throw the error
-          throw networkError;
-        }
-      }
+  /**
+   * Checks for connection issues and throws if detected.
+   * @private
+   */
+  private async checkAndThrowCriticalError(): Promise<void> {
+    try {
+      await this.provider.getNetwork();
+    } catch (networkError) {
+      // Connection issue detected, throw the error
+      throw networkError;
     }
   }
 
