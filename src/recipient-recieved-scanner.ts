@@ -127,90 +127,77 @@ export class RecipientRecievedScanner {
         }
       : distributorsData.distributors;
 
-    // Only apply error isolation when processing multiple distributors
-    const distributorCount = Object.keys(distributorsToProcess).length;
-
-    if (distributorAddress || distributorCount === 1) {
-      // Single distributor - no error isolation
-      await this.processSingleDistributor(
-        distributorsToProcess,
-        blockNumbersData,
-        yesterdayStr,
-      );
-    } else {
-      // Multiple distributors - apply error isolation
-      await this.processMultipleDistributors(
-        distributorsToProcess,
-        blockNumbersData,
-        yesterdayStr,
-      );
-    }
-  }
-
-  /**
-   * Processes a single distributor without error isolation.
-   * @private
-   */
-  private async processSingleDistributor(
-    distributorsToProcess: Record<string, DistributorInfo | undefined>,
-    blockNumbersData: BlockNumberData,
-    yesterdayStr: string,
-  ): Promise<void> {
-    for (const [address, distributorInfo] of Object.entries(
+    // Process distributors with error isolation only for multiple distributors
+    await this.processDistributors(
       distributorsToProcess,
-    )) {
-      if (!distributorInfo) continue;
-
-      await this.processDistributor(
-        address,
-        distributorInfo,
-        blockNumbersData,
-        yesterdayStr,
-      );
-    }
+      blockNumbersData,
+      yesterdayStr,
+      distributorAddress,
+    );
   }
 
   /**
-   * Processes multiple distributors with error isolation.
+   * Processes distributors with optional error isolation for multiple distributors.
    * @private
    */
-  private async processMultipleDistributors(
+  private async processDistributors(
     distributorsToProcess: Record<string, DistributorInfo | undefined>,
     blockNumbersData: BlockNumberData,
     yesterdayStr: string,
+    distributorAddress?: string,
   ): Promise<void> {
-    let successCount = 0;
-    let failureCount = 0;
-
     // Sort distributor addresses for consistent processing order
     const sortedAddresses = Object.keys(distributorsToProcess).sort();
 
-    for (const address of sortedAddresses) {
-      const distributorInfo = distributorsToProcess[address];
-      if (!distributorInfo) continue;
+    // Determine if we should apply error isolation
+    const shouldApplyErrorIsolation =
+      !distributorAddress && sortedAddresses.length > 1;
 
-      try {
+    if (!shouldApplyErrorIsolation) {
+      // No error isolation - process normally
+      for (const address of sortedAddresses) {
+        const distributorInfo = distributorsToProcess[address];
+        if (!distributorInfo) continue;
+
         await this.processDistributor(
           address,
           distributorInfo,
           blockNumbersData,
           yesterdayStr,
         );
-        successCount++;
-      } catch {
-        failureCount++;
       }
-    }
+    } else {
+      // Apply error isolation for multiple distributors
+      let successCount = 0;
+      let failureCount = 0;
 
-    // Check for critical errors
-    if (
-      this.isAllDistributorsFailed(
-        successCount,
-        failureCount,
-        sortedAddresses.length,
-      )
-    ) {
-      await this.checkAndThrowCriticalError();
+      for (const address of sortedAddresses) {
+        const distributorInfo = distributorsToProcess[address];
+        if (!distributorInfo) continue;
+
+        try {
+          await this.processDistributor(
+            address,
+            distributorInfo,
+            blockNumbersData,
+            yesterdayStr,
+          );
+          successCount++;
+        } catch {
+          failureCount++;
+        }
+      }
+
+      // Check for critical errors
+      if (
+        this.isAllDistributorsFailed(
+          successCount,
+          failureCount,
+          sortedAddresses.length,
+        )
+      ) {
+        await this.checkAndThrowCriticalError();
+      }
     }
   }
 
