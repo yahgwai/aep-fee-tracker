@@ -1,0 +1,9 @@
+{
+  "chain_id": 42170,
+  "distributor_address": "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
+  "events": [],
+  "block_range": {
+    "start": 120,
+    "end": 83686055
+  }
+}
