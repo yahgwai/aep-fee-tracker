@@ -268,6 +268,15 @@ describe("Core Types", () => {
           outflows: {},
         }),
         writeDistributorOutflows: () => {},
+        readRecipientRecievedEvents: () => ({
+          metadata: {
+            chain_id: 42170,
+            reward_distributor: "",
+            last_scanned_block: 0,
+          },
+          events: {},
+        }),
+        writeRecipientRecievedEvents: () => {},
         ensureStoreDirectory: () => {},
         validateAddress: (address: string) => address as Address,
         formatDate: (date: Date) =>
