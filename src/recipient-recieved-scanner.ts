@@ -1,6 +1,29 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
-import { DistributorsData, BlockNumberData, DistributorInfo } from "./types";
+import {
+  DistributorsData,
+  BlockNumberData,
+  DistributorInfo,
+  withRetry,
+} from "./types";
+import { chunkBlockRange } from "./utils/block-range-chunking";
+
+// Event signature and topic for RecipientRecieved event
+export const RECIPIENT_RECIEVED_EVENT_SIGNATURE =
+  "RecipientRecieved(address,uint256)";
+export const RECIPIENT_RECIEVED_EVENT_TOPIC = ethers.id(
+  RECIPIENT_RECIEVED_EVENT_SIGNATURE,
+);
+
+// Event ABI definition
+export const RECIPIENT_RECIEVED_EVENT_ABI = [
+  "event RecipientRecieved(address indexed recipient, uint256 value)",
+];
+
+// Create ethers Interface for event parsing
+export const recipientRecievedInterface = new ethers.Interface(
+  RECIPIENT_RECIEVED_EVENT_ABI,
+);
 
 /**
  * Creates a new RecipientRecievedScanner instance with the specified dependencies.
@@ -13,6 +36,44 @@ export class RecipientRecievedScanner {
     public readonly provider: ethers.Provider,
     public readonly fileManager: FileManager,
   ) {}
+
+  /**
+   * Queries RecipientRecieved events for a distributor within a block range.
+   * Chunks large block ranges and applies retry logic to RPC calls.
+   *
+   * @param distributorAddress - The distributor contract address
+   * @param fromBlock - Starting block number (inclusive)
+   * @param toBlock - Ending block number (inclusive)
+   * @returns Promise resolving to array of raw event logs
+   */
+  async queryRecipientRecievedEvents(
+    distributorAddress: string,
+    fromBlock: number,
+    toBlock: number,
+  ): Promise<ethers.Log[]> {
+    const allLogs: ethers.Log[] = [];
+    const chunks = chunkBlockRange(fromBlock, toBlock, 10000);
+
+    // Process each chunk
+    for (const chunk of chunks) {
+      const filter = {
+        address: distributorAddress,
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: chunk.fromBlock,
+        toBlock: chunk.toBlock,
+      };
+
+      // Query events with retry logic
+      const logs = await withRetry(() => this.provider.getLogs(filter), {
+        maxRetries: 3,
+        operationName: `queryRecipientRecievedEvents.getLogs(${chunk.fromBlock}-${chunk.toBlock})`,
+      });
+
+      allLogs.push(...logs);
+    }
+
+    return allLogs;
+  }
 
   /**
    * Scans for RecipientRecieved events and updates outflow data.
@@ -193,8 +254,15 @@ export class RecipientRecievedScanner {
         blockNumbersData,
       );
 
-      // TODO: Fetch and process receipts for this block range (out of scope for this issue)
-      void { date: dateStr, startBlock, endBlock }; // Suppress unused variable warning
+      // Query RecipientRecieved events for this block range
+      const events = await this.queryRecipientRecievedEvents(
+        address,
+        startBlock,
+        endBlock,
+      );
+
+      // Collect all events without parsing (out of scope for this issue)
+      void events; // Events collected but not processed yet
 
       // Move to next day
       currentDate.setDate(currentDate.getDate() + 1);

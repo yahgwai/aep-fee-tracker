@@ -1,6 +1,12 @@
 import { ethers } from "ethers";
 import { FileManager } from "../../src/file-manager";
-import { RecipientRecievedScanner } from "../../src/recipient-recieved-scanner";
+import {
+  RecipientRecievedScanner,
+  RECIPIENT_RECIEVED_EVENT_SIGNATURE,
+  RECIPIENT_RECIEVED_EVENT_TOPIC,
+  RECIPIENT_RECIEVED_EVENT_ABI,
+  recipientRecievedInterface,
+} from "../../src/recipient-recieved-scanner";
 import {
   DistributorType,
   DistributorsData,
@@ -17,7 +23,9 @@ describe("RecipientRecievedScanner", () => {
     mockFileManager = {
       readDistributors: jest.fn(),
     } as unknown as jest.Mocked<FileManager>;
-    mockProvider = {} as jest.Mocked<ethers.Provider>;
+    mockProvider = {
+      getLogs: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<ethers.Provider>;
   });
 
   describe("constructor", () => {
@@ -898,6 +906,531 @@ describe("RecipientRecievedScanner", () => {
 
       // Should convert dates for both distributors
       expect(convertDateToBlockRangeSpy).toHaveBeenCalledTimes(5); // 3 dates for first + 2 dates for second
+    });
+  });
+
+  describe("RecipientRecieved event constants", () => {
+    it("defines RECIPIENT_RECIEVED_EVENT_SIGNATURE with correct format", () => {
+      expect(RECIPIENT_RECIEVED_EVENT_SIGNATURE).toBeDefined();
+      expect(RECIPIENT_RECIEVED_EVENT_SIGNATURE).toBe(
+        "RecipientRecieved(address,uint256)",
+      );
+    });
+
+    it("defines RECIPIENT_RECIEVED_EVENT_TOPIC as the keccak256 hash of the signature", () => {
+      expect(RECIPIENT_RECIEVED_EVENT_TOPIC).toBeDefined();
+
+      // Calculate expected hash
+      const expectedHash = ethers.id("RecipientRecieved(address,uint256)");
+      expect(RECIPIENT_RECIEVED_EVENT_TOPIC).toBe(expectedHash);
+    });
+
+    it("event topic is a valid hex string", () => {
+      expect(RECIPIENT_RECIEVED_EVENT_TOPIC).toMatch(/^0x[a-fA-F0-9]{64}$/);
+    });
+  });
+
+  describe("RecipientRecieved event interface", () => {
+    it("defines RECIPIENT_RECIEVED_EVENT_ABI with correct event definition", () => {
+      expect(RECIPIENT_RECIEVED_EVENT_ABI).toBeDefined();
+      expect(RECIPIENT_RECIEVED_EVENT_ABI).toContain(
+        "event RecipientRecieved(address indexed recipient, uint256 value)",
+      );
+    });
+
+    it("creates recipientRecievedInterface as an ethers Interface", () => {
+      expect(recipientRecievedInterface).toBeDefined();
+      expect(recipientRecievedInterface).toBeInstanceOf(ethers.Interface);
+    });
+
+    it("interface contains RecipientRecieved event", () => {
+      const event = recipientRecievedInterface.getEvent("RecipientRecieved");
+      expect(event).toBeDefined();
+      expect(event!.name).toBe("RecipientRecieved");
+    });
+
+    it("RecipientRecieved event has correct inputs", () => {
+      const event = recipientRecievedInterface.getEvent("RecipientRecieved");
+      expect(event!.inputs).toHaveLength(2);
+
+      // Check recipient parameter
+      expect(event!.inputs[0]!.name).toBe("recipient");
+      expect(event!.inputs[0]!.type).toBe("address");
+      expect(event!.inputs[0]!.indexed).toBe(true);
+
+      // Check value parameter
+      expect(event!.inputs[1]!.name).toBe("value");
+      expect(event!.inputs[1]!.type).toBe("uint256");
+      expect(event!.inputs[1]!.indexed).toBeFalsy(); // Could be false or null
+    });
+
+    it("interface generates correct event topic", () => {
+      const eventFragment =
+        recipientRecievedInterface.getEvent("RecipientRecieved");
+      const topicHash = ethers.id(eventFragment!.format("sighash"));
+      expect(topicHash).toBe(RECIPIENT_RECIEVED_EVENT_TOPIC);
+    });
+  });
+
+  describe("queryRecipientRecievedEvents", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockProvider: jest.Mocked<ethers.Provider>;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockFileManager = {} as jest.Mocked<FileManager>;
+      mockProvider = {
+        getLogs: jest.fn(),
+      } as unknown as jest.Mocked<ethers.Provider>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+    });
+
+    it("exists as a method on RecipientRecievedScanner instance", () => {
+      expect(scanner.queryRecipientRecievedEvents).toBeDefined();
+      expect(typeof scanner.queryRecipientRecievedEvents).toBe("function");
+    });
+
+    it("returns a Promise of ethers.Log array", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      const result = scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        100,
+      );
+      expect(result).toBeInstanceOf(Promise);
+
+      const logs = await result;
+      expect(Array.isArray(logs)).toBe(true);
+    });
+
+    it("chunks large block ranges into 10000 block chunks", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.queryRecipientRecievedEvents(distributorAddress, 1, 25000);
+
+      // Should be called 3 times for ranges 1-10000, 10001-20000, 20001-25000
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          fromBlock: 1,
+          toBlock: 10000,
+        }),
+      );
+
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          fromBlock: 10001,
+          toBlock: 20000,
+        }),
+      );
+
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          fromBlock: 20001,
+          toBlock: 25000,
+        }),
+      );
+    });
+
+    it("queries events with correct filter parameters", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.queryRecipientRecievedEvents(distributorAddress, 100, 200);
+
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: distributorAddress,
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 100,
+        toBlock: 200,
+      });
+    });
+
+    it("returns all logs from multiple chunks", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      const mockLogs1 = [
+        { blockNumber: 5000, transactionHash: "0x111", index: 0 },
+        { blockNumber: 8000, transactionHash: "0x222", index: 1 },
+      ] as unknown as ethers.Log[];
+      const mockLogs2 = [
+        { blockNumber: 15000, transactionHash: "0x333", index: 0 },
+      ] as unknown as ethers.Log[];
+
+      mockProvider.getLogs
+        .mockResolvedValueOnce(mockLogs1)
+        .mockResolvedValueOnce(mockLogs2);
+
+      const result = await scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        20000,
+      );
+
+      expect(result).toHaveLength(3);
+      expect(result).toEqual([...mockLogs1, ...mockLogs2]);
+    });
+
+    it("handles empty results", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      const result = await scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        100,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("applies retry logic when RPC calls fail", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      const mockError = new Error("RPC error");
+
+      // Fail twice, then succeed
+      mockProvider.getLogs
+        .mockRejectedValueOnce(mockError)
+        .mockRejectedValueOnce(mockError)
+        .mockResolvedValueOnce([]);
+
+      const result = await scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        100,
+      );
+
+      expect(result).toEqual([]);
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+    });
+
+    it("throws error after max retries", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      const mockError = new Error("RPC error");
+
+      // Always fail
+      mockProvider.getLogs.mockRejectedValue(mockError);
+
+      await expect(
+        scanner.queryRecipientRecievedEvents(distributorAddress, 1, 100),
+      ).rejects.toThrow("RPC error");
+    });
+
+    it("processes multiple chunks even if some chunks have no events", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      const mockLogs = [
+        { blockNumber: 15000, transactionHash: "0x123", index: 0 },
+      ] as unknown as ethers.Log[];
+
+      mockProvider.getLogs
+        .mockResolvedValueOnce([]) // First chunk empty
+        .mockResolvedValueOnce(mockLogs) // Second chunk has events
+        .mockResolvedValueOnce([]); // Third chunk empty
+
+      const result = await scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        25000,
+      );
+
+      expect(result).toEqual(mockLogs);
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe("scan - event querying integration", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockDistributorsData: DistributorsData;
+    let mockBlockNumbersData: BlockNumberData;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      mockProvider = {
+        getLogs: jest.fn(),
+      } as unknown as jest.Mocked<ethers.Provider>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+
+      // Set up a mock date for "today" to make tests deterministic
+      jest.useFakeTimers().setSystemTime(new Date("2022-07-15"));
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      mockBlockNumbersData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+          "2022-07-14": 400,
+        },
+      };
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("queries RecipientRecieved events for each date range", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.scan();
+
+      // Should query events for each day from creation date to yesterday
+      // Day 1: 2022-07-12 (blocks 101-200)
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 101,
+        toBlock: 200,
+      });
+
+      // Day 2: 2022-07-13 (blocks 201-300)
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 201,
+        toBlock: 300,
+      });
+
+      // Day 3: 2022-07-14 (blocks 301-400)
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 301,
+        toBlock: 400,
+      });
+
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+    });
+
+    it("collects all events across multiple days", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      const mockLogs1 = [
+        { blockNumber: 150, transactionHash: "0x111", index: 0 },
+      ] as unknown as ethers.Log[];
+      const mockLogs2 = [
+        { blockNumber: 250, transactionHash: "0x222", index: 0 },
+        { blockNumber: 280, transactionHash: "0x333", index: 1 },
+      ] as unknown as ethers.Log[];
+      const mockLogs3 = [
+        { blockNumber: 350, transactionHash: "0x444", index: 0 },
+      ] as unknown as ethers.Log[];
+
+      mockProvider.getLogs
+        .mockResolvedValueOnce(mockLogs1)
+        .mockResolvedValueOnce(mockLogs2)
+        .mockResolvedValueOnce(mockLogs3);
+
+      await scanner.scan();
+
+      // Verify all logs were queried
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+
+      // Should have queried in chronological order
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          fromBlock: 101,
+          toBlock: 200,
+        }),
+      );
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          fromBlock: 201,
+          toBlock: 300,
+        }),
+      );
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          fromBlock: 301,
+          toBlock: 400,
+        }),
+      );
+    });
+
+    it("does not parse or store events during scan", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockFileManager.writeRecipientRecievedEvents = jest.fn();
+
+      const mockLogs = [
+        {
+          blockNumber: 150,
+          transactionHash: "0x111",
+          index: 0,
+          topics: [RECIPIENT_RECIEVED_EVENT_TOPIC, "0xrecipient"],
+          data: "0xvalue",
+        },
+      ] as unknown as ethers.Log[];
+
+      mockProvider.getLogs.mockResolvedValue(mockLogs);
+
+      await scanner.scan();
+
+      // Should NOT write events to disk (out of scope)
+      expect(
+        mockFileManager.writeRecipientRecievedEvents,
+      ).not.toHaveBeenCalled();
+
+      // Should NOT access the interface for parsing (out of scope)
+      const interfaceSpy = jest.spyOn(recipientRecievedInterface, "parseLog");
+      expect(interfaceSpy).not.toHaveBeenCalled();
+    });
+
+    it("handles empty event results for some date ranges", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      mockProvider.getLogs
+        .mockResolvedValueOnce([]) // Day 1: no events
+        .mockResolvedValueOnce([
+          { blockNumber: 250, transactionHash: "0x222", index: 0 },
+        ] as unknown as ethers.Log[]) // Day 2: has events
+        .mockResolvedValueOnce([]); // Day 3: no events
+
+      await scanner.scan();
+
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+    });
+
+    it("skips event querying when all dates have been processed", async () => {
+      const existingEventData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          last_scanned_block: 400, // Already scanned up to yesterday
+        },
+        events: {},
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(
+        existingEventData,
+      );
+
+      await scanner.scan();
+
+      // Should not query any events since already up to date
+      expect(mockProvider.getLogs).not.toHaveBeenCalled();
+    });
+
+    it("queries events only for dates after last scanned block", async () => {
+      const existingEventData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          last_scanned_block: 200, // Scanned up to 2022-07-12
+        },
+        events: {},
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(
+        existingEventData,
+      );
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.scan();
+
+      // Should only query events for 2022-07-13 and 2022-07-14
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(2);
+      expect(mockProvider.getLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fromBlock: 201,
+          toBlock: 300,
+        }),
+      );
+      expect(mockProvider.getLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fromBlock: 301,
+          toBlock: 400,
+        }),
+      );
+    });
+
+    it("handles large block ranges by chunking", async () => {
+      // Set up a scenario with a large block range
+      const largeRangeBlockData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 25000, // Large range that needs chunking
+          "2022-07-13": 25100, // Add the next day to avoid missing block error
+          "2022-07-14": 25200, // Add up to yesterday
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(largeRangeBlockData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.scan();
+
+      // Should chunk the large range (101-25000) into multiple calls
+      const logsCallsForLargeRange = mockProvider.getLogs.mock.calls.filter(
+        (call) => {
+          const filter = call[0] as { fromBlock?: number; toBlock?: number };
+          return (
+            filter.fromBlock !== undefined &&
+            filter.toBlock !== undefined &&
+            filter.fromBlock >= 101 &&
+            filter.toBlock <= 25000
+          );
+        },
+      );
+      expect(logsCallsForLargeRange.length).toBeGreaterThan(1);
+
+      // Verify first chunk of the large range
+      expect(mockProvider.getLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fromBlock: 101,
+          toBlock: 10100,
+        }),
+      );
     });
   });
 });
