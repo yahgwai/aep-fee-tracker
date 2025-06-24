@@ -245,13 +245,42 @@ interface RecipientRecievedEvent {
    - Large value transfers
    - Small value transfers
 
+### Available Test Data
+
+#### RecipientRecieved Events
+
+Test data for RecipientRecieved events has been collected and is available at:
+
+- Location: `__tests__/test-data/recipient-recieved/`
+- Coverage: All 5 Nova Arbitrum distributors
+- Total Events: 320 events collected
+- Block Range: From approximately block 75 million to 83 million
+- Value Range: From small transfers (< 1 ETH) to large transfers (> 10,000 ETH)
+
+The test data includes:
+
+- `0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB.json` - 0 events (no RecipientRecieved events found)
+- `0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce.json` - 25 events
+- `0x509386DbF5C0BE6fd68Df97A05fdB375136c32De.json` - 1 event
+- `0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f.json` - 294 events
+- `0xdff90519a9DE6ad469D4f9839a9220C5D340B792.json` - 0 events (no RecipientRecieved events found)
+
+#### Distributor Detector Test Data
+
+Additional test data for the distributor detector component is available at:
+
+- Location: `__tests__/test-data/distributor-detector/`
+- Includes:
+  - `block_numbers.json` - Master block numbers for date mapping
+  - `distributor-creation-events-raw.json` - Raw distributor creation events
+  - `balance_data/` - Historical balance data for each distributor
+  - `reward-distributor-bytecode.json` - Contract bytecode for verification
+
 ### Data Sources
 
-- Nova Arbitrum reward distributor contracts (already available in test files)
-- Historical blockchain data via standard RPC (same as used in other tests)
+- Nova Arbitrum reward distributor contracts (available in test files)
+- Historical blockchain data collected via RPC with the `gather-recipient-recieved-events.ts` script
 - Test fixtures for edge cases
-
-**Note**: A ticket is needed to collect all Nova RecipientRecieved events. This should involve creating a one-off script to scan through all blocks looking for these events from the known distributors.
 
 **Note**: A ticket is also needed to update the FileManager implementation and specification to support the new RecipientRecievedEventData structure for storing raw event data.
 
