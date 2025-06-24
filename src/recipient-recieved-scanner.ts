@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
+import { DistributorsData } from "./types";
 
 /**
  * Creates a new RecipientRecievedScanner instance with the specified dependencies.
@@ -39,23 +40,61 @@ export class RecipientRecievedScanner {
       return;
     }
 
-    // If specific distributor requested, validate it exists
+    // Process distributors based on filter
+    const distributorsToProcess = this.getDistributorsToProcess(
+      distributorsData,
+      distributorAddress,
+    );
+
+    // Log which distributors will be scanned
+    this.logScanningInfo(distributorsToProcess, distributorAddress);
+  }
+
+  /**
+   * Gets the distributors to process based on the filter parameter.
+   * @private
+   */
+  private getDistributorsToProcess(
+    distributorsData: DistributorsData,
+    distributorAddress?: string,
+  ): DistributorsData["distributors"] {
     if (distributorAddress) {
       // Find distributor with case-insensitive comparison
-      const foundDistributor = Object.keys(distributorsData.distributors).find(
+      const foundAddress = Object.keys(distributorsData.distributors).find(
         (address) => address.toLowerCase() === distributorAddress.toLowerCase(),
       );
 
-      if (!foundDistributor) {
+      if (!foundAddress) {
         throw new Error(`Distributor ${distributorAddress} not found`);
       }
 
+      // Return only the requested distributor
+      const distributor = distributorsData.distributors[foundAddress];
+      if (!distributor) {
+        // This should never happen as we just found the address
+        throw new Error(`Distributor ${distributorAddress} not found`);
+      }
+      return {
+        [foundAddress]: distributor,
+      };
+    }
+
+    // Return all distributors
+    return distributorsData.distributors;
+  }
+
+  /**
+   * Logs information about which distributors will be scanned.
+   * @private
+   */
+  private logScanningInfo(
+    distributorsToProcess: DistributorsData["distributors"],
+    distributorAddress?: string,
+  ): void {
+    if (distributorAddress) {
       console.log(`Scanning distributor: ${distributorAddress}`);
     } else {
-      // Process all distributors
-      const distributorCount = Object.keys(
-        distributorsData.distributors,
-      ).length;
+      const distributorCount = Object.keys(distributorsToProcess).length;
       console.log(`Scanning all ${distributorCount} distributors`);
     }
   }
