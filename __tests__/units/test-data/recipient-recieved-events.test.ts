@@ -23,6 +23,10 @@ interface RecipientRecievedTestData {
   };
 }
 
+const NOVA_ARBITRUM_CHAIN_ID = 42170;
+const REQUIRED_DISTRIBUTOR_COUNT = 3;
+const VALUE_MULTIPLIER_THRESHOLD = 10n;
+
 describe("RecipientRecieved Event Test Data", () => {
   const TEST_DATA_DIR = join(__dirname, "../../test-data/recipient-recieved");
   const DISTRIBUTOR_ADDRESSES = [
@@ -44,7 +48,9 @@ describe("RecipientRecieved Event Test Data", () => {
         return existsSync(filePath);
       });
 
-      expect(existingFiles.length).toBeGreaterThanOrEqual(3);
+      expect(existingFiles.length).toBeGreaterThanOrEqual(
+        REQUIRED_DISTRIBUTOR_COUNT,
+      );
     });
   });
 
@@ -67,7 +73,7 @@ describe("RecipientRecieved Event Test Data", () => {
         expect(data).toHaveProperty("distributor_address");
         expect(data).toHaveProperty("events");
 
-        expect(data.chain_id).toBe(42170); // Nova Arbitrum
+        expect(data.chain_id).toBe(NOVA_ARBITRUM_CHAIN_ID);
         expect(data.distributor_address.toLowerCase()).toBe(
           address.toLowerCase(),
         );
@@ -190,8 +196,8 @@ describe("RecipientRecieved Event Test Data", () => {
       const smallest = sortedValues[0]!;
       const largest = sortedValues[sortedValues.length - 1]!;
 
-      // Should have at least 10x difference between smallest and largest
-      expect(largest / smallest).toBeGreaterThan(10n);
+      // Should have significant difference between smallest and largest values
+      expect(largest / smallest).toBeGreaterThan(VALUE_MULTIPLIER_THRESHOLD);
     });
 
     it("should document block ranges in metadata", () => {
