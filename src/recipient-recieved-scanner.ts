@@ -254,8 +254,15 @@ export class RecipientRecievedScanner {
         blockNumbersData,
       );
 
-      // TODO: Fetch and process receipts for this block range (out of scope for this issue)
-      void { date: dateStr, startBlock, endBlock }; // Suppress unused variable warning
+      // Query RecipientRecieved events for this block range
+      const events = await this.queryRecipientRecievedEvents(
+        address,
+        startBlock,
+        endBlock,
+      );
+
+      // Collect all events without parsing (out of scope for this issue)
+      void events; // Events collected but not processed yet
 
       // Move to next day
       currentDate.setDate(currentDate.getDate() + 1);
