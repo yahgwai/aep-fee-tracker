@@ -220,7 +220,6 @@ interface RecipientRecievedEvent {
 
 1. **Data Integrity**
 
-   - Validate all blockchain data before processing
    - Use checksummed addresses for consistency
 
 2. **Error Handling**
@@ -253,6 +252,8 @@ interface RecipientRecievedEvent {
 - Test fixtures for edge cases
 
 **Note**: A ticket is needed to collect all Nova RecipientRecieved events. This should involve creating a one-off script to scan through all blocks looking for these events from the known distributors.
+
+**Note**: A ticket is also needed to update the FileManager implementation and specification to support the new RecipientRecievedEventData structure for storing raw event data.
 
 ### Expected Test Data Format
 
