@@ -1,7 +1,11 @@
 import { ethers } from "ethers";
 import { FileManager } from "../../src/file-manager";
 import { RecipientRecievedScanner } from "../../src/recipient-recieved-scanner";
-import { DistributorType, DistributorsData } from "../../src/types";
+import {
+  DistributorType,
+  DistributorsData,
+  BlockNumberData,
+} from "../../src/types";
 
 jest.mock("../../src/file-manager");
 
@@ -144,6 +148,7 @@ describe("RecipientRecievedScanner", () => {
       };
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers = jest.fn().mockReturnValue(undefined);
 
       await scanner.scan();
 
@@ -178,6 +183,394 @@ describe("RecipientRecievedScanner", () => {
     });
   });
 
+  describe("scan - loading block numbers", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockDistributorsData: DistributorsData;
+
+    beforeEach(() => {
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+    });
+
+    it("loads block numbers data to determine date ranges", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue({
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+        },
+      });
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      await scanner.scan();
+
+      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns early when no block numbers data is available", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(undefined);
+
+      await scanner.scan();
+
+      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
+      // Scanner should not proceed with date range processing
+    });
+  });
+
+  describe("scan - loading existing event data", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockDistributorsData: DistributorsData;
+
+    beforeEach(() => {
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+    });
+
+    it("loads existing event data for each distributor", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue({
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+        },
+      });
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      await scanner.scan();
+
+      expect(mockFileManager.readRecipientRecievedEvents).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
+    });
+
+    it("loads existing event data for specific distributor when address provided", async () => {
+      const targetAddress = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue({
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+        },
+      });
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      await scanner.scan(targetAddress);
+
+      expect(mockFileManager.readRecipientRecievedEvents).toHaveBeenCalledWith(
+        targetAddress,
+      );
+      expect(mockFileManager.readRecipientRecievedEvents).toHaveBeenCalledTimes(
+        1,
+      );
+    });
+  });
+
+  describe("scan - date range determination", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockDistributorsData: DistributorsData;
+    let mockBlockNumbersData: BlockNumberData;
+
+    beforeEach(() => {
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+
+      // Set up a mock date for "today" to make tests deterministic
+      jest.useFakeTimers().setSystemTime(new Date("2022-07-15"));
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      mockBlockNumbersData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+          "2022-07-14": 400,
+        },
+      };
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("determines date range from creation date to yesterday when no existing data", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      // Should complete without error
+      await expect(scanner.scan()).resolves.not.toThrow();
+    });
+
+    it("processes multiple distributors with different creation dates", async () => {
+      const multipleDistributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x1111111111111111111111111111111111111111": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 100,
+            date: "2022-07-10",
+            tx_hash: "0x1111",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x1111111111111111111111111111111111111111",
+          },
+          "0x2222222222222222222222222222222222222222": {
+            type: DistributorType.L1_BASE_FEE,
+            block: 250,
+            date: "2022-07-13",
+            tx_hash: "0x2222",
+            method: "0x57f585db",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x2222222222222222222222222222222222222222",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(
+        multipleDistributorsData,
+      );
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      // Should process both distributors without error
+      await expect(scanner.scan()).resolves.not.toThrow();
+    });
+
+    it("determines date range from day after last scanned block when existing data present", async () => {
+      const existingEventData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          last_scanned_block: 200, // Block 200 is on 2022-07-12
+        },
+        events: {
+          "0xabc123:0": {
+            blockNumber: 200,
+            transactionHash: "0xabc123",
+            logIndex: 0,
+            address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            topics: ["0x..."],
+            data: "0x...",
+            recipient: "0x1234567890123456789012345678901234567890",
+            value: "1000000000000000000",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(
+        existingEventData,
+      );
+
+      // Should process without error, starting from day after last scanned block
+      await expect(scanner.scan()).resolves.not.toThrow();
+    });
+
+    it("correctly handles existing data with last scanned block on different dates", async () => {
+      const existingEventData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          last_scanned_block: 300, // Block 300 is on 2022-07-13
+        },
+        events: {},
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(
+        existingEventData,
+      );
+
+      // Should process without error
+      await expect(scanner.scan()).resolves.not.toThrow();
+    });
+
+    it("skips distributors when all dates have been processed", async () => {
+      const existingEventData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          last_scanned_block: 400, // Block 400 is on 2022-07-14 (yesterday)
+        },
+        events: {},
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(
+        existingEventData,
+      );
+
+      // Should complete without error, skipping the distributor
+      await expect(scanner.scan()).resolves.not.toThrow();
+    });
+
+    it("correctly calculates yesterday as the end date", async () => {
+      // Today is 2022-07-15, so yesterday should be 2022-07-14
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      // Should process dates up to yesterday without error
+      await expect(scanner.scan()).resolves.not.toThrow();
+    });
+
+    it("handles future distributors gracefully", async () => {
+      const futureDistributorData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x9999999999999999999999999999999999999999": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 500,
+            date: "2022-07-16", // Created in the future (tomorrow)
+            tx_hash: "0x9999",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x9999999999999999999999999999999999999999",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(futureDistributorData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      // Should skip future distributors without error
+      await expect(scanner.scan()).resolves.not.toThrow();
+    });
+
+    it("processes date ranges for each distributor", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      // Should process date ranges without error
+      await expect(scanner.scan()).resolves.not.toThrow();
+    });
+
+    it("throws error when cannot find date for last scanned block", async () => {
+      const existingEventData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          last_scanned_block: 999, // Block that doesn't exist in our block numbers data
+        },
+        events: {},
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(
+        existingEventData,
+      );
+
+      await expect(scanner.scan()).rejects.toThrow(
+        "Cannot find date for block 999 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
+    });
+  });
+
   describe("scan - distributor filtering", () => {
     let scanner: RecipientRecievedScanner;
     let mockDistributorsData: DistributorsData;
@@ -185,6 +578,8 @@ describe("RecipientRecievedScanner", () => {
     beforeEach(() => {
       mockFileManager = {
         readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -225,6 +620,7 @@ describe("RecipientRecievedScanner", () => {
 
     it("processes all distributors when no distributorAddress is provided", async () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(undefined);
 
       await scanner.scan();
 
@@ -234,6 +630,7 @@ describe("RecipientRecievedScanner", () => {
 
     it("filters to a specific distributor when distributorAddress is provided", async () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(undefined);
       const targetAddress = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
 
       await scanner.scan(targetAddress);
@@ -244,6 +641,7 @@ describe("RecipientRecievedScanner", () => {
 
     it("finds distributor with case-insensitive address comparison", async () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(undefined);
       const targetAddress = "0x37daa99b1caae0c22670963e103a66ca2c5db2db"; // lowercase
 
       await scanner.scan(targetAddress);

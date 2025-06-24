@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
-import { DistributorsData } from "./types";
+import { DistributorsData, BlockNumberData, DistributorInfo } from "./types";
 
 /**
  * Creates a new RecipientRecievedScanner instance with the specified dependencies.
@@ -44,6 +44,45 @@ export class RecipientRecievedScanner {
     if (distributorAddress) {
       this.validateDistributorExists(distributorsData, distributorAddress);
     }
+
+    // Load block numbers data to determine date ranges
+    const blockNumbersData = this.fileManager.readBlockNumbers();
+    if (!blockNumbersData) {
+      return;
+    }
+
+    // Calculate yesterday's date
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = this.formatDate(yesterday);
+
+    // Process distributors
+    const distributorsToProcess = distributorAddress
+      ? {
+          [distributorAddress]:
+            distributorsData.distributors[distributorAddress],
+        }
+      : distributorsData.distributors;
+
+    for (const [address, distributorInfo] of Object.entries(
+      distributorsToProcess,
+    )) {
+      if (!distributorInfo) continue;
+
+      const datesToProcess = this.determineDateRangeForDistributor(
+        address,
+        distributorInfo,
+        blockNumbersData,
+        yesterdayStr,
+      );
+
+      if (datesToProcess.length === 0) {
+        continue;
+      }
+
+      // TODO: Process the date range (out of scope for this issue)
+    }
   }
 
   /**
@@ -62,5 +101,101 @@ export class RecipientRecievedScanner {
     if (!foundAddress) {
       throw new Error(`Distributor ${distributorAddress} not found`);
     }
+  }
+
+  /**
+   * Formats a Date object to YYYY-MM-DD string.
+   * @private
+   */
+  private formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Finds the date for a given block number.
+   * @private
+   */
+  private findDateForBlock(
+    blockNumbersData: BlockNumberData,
+    blockNumber: number,
+  ): string | null {
+    // Find the date where the block number is less than or equal to the end-of-day block
+    for (const [date, block] of Object.entries(blockNumbersData.blocks)) {
+      if (blockNumber <= (block as number)) {
+        return date;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Determines the date range to process for a distributor.
+   * @private
+   */
+  private determineDateRangeForDistributor(
+    address: string,
+    distributorInfo: DistributorInfo,
+    blockNumbersData: BlockNumberData,
+    yesterdayStr: string,
+  ): string[] {
+    // Check if distributor is created in the future
+    if (distributorInfo.date > yesterdayStr) {
+      return [];
+    }
+
+    // Load existing event data
+    const existingEventData =
+      this.fileManager.readRecipientRecievedEvents(address);
+
+    // Determine start date
+    let startDate: string;
+    if (existingEventData && existingEventData.metadata.last_scanned_block) {
+      // Find the date of the last scanned block
+      const lastScannedBlock = existingEventData.metadata.last_scanned_block;
+      const lastScannedDate = this.findDateForBlock(
+        blockNumbersData,
+        lastScannedBlock,
+      );
+      if (!lastScannedDate) {
+        throw new Error(
+          `Cannot find date for block ${lastScannedBlock} for distributor ${address}`,
+        );
+      }
+      // Start from day after last scanned date
+      const nextDay = new Date(lastScannedDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      startDate = this.formatDate(nextDay);
+    } else {
+      // No existing data, start from creation date
+      startDate = distributorInfo.date;
+    }
+
+    // Skip if start date is after yesterday (all dates processed)
+    if (startDate > yesterdayStr) {
+      return [];
+    }
+
+    // Determine date range to process
+    return this.getDateRange(startDate, yesterdayStr);
+  }
+
+  /**
+   * Gets an array of dates between start and end (inclusive).
+   * @private
+   */
+  private getDateRange(startDate: string, endDate: string): string[] {
+    const dates: string[] = [];
+    const current = new Date(startDate);
+    const end = new Date(endDate);
+
+    while (current <= end) {
+      dates.push(this.formatDate(current));
+      current.setDate(current.getDate() + 1);
+    }
+
+    return dates;
   }
 }
