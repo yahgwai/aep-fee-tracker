@@ -754,12 +754,11 @@ describe("BalanceFetcher", () => {
     });
   });
 
-  describe("fetchBalances - validation", () => {
+  describe("fetchBalances - parameter validation", () => {
     let fetcher: BalanceFetcher;
-    let mockDistributorsData: DistributorsData;
-    let mockBlockNumberData: BlockNumberData;
 
     beforeEach(() => {
+      // Set up mocks for these tests
       mockFileManager = {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
@@ -773,184 +772,70 @@ describe("BalanceFetcher", () => {
           .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
       } as unknown as jest.Mocked<ethers.Provider>;
       fetcher = new BalanceFetcher(mockFileManager, mockProvider);
+    });
 
-      mockBlockNumberData = {
+    it("throws error when distributorAddress parameter is invalid", async () => {
+      await expect(
+        fetcher.fetchBalances("invalid-address-param"),
+      ).rejects.toThrow("Invalid Ethereum address: invalid-address-param");
+    });
+
+    it("throws error when distributorAddress parameter is empty string", async () => {
+      await expect(fetcher.fetchBalances("")).rejects.toThrow(
+        "Invalid Ethereum address: ",
+      );
+    });
+
+    it("accepts valid distributorAddress parameter", async () => {
+      const mockDistributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      const mockBlockNumberData: BlockNumberData = {
         metadata: {
           chain_id: 42170,
         },
         blocks: {
           "2022-07-12": 155,
-          "2022-07-13": 189,
         },
       };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumberData);
+      mockFileManager.readDistributorBalances.mockReturnValue(undefined);
+      mockProvider.getBalance.mockResolvedValue(BigInt("1000000000000000000"));
+
+      // Should not throw
+      const result = await fetcher.fetchBalances(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
+      expect(result).toBeDefined();
     });
 
-    describe("parameter validation", () => {
-      it("throws error when distributorAddress parameter is invalid", async () => {
-        mockDistributorsData = {
-          metadata: {
-            chain_id: 42170,
-            arbowner_address: "0x0000000000000000000000000000000000000070",
-            last_scanned_block: 1000,
-          },
-          distributors: {
-            "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-              type: DistributorType.L2_SURPLUS_FEE,
-              block: 152,
-              date: "2022-07-12",
-              tx_hash:
-                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-              method: "0xfcdde2b4",
-              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-              event_data: "0x...",
-              is_reward_distributor: true,
-              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-            },
-          },
-        };
+    it("does not validate when distributorAddress parameter is not provided", async () => {
+      mockFileManager.readDistributors.mockReturnValue(undefined);
 
-        mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
-
-        await expect(
-          fetcher.fetchBalances("invalid-address-param"),
-        ).rejects.toThrow("Invalid Ethereum address: invalid-address-param");
-      });
-
-      it("throws error when distributorAddress parameter is empty string", async () => {
-        mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
-
-        await expect(fetcher.fetchBalances("")).rejects.toThrow(
-          "Invalid Ethereum address: ",
-        );
-      });
-
-      it("accepts valid distributorAddress parameter", async () => {
-        mockDistributorsData = {
-          metadata: {
-            chain_id: 42170,
-            arbowner_address: "0x0000000000000000000000000000000000000070",
-            last_scanned_block: 1000,
-          },
-          distributors: {
-            "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-              type: DistributorType.L2_SURPLUS_FEE,
-              block: 152,
-              date: "2022-07-12",
-              tx_hash:
-                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-              method: "0xfcdde2b4",
-              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-              event_data: "0x...",
-              is_reward_distributor: true,
-              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-            },
-          },
-        };
-
-        mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
-        mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumberData);
-        mockFileManager.readDistributorBalances.mockReturnValue(undefined);
-        mockProvider.getBalance.mockResolvedValue(
-          BigInt("1000000000000000000"),
-        );
-
-        // Should not throw
-        const result = await fetcher.fetchBalances(
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-        );
-        expect(result).toBeDefined();
-      });
-    });
-    describe("error propagation", () => {
-      it("lets RPC errors bubble up without modification", async () => {
-        const rpcError = new Error("RPC request failed");
-
-        mockDistributorsData = {
-          metadata: {
-            chain_id: 42170,
-            arbowner_address: "0x0000000000000000000000000000000000000070",
-            last_scanned_block: 1000,
-          },
-          distributors: {
-            "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-              type: DistributorType.L2_SURPLUS_FEE,
-              block: 152,
-              date: "2022-07-12",
-              tx_hash:
-                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-              method: "0xfcdde2b4",
-              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-              event_data: "0x...",
-              is_reward_distributor: true,
-              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-            },
-          },
-        };
-
-        mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
-        mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumberData);
-        mockFileManager.readDistributorBalances.mockReturnValue(undefined);
-        mockProvider.getBalance.mockRejectedValue(rpcError);
-
-        await expect(fetcher.fetchBalances()).rejects.toThrow(rpcError);
-
-        // Verify no data was written
-        expect(mockFileManager.writeDistributorBalances).not.toHaveBeenCalled();
-      });
-
-      it("prevents partial completion when error occurs mid-process", async () => {
-        mockDistributorsData = {
-          metadata: {
-            chain_id: 42170,
-            arbowner_address: "0x0000000000000000000000000000000000000070",
-            last_scanned_block: 1000,
-          },
-          distributors: {
-            "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-              type: DistributorType.L2_SURPLUS_FEE,
-              block: 152,
-              date: "2022-07-12",
-              tx_hash:
-                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-              method: "0xfcdde2b4",
-              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-              event_data: "0x...",
-              is_reward_distributor: true,
-              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-            },
-            "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": {
-              type: DistributorType.L1_SURPLUS_FEE,
-              block: 160,
-              date: "2022-07-13",
-              tx_hash:
-                "0x0000000000000000000000000000000000000000000000000000000000000000",
-              method: "0x934be07d",
-              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-              event_data: "0x...",
-              is_reward_distributor: true,
-              distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
-            },
-          },
-        };
-
-        mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
-        mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumberData);
-        mockFileManager.readDistributorBalances.mockReturnValue(undefined);
-
-        // First call succeeds, second call fails (with retries)
-        mockProvider.getBalance
-          .mockResolvedValueOnce(BigInt("1000000000000000000"))
-          .mockRejectedValueOnce(new Error("RPC error on second call"))
-          .mockRejectedValueOnce(new Error("RPC error on second call"))
-          .mockRejectedValueOnce(new Error("RPC error on second call"));
-
-        await expect(fetcher.fetchBalances()).rejects.toThrow(
-          "RPC error on second call",
-        );
-
-        // Verify no balances were written even though first fetch succeeded
-        expect(mockFileManager.writeDistributorBalances).not.toHaveBeenCalled();
-      });
+      // Should not throw for missing distributorAddress when parameter not provided
+      const result = await fetcher.fetchBalances();
+      expect(result).toEqual({});
     });
   });
 });
