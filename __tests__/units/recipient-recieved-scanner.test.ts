@@ -195,6 +195,9 @@ describe("RecipientRecievedScanner", () => {
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
+      // Set up a mock date for "today" to make tests deterministic
+      jest.useFakeTimers().setSystemTime(new Date("2022-07-15"));
+
       mockDistributorsData = {
         metadata: {
           chain_id: 42170,
@@ -218,6 +221,10 @@ describe("RecipientRecievedScanner", () => {
       };
     });
 
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     it("loads block numbers data to determine date ranges", async () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue({
@@ -226,6 +233,7 @@ describe("RecipientRecievedScanner", () => {
           "2022-07-11": 100,
           "2022-07-12": 200,
           "2022-07-13": 300,
+          "2022-07-14": 400,
         },
       });
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
@@ -258,6 +266,9 @@ describe("RecipientRecievedScanner", () => {
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
+      // Set up a mock date for "today" to make tests deterministic
+      jest.useFakeTimers().setSystemTime(new Date("2022-07-15"));
+
       mockDistributorsData = {
         metadata: {
           chain_id: 42170,
@@ -281,6 +292,10 @@ describe("RecipientRecievedScanner", () => {
       };
     });
 
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     it("loads existing event data for each distributor", async () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue({
@@ -289,6 +304,7 @@ describe("RecipientRecievedScanner", () => {
           "2022-07-11": 100,
           "2022-07-12": 200,
           "2022-07-13": 300,
+          "2022-07-14": 400,
         },
       });
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
@@ -309,6 +325,7 @@ describe("RecipientRecievedScanner", () => {
           "2022-07-11": 100,
           "2022-07-12": 200,
           "2022-07-13": 300,
+          "2022-07-14": 400,
         },
       });
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
@@ -365,6 +382,7 @@ describe("RecipientRecievedScanner", () => {
       mockBlockNumbersData = {
         metadata: { chain_id: 42170 },
         blocks: {
+          "2022-07-10": 50,
           "2022-07-11": 100,
           "2022-07-12": 200,
           "2022-07-13": 300,
@@ -703,6 +721,7 @@ describe("RecipientRecievedScanner", () => {
       mockBlockNumbersData = {
         metadata: { chain_id: 42170 },
         blocks: {
+          "2022-07-10": 50,
           "2022-07-11": 100,
           "2022-07-12": 200,
           "2022-07-13": 300,
@@ -784,7 +803,7 @@ describe("RecipientRecievedScanner", () => {
           "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
         ];
       if (distributor) {
-        distributor.date = "2022-07-10"; // Date before available block data
+        distributor.date = "2022-07-09"; // Date before available block data
       }
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
@@ -792,7 +811,7 @@ describe("RecipientRecievedScanner", () => {
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
 
       await expect(scanner.scan()).rejects.toThrow(
-        "Missing block number for date 2022-07-10 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        "Missing block number for date 2022-07-09 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
       );
     });
 
@@ -816,7 +835,7 @@ describe("RecipientRecievedScanner", () => {
           "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
         ];
       if (distributor) {
-        distributor.date = "2022-07-11";
+        distributor.date = "2022-07-10";
       }
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
@@ -837,12 +856,12 @@ describe("RecipientRecievedScanner", () => {
       // First date should start from block 1
       expect(convertDateToBlockRangeSpy).toHaveBeenNthCalledWith(
         1,
-        "2022-07-11",
+        "2022-07-10",
         mockBlockNumbersData,
       );
       expect(convertDateToBlockRangeSpy).toHaveNthReturnedWith(1, {
         startBlock: 1, // No previous day, so start from block 1
-        endBlock: 100,
+        endBlock: 50,
       });
     });
 
