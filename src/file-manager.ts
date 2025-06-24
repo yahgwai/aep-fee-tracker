@@ -10,7 +10,6 @@ import {
   DistributorInfo,
   DistributorType,
   BalanceData,
-  OutflowData,
   RecipientRecievedEventData,
   DISTRIBUTORS_DIR,
 } from "./types";
@@ -23,7 +22,6 @@ const ERROR_BAD_CHECKSUM = "bad address checksum";
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
 const BALANCES_FILE = "balances.json";
-const OUTFLOWS_FILE = "outflows.json";
 const RECIPIENT_RECIEVED_EVENTS_FILE = "recipient-recieved-events.json";
 const JSON_INDENT_SIZE = 2;
 
@@ -93,23 +91,6 @@ export class FileManager implements FileManagerInterface {
     this.ensureDistributorDirectory(validatedAddress);
     this.writeJsonFile(
       this.getDistributorFilePath(validatedAddress, BALANCES_FILE),
-      data,
-    );
-  }
-
-  readDistributorOutflows(address: Address): OutflowData | undefined {
-    const validatedAddress = this.validateAddress(address);
-    return this.readJsonFileOrUndefined(
-      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
-    );
-  }
-
-  writeDistributorOutflows(address: Address, data: OutflowData): void {
-    const validatedAddress = this.validateAddress(address);
-    this.validateOutflowData(validatedAddress, data);
-    this.ensureDistributorDirectory(validatedAddress);
-    this.writeJsonFile(
-      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
       data,
     );
   }
@@ -344,48 +325,6 @@ export class FileManager implements FileManagerInterface {
       this.validateDateFormat(date);
       this.validateBlockNumber(balance.block_number);
       this.validateWeiValue(balance.balance_wei, "balance_wei", date);
-    }
-  }
-
-  private validateOutflowData(address: Address, data: OutflowData): void {
-    // Validate metadata
-    if (data.metadata.reward_distributor !== address) {
-      throw new Error(
-        `Reward distributor address mismatch: expected ${address}, got ${data.metadata.reward_distributor}`,
-      );
-    }
-
-    // Validate outflows
-    for (const [date, outflow] of Object.entries(data.outflows)) {
-      this.validateDateFormat(date);
-      this.validateBlockNumber(outflow.block_number);
-      this.validateWeiValue(
-        outflow.total_outflow_wei,
-        "total_outflow_wei",
-        date,
-      );
-
-      // Validate events and sum values
-      let totalEventWei = BigInt(0);
-      for (const event of outflow.events) {
-        // Validate recipient address is checksummed
-        if (event.recipient !== this.validateAddress(event.recipient)) {
-          throw new Error(
-            `Recipient address must be checksummed: ${event.recipient}`,
-          );
-        }
-
-        this.validateWeiValue(event.value_wei, "event.value_wei", date);
-        this.validateTransactionHash(event.tx_hash);
-        totalEventWei += BigInt(event.value_wei);
-      }
-
-      // Validate total matches sum of events
-      if (totalEventWei.toString() !== outflow.total_outflow_wei) {
-        throw new Error(
-          `Total outflow mismatch for ${date}: expected ${totalEventWei.toString()}, got ${outflow.total_outflow_wei}`,
-        );
-      }
     }
   }
 

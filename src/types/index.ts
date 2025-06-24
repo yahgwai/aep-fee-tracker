@@ -62,28 +62,6 @@ export interface BalanceData {
   };
 }
 
-export interface OutflowData {
-  metadata: {
-    chain_id: number;
-    reward_distributor: string;
-  };
-  outflows: {
-    [date: string]: DailyOutflow;
-  };
-}
-
-export interface DailyOutflow {
-  block_number: number;
-  total_outflow_wei: string;
-  events: OutflowEvent[];
-}
-
-export interface OutflowEvent {
-  recipient: string;
-  value_wei: string;
-  tx_hash: string;
-}
-
 export interface RecipientRecievedEvent {
   // Raw event data
   blockNumber: number;
@@ -144,8 +122,6 @@ export interface FileManager {
   writeDistributors(data: DistributorsData): void;
   readDistributorBalances(address: Address): BalanceData | undefined;
   writeDistributorBalances(address: Address, data: BalanceData): void;
-  readDistributorOutflows(address: Address): OutflowData | undefined;
-  writeDistributorOutflows(address: Address, data: OutflowData): void;
   readRecipientRecievedEvents(
     address: Address,
   ): RecipientRecievedEventData | undefined;
