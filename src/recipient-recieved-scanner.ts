@@ -127,104 +127,18 @@ export class RecipientRecievedScanner {
         }
       : distributorsData.distributors;
 
-    // Process distributors with error isolation only for multiple distributors
-    await this.processDistributors(
+    // Process distributors
+    for (const [address, distributorInfo] of Object.entries(
       distributorsToProcess,
-      blockNumbersData,
-      yesterdayStr,
-      distributorAddress,
-    );
-  }
+    )) {
+      if (!distributorInfo) continue;
 
-  /**
-   * Processes distributors with optional error isolation for multiple distributors.
-   * @private
-   */
-  private async processDistributors(
-    distributorsToProcess: Record<string, DistributorInfo | undefined>,
-    blockNumbersData: BlockNumberData,
-    yesterdayStr: string,
-    distributorAddress?: string,
-  ): Promise<void> {
-    // Sort distributor addresses for consistent processing order
-    const sortedAddresses = Object.keys(distributorsToProcess).sort();
-
-    // Determine if we should apply error isolation
-    const shouldApplyErrorIsolation =
-      !distributorAddress && sortedAddresses.length > 1;
-
-    if (!shouldApplyErrorIsolation) {
-      // No error isolation - process normally
-      for (const address of sortedAddresses) {
-        const distributorInfo = distributorsToProcess[address];
-        if (!distributorInfo) continue;
-
-        await this.processDistributor(
-          address,
-          distributorInfo,
-          blockNumbersData,
-          yesterdayStr,
-        );
-      }
-    } else {
-      // Apply error isolation for multiple distributors
-      let successCount = 0;
-      let failureCount = 0;
-
-      for (const address of sortedAddresses) {
-        const distributorInfo = distributorsToProcess[address];
-        if (!distributorInfo) continue;
-
-        try {
-          await this.processDistributor(
-            address,
-            distributorInfo,
-            blockNumbersData,
-            yesterdayStr,
-          );
-          successCount++;
-        } catch {
-          failureCount++;
-        }
-      }
-
-      // Check for critical errors
-      if (
-        this.isAllDistributorsFailed(
-          successCount,
-          failureCount,
-          sortedAddresses.length,
-        )
-      ) {
-        await this.checkAndThrowCriticalError();
-      }
-    }
-  }
-
-  /**
-   * Checks if all distributors failed.
-   * @private
-   */
-  private isAllDistributorsFailed(
-    successCount: number,
-    failureCount: number,
-    totalCount: number,
-  ): boolean {
-    return (
-      failureCount > 0 && successCount === 0 && totalCount === failureCount
-    );
-  }
-
-  /**
-   * Checks for connection issues and throws if detected.
-   * @private
-   */
-  private async checkAndThrowCriticalError(): Promise<void> {
-    try {
-      await this.provider.getNetwork();
-    } catch (networkError) {
-      // Connection issue detected, throw the error
-      throw networkError;
+      await this.processDistributor(
+        address,
+        distributorInfo,
+        blockNumbersData,
+        yesterdayStr,
+      );
     }
   }
 
