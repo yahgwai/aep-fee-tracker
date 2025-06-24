@@ -753,4 +753,89 @@ describe("BalanceFetcher", () => {
       expect(mockProvider.getBalance).not.toHaveBeenCalled();
     });
   });
+
+  describe("fetchBalances - parameter validation", () => {
+    let fetcher: BalanceFetcher;
+
+    beforeEach(() => {
+      // Set up mocks for these tests
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readDistributorBalances: jest.fn(),
+        writeDistributorBalances: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      mockProvider = {
+        getBalance: jest.fn(),
+        getNetwork: jest
+          .fn()
+          .mockResolvedValue({ chainId: 42170n } as unknown as ethers.Network),
+      } as unknown as jest.Mocked<ethers.Provider>;
+      fetcher = new BalanceFetcher(mockFileManager, mockProvider);
+    });
+
+    it("throws error when distributorAddress parameter is invalid", async () => {
+      await expect(
+        fetcher.fetchBalances("invalid-address-param"),
+      ).rejects.toThrow("Invalid Ethereum address: invalid-address-param");
+    });
+
+    it("throws error when distributorAddress parameter is empty string", async () => {
+      await expect(fetcher.fetchBalances("")).rejects.toThrow(
+        "Invalid Ethereum address: ",
+      );
+    });
+
+    it("accepts valid distributorAddress parameter", async () => {
+      const mockDistributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      const mockBlockNumberData: BlockNumberData = {
+        metadata: {
+          chain_id: 42170,
+        },
+        blocks: {
+          "2022-07-12": 155,
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumberData);
+      mockFileManager.readDistributorBalances.mockReturnValue(undefined);
+      mockProvider.getBalance.mockResolvedValue(BigInt("1000000000000000000"));
+
+      // Should not throw
+      const result = await fetcher.fetchBalances(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
+      expect(result).toBeDefined();
+    });
+
+    it("does not validate when distributorAddress parameter is not provided", async () => {
+      mockFileManager.readDistributors.mockReturnValue(undefined);
+
+      // Should not throw for missing distributorAddress when parameter not provided
+      const result = await fetcher.fetchBalances();
+      expect(result).toEqual({});
+    });
+  });
 });

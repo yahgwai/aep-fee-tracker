@@ -67,6 +67,13 @@ export class BalanceFetcher {
   async fetchBalances(
     distributorAddress?: string,
   ): Promise<Record<string, Record<string, string>>> {
+    // Validate distributorAddress parameter if provided
+    if (
+      distributorAddress !== undefined &&
+      !ethers.isAddress(distributorAddress)
+    ) {
+      throw new Error(`Invalid Ethereum address: ${distributorAddress}`);
+    }
     const distributorsData = this.fileManager.readDistributors();
 
     // Early return if no distributors data
