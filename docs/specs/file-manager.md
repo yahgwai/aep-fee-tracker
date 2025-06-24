@@ -36,7 +36,7 @@ store/
 └── distributors/
     └── {address}/                  # Per-distributor data directory
         ├── balances.json           # Historical balances by date
-        └── outflows.json           # Distribution events by date
+        └── recipient-recieved-events.json  # RecipientRecieved events
 ```
 
 ## Data Schemas
@@ -117,33 +117,33 @@ End-of-day balance snapshots for a distributor.
 }
 ```
 
-### 4. Outflows (`store/distributors/{address}/outflows.json`)
+### 4. RecipientRecieved Events (`store/distributors/{address}/recipient-recieved-events.json`)
 
-Daily distribution events and totals.
+All RecipientRecieved events emitted by the distributor.
 
 ```json
 {
   "metadata": {
-    "chain_id": 42170, // From provider.getNetwork().chainId
-    "reward_distributor": "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"
+    "chain_id": 42170,
+    "reward_distributor": "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+    "last_scanned_block": 12345678
   },
-  "outflows": {
-    "2024-01-15": {
-      "block_number": 12345678,
-      "total_outflow_wei": "4000000000000000000000",
-      "events": [
-        {
-          "recipient": "0xAAA...",
-          "value_wei": "1500000000000000000000",
-          "tx_hash": "0xdef..."
-        }
-      ]
+  "events": {
+    "0xdef...123:0": {
+      "blockNumber": 12345678,
+      "transactionHash": "0xdef...123",
+      "logIndex": 0,
+      "address": "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+      "topics": ["0x8b2a2b28..."],
+      "data": "0x...",
+      "recipient": "0xAAA...",
+      "value": "1500000000000000000000"
     }
   }
 }
 ```
 
-**Note:** Wei values (balances and outflows) must be stored as decimal strings to prevent precision loss. Block numbers can be stored as regular numbers.
+**Note:** Wei values (balances and event values) must be stored as decimal strings to prevent precision loss. Block numbers can be stored as regular numbers.
 
 ## Public API
 
@@ -209,23 +209,23 @@ writeDistributorBalances(address: string, data: BalanceData): void
 - Creates distributor directory if needed
 - Validates all balance values are valid decimal strings (no scientific notation)
 
-#### readDistributorOutflows(address: string)
+#### readRecipientRecievedEvents(address: string)
 
 ```typescript
-readDistributorOutflows(address: string): OutflowData
+readRecipientRecievedEvents(address: string): RecipientRecievedEventData | undefined
 ```
 
-- Returns outflow events for a specific distributor
-- Creates empty structure if file doesn't exist
+- Returns all RecipientRecieved events for a specific distributor
+- Returns undefined if file doesn't exist
 - Validates address format before reading
 
-#### writeDistributorOutflows(address: string, data: OutflowData)
+#### writeRecipientRecievedEvents(address: string, data: RecipientRecievedEventData)
 
 ```typescript
-writeDistributorOutflows(address: string, data: OutflowData): void
+writeRecipientRecievedEvents(address: string, data: RecipientRecievedEventData): void
 ```
 
-- Updates outflow data for a distributor
+- Updates RecipientRecieved event data for a distributor
 - Creates distributor directory if needed
 - Validates event data matches expected schema
 - Ensures all wei values are decimal strings
@@ -386,7 +386,7 @@ The File Manager component should be tested in the following functional areas:
 **Per-Distributor Data**
 
 - Reading and writing balance histories
-- Reading and writing outflow events
+- Reading and writing RecipientRecieved events
 - Creating distributor directories automatically
 - Supporting large datasets (365+ days)
 

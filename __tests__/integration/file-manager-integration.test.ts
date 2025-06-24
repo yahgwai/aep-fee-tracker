@@ -143,70 +143,7 @@ describe("FileManager - Integration Tests", () => {
       };
       fileManager.writeDistributorBalances(distributor2Address, balances2);
 
-      // Step 4: Write daily outflows
-      console.log("Step 4: Writing distributor outflows...");
-      const outflows1 = {
-        metadata: {
-          chain_id: 42170,
-          reward_distributor: distributor1Address,
-        },
-        outflows: {
-          "2024-01-11": {
-            block_number: 237946584,
-            total_outflow_wei: "0",
-            events: [],
-          },
-          "2024-01-12": {
-            block_number: 238375041,
-            total_outflow_wei: "100000000000000000",
-            events: [
-              {
-                recipient: getAddress(
-                  "0x1000000000000000000000000000000000000001",
-                ),
-                value_wei: "100000000000000000",
-                tx_hash: "0x" + "c".repeat(64),
-              },
-            ],
-          },
-        },
-      };
-      fileManager.writeDistributorOutflows(distributor1Address, outflows1);
-
-      const outflows2 = {
-        metadata: {
-          chain_id: 42170,
-          reward_distributor: distributor2Address,
-        },
-        outflows: {
-          "2024-01-12": {
-            block_number: 238375041,
-            total_outflow_wei: "0",
-            events: [],
-          },
-          "2024-01-13": {
-            block_number: 238803498,
-            total_outflow_wei: "250000000000000000",
-            events: [
-              {
-                recipient: getAddress(
-                  "0x2000000000000000000000000000000000000002",
-                ),
-                value_wei: "150000000000000000",
-                tx_hash: "0x" + "d".repeat(64),
-              },
-              {
-                recipient: getAddress(
-                  "0x3000000000000000000000000000000000000003",
-                ),
-                value_wei: "100000000000000000",
-                tx_hash: "0x" + "e".repeat(64),
-              },
-            ],
-          },
-        },
-      };
-      fileManager.writeDistributorOutflows(distributor2Address, outflows2);
+      // Step 4: Outflows removed - using recipient received events instead
 
       // Step 5: Read everything back and verify consistency
       console.log("Step 5: Reading all data back and verifying consistency...");
@@ -235,7 +172,8 @@ describe("FileManager - Integration Tests", () => {
             storePath,
             "distributors",
             distributor1Address,
-            "outflows.json",
+            // "outflows.json",
+            "balances.json", // checking balances instead
           ),
         ),
       ).toBe(true);
@@ -255,7 +193,8 @@ describe("FileManager - Integration Tests", () => {
             storePath,
             "distributors",
             distributor2Address,
-            "outflows.json",
+            // "outflows.json",
+            "balances.json", // checking balances instead
           ),
         ),
       ).toBe(true);
@@ -265,15 +204,15 @@ describe("FileManager - Integration Tests", () => {
         fileManager.readDistributorBalances(distributor1Address);
       const readBalances2 =
         fileManager.readDistributorBalances(distributor2Address);
-      const readOutflows1 =
-        fileManager.readDistributorOutflows(distributor1Address);
-      const readOutflows2 =
-        fileManager.readDistributorOutflows(distributor2Address);
+      // const readOutflows1 =
+      //   fileManager.readDistributorOutflows(distributor1Address);
+      // const readOutflows2 =
+      //   fileManager.readDistributorOutflows(distributor2Address);
 
       expect(readBalances1).toEqual(balances1);
       expect(readBalances2).toEqual(balances2);
-      expect(readOutflows1).toEqual(outflows1);
-      expect(readOutflows2).toEqual(outflows2);
+      // expect(readOutflows1).toEqual(outflows1);
+      // expect(readOutflows2).toEqual(outflows2);
 
       // Step 6: Simulate multi-day updates
       console.log("Step 6: Simulating multi-day updates...");
@@ -410,27 +349,7 @@ describe("FileManager - Integration Tests", () => {
               },
             },
           }),
-        // Write outflows to distributor B
-        () =>
-          fileManager.writeDistributorOutflows(addrB, {
-            metadata: {
-              chain_id: 42170,
-              reward_distributor: addrB,
-            },
-            outflows: {
-              "2024-01-10": {
-                block_number: 237518127,
-                total_outflow_wei: "500000000000000000",
-                events: [
-                  {
-                    recipient: addrD,
-                    value_wei: "500000000000000000",
-                    tx_hash: "0x" + "d".repeat(64),
-                  },
-                ],
-              },
-            },
-          }),
+        // Write outflows to distributor B - removed
         // Update block numbers
         () =>
           fileManager.writeBlockNumbers({
@@ -490,12 +409,12 @@ describe("FileManager - Integration Tests", () => {
         "1000000000000000000",
       );
 
-      // Check distributor B outflows
-      const outflowsB = fileManager.readDistributorOutflows(addrB);
-      expect(outflowsB).toBeDefined();
-      expect(outflowsB?.outflows["2024-01-10"]?.total_outflow_wei).toBe(
-        "500000000000000000",
-      );
+      // Check distributor B outflows - removed
+      // const outflowsB = fileManager.readDistributorOutflows(addrB);
+      // expect(outflowsB).toBeDefined();
+      // expect(outflowsB?.outflows["2024-01-10"]?.total_outflow_wei).toBe(
+      //   "500000000000000000",
+      // );
 
       // Check new distributor was added
       const finalDistributors = fileManager.readDistributors();

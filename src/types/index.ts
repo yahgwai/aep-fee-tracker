@@ -62,26 +62,29 @@ export interface BalanceData {
   };
 }
 
-export interface OutflowData {
+export interface RecipientRecievedEvent {
+  // Raw event data
+  blockNumber: number;
+  transactionHash: string;
+  logIndex: number;
+  address: string; // Contract address that emitted the event
+  topics: string[]; // Raw event topics
+  data: string; // Raw event data
+
+  // Parsed fields
+  recipient: string; // Checksummed recipient address
+  value: string; // Decimal string representation of value
+}
+
+export interface RecipientRecievedEventData {
   metadata: {
-    chain_id: number;
-    reward_distributor: string;
+    chain_id: number; // Network chain ID
+    reward_distributor: string; // Distributor contract address
+    last_scanned_block: number; // Last block that was successfully scanned
   };
-  outflows: {
-    [date: string]: DailyOutflow;
+  events: {
+    [key: string]: RecipientRecievedEvent; // Key format: "transactionHash:logIndex"
   };
-}
-
-export interface DailyOutflow {
-  block_number: number;
-  total_outflow_wei: string;
-  events: OutflowEvent[];
-}
-
-export interface OutflowEvent {
-  recipient: string;
-  value_wei: string;
-  tx_hash: string;
 }
 
 // Utility Types
@@ -119,8 +122,13 @@ export interface FileManager {
   writeDistributors(data: DistributorsData): void;
   readDistributorBalances(address: Address): BalanceData | undefined;
   writeDistributorBalances(address: Address, data: BalanceData): void;
-  readDistributorOutflows(address: Address): OutflowData | undefined;
-  writeDistributorOutflows(address: Address, data: OutflowData): void;
+  readRecipientRecievedEvents(
+    address: Address,
+  ): RecipientRecievedEventData | undefined;
+  writeRecipientRecievedEvents(
+    address: Address,
+    data: RecipientRecievedEventData,
+  ): void;
   ensureStoreDirectory(): void;
   validateAddress(address: string): Address;
   formatDate(date: Date): DateString;

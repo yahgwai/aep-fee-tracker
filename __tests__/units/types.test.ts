@@ -2,7 +2,6 @@ import {
   BlockNumberData,
   DistributorsData,
   BalanceData,
-  OutflowData,
   DistributorType,
   type DateString,
   type Address,
@@ -96,37 +95,6 @@ describe("Core Types", () => {
       const balance = data.balances["2024-01-15"];
       expect(balance).toBeDefined();
       expect(balance?.balance_wei).toBe("1000000000000000000000");
-    });
-  });
-
-  describe("OutflowData", () => {
-    it("should create valid OutflowData object", () => {
-      const data: OutflowData = {
-        metadata: {
-          chain_id: 42170,
-          reward_distributor: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
-        },
-        outflows: {
-          "2024-01-15": {
-            block_number: 12345678,
-            total_outflow_wei: "500000000000000000000",
-            events: [
-              {
-                recipient: "0x1234567890123456789012345678901234567890",
-                value_wei: "500000000000000000000",
-                tx_hash: "0xdef456",
-              },
-            ],
-          },
-        },
-      };
-      expect(data.metadata.chain_id).toBe(42170);
-      const outflow = data.outflows["2024-01-15"];
-      expect(outflow).toBeDefined();
-      expect(outflow?.total_outflow_wei).toBe("500000000000000000000");
-      expect(outflow?.events[0]?.recipient).toBe(
-        "0x1234567890123456789012345678901234567890",
-      );
     });
   });
 
@@ -263,11 +231,15 @@ describe("Core Types", () => {
           balances: {},
         }),
         writeDistributorBalances: () => {},
-        readDistributorOutflows: () => ({
-          metadata: { chain_id: 42170, reward_distributor: "" },
-          outflows: {},
+        readRecipientRecievedEvents: () => ({
+          metadata: {
+            chain_id: 42170,
+            reward_distributor: "",
+            last_scanned_block: 0,
+          },
+          events: {},
         }),
-        writeDistributorOutflows: () => {},
+        writeRecipientRecievedEvents: () => {},
         ensureStoreDirectory: () => {},
         validateAddress: (address: string) => address as Address,
         formatDate: (date: Date) =>

@@ -11,7 +11,6 @@ import {
   BlockNumberData,
   DistributorsData,
   BalanceData,
-  OutflowData,
   CHAIN_IDS,
   CONTRACTS,
 } from "../../../src/types";
@@ -121,52 +120,6 @@ describe("FileManager - Undefined Returns", () => {
       // After refactoring, it should return undefined instead
       const result =
         testContext.fileManager.readDistributorBalances(VALID_ADDRESS);
-
-      // Currently this returns default data, but should return undefined
-      expect(result).toBeUndefined();
-    });
-  });
-
-  describe("readDistributorOutflows()", () => {
-    it("should return undefined when outflows.json does not exist", () => {
-      const result =
-        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
-      expect(result).toBeUndefined();
-    });
-
-    it("should return data when outflows.json exists", () => {
-      const testData: OutflowData = {
-        metadata: {
-          chain_id: CHAIN_IDS.ARBITRUM_NOVA,
-          reward_distributor: VALID_ADDRESS,
-        },
-        outflows: {
-          "2024-01-15": {
-            block_number: 12345678,
-            total_outflow_wei: "1000000000000000000",
-            events: [],
-          },
-        },
-      };
-
-      // Write file directly to simulate existing data
-      const distributorDir = path.join("store", "distributors", VALID_ADDRESS);
-      fs.mkdirSync(distributorDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(distributorDir, "outflows.json"),
-        JSON.stringify(testData, null, 2),
-      );
-
-      const result =
-        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
-      expect(result).toEqual(testData);
-    });
-
-    it("should not create default data with address when file doesn't exist", () => {
-      // The current implementation creates default data using the address parameter
-      // After refactoring, it should return undefined instead
-      const result =
-        testContext.fileManager.readDistributorOutflows(VALID_ADDRESS);
 
       // Currently this returns default data, but should return undefined
       expect(result).toBeUndefined();

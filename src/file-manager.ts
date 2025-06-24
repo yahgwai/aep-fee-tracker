@@ -10,7 +10,7 @@ import {
   DistributorInfo,
   DistributorType,
   BalanceData,
-  OutflowData,
+  RecipientRecievedEventData,
   DISTRIBUTORS_DIR,
 } from "./types";
 
@@ -22,7 +22,7 @@ const ERROR_BAD_CHECKSUM = "bad address checksum";
 const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
 const BALANCES_FILE = "balances.json";
-const OUTFLOWS_FILE = "outflows.json";
+const RECIPIENT_RECIEVED_EVENTS_FILE = "recipient-recieved-events.json";
 const JSON_INDENT_SIZE = 2;
 
 // Ethereum constants
@@ -95,19 +95,30 @@ export class FileManager implements FileManagerInterface {
     );
   }
 
-  readDistributorOutflows(address: Address): OutflowData | undefined {
+  readRecipientRecievedEvents(
+    address: Address,
+  ): RecipientRecievedEventData | undefined {
     const validatedAddress = this.validateAddress(address);
     return this.readJsonFileOrUndefined(
-      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
+      this.getDistributorFilePath(
+        validatedAddress,
+        RECIPIENT_RECIEVED_EVENTS_FILE,
+      ),
     );
   }
 
-  writeDistributorOutflows(address: Address, data: OutflowData): void {
+  writeRecipientRecievedEvents(
+    address: Address,
+    data: RecipientRecievedEventData,
+  ): void {
     const validatedAddress = this.validateAddress(address);
-    this.validateOutflowData(validatedAddress, data);
+    this.validateRecipientRecievedEventData(validatedAddress, data);
     this.ensureDistributorDirectory(validatedAddress);
     this.writeJsonFile(
-      this.getDistributorFilePath(validatedAddress, OUTFLOWS_FILE),
+      this.getDistributorFilePath(
+        validatedAddress,
+        RECIPIENT_RECIEVED_EVENTS_FILE,
+      ),
       data,
     );
   }
@@ -317,48 +328,6 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
-  private validateOutflowData(address: Address, data: OutflowData): void {
-    // Validate metadata
-    if (data.metadata.reward_distributor !== address) {
-      throw new Error(
-        `Reward distributor address mismatch: expected ${address}, got ${data.metadata.reward_distributor}`,
-      );
-    }
-
-    // Validate outflows
-    for (const [date, outflow] of Object.entries(data.outflows)) {
-      this.validateDateFormat(date);
-      this.validateBlockNumber(outflow.block_number);
-      this.validateWeiValue(
-        outflow.total_outflow_wei,
-        "total_outflow_wei",
-        date,
-      );
-
-      // Validate events and sum values
-      let totalEventWei = BigInt(0);
-      for (const event of outflow.events) {
-        // Validate recipient address is checksummed
-        if (event.recipient !== this.validateAddress(event.recipient)) {
-          throw new Error(
-            `Recipient address must be checksummed: ${event.recipient}`,
-          );
-        }
-
-        this.validateWeiValue(event.value_wei, "event.value_wei", date);
-        this.validateTransactionHash(event.tx_hash);
-        totalEventWei += BigInt(event.value_wei);
-      }
-
-      // Validate total matches sum of events
-      if (totalEventWei.toString() !== outflow.total_outflow_wei) {
-        throw new Error(
-          `Total outflow mismatch for ${date}: expected ${totalEventWei.toString()}, got ${outflow.total_outflow_wei}`,
-        );
-      }
-    }
-  }
-
   /**
    * Validates that a transaction hash is in the correct format (0x followed by 64 hex characters)
    * @throws {Error} If the transaction hash format is invalid
@@ -387,6 +356,58 @@ export class FileManager implements FileManagerInterface {
       throw new Error(
         `Invalid ${enumName} value: ${value}. Valid values are: ${validValues.join(", ")}`,
       );
+    }
+  }
+
+  private validateRecipientRecievedEventData(
+    address: Address,
+    data: RecipientRecievedEventData,
+  ): void {
+    // Validate metadata
+    if (data.metadata.reward_distributor !== address) {
+      throw new Error(
+        `Reward distributor address mismatch: expected ${address}, got ${data.metadata.reward_distributor}`,
+      );
+    }
+
+    this.validateBlockNumber(data.metadata.last_scanned_block);
+
+    // Validate events
+    for (const [key, event] of Object.entries(data.events)) {
+      // Validate event key format
+      const expectedKey = `${event.transactionHash}:${event.logIndex}`;
+      if (key !== expectedKey) {
+        throw new Error(
+          `Event key mismatch: expected ${expectedKey}, got ${key}`,
+        );
+      }
+
+      // Validate addresses are checksummed
+      if (event.address !== this.validateAddress(event.address)) {
+        throw new Error(`Event address must be checksummed: ${event.address}`);
+      }
+
+      if (event.recipient !== this.validateAddress(event.recipient)) {
+        throw new Error(
+          `Recipient address must be checksummed: ${event.recipient}`,
+        );
+      }
+
+      // Validate block number
+      this.validateBlockNumber(event.blockNumber);
+
+      // Validate transaction hash
+      this.validateTransactionHash(event.transactionHash);
+
+      // Validate log index
+      if (!Number.isInteger(event.logIndex) || event.logIndex < 0) {
+        throw new Error(
+          `Log index must be a non-negative integer, got: ${event.logIndex}`,
+        );
+      }
+
+      // Validate value
+      this.validateWeiValue(event.value, "event.value", key);
     }
   }
 }
