@@ -180,18 +180,15 @@ interface FeeReport {
     chain_id: number;
   };
   distributors: {
-    [distributorAddress: string]: {
-      name: string;
-      daily_totals: Array<{
-        date: string;
-        start_balance_wei: string;
-        end_balance_wei: string;
-        balance_change_wei: string;
-        distributions_wei: string;
-        distributions_count: number;
-        total_wei: string;
-      }>;
-    };
+    [distributorAddress: string]: Array<{
+      date: string;
+      start_balance_wei: string;
+      end_balance_wei: string;
+      balance_change_wei: string;
+      distributions_wei: string;
+      distributions_count: number;
+      total_wei: string;
+    }>;
   };
 }
 ```
@@ -286,29 +283,26 @@ calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
     "chain_id": 42170
   },
   "distributors": {
-    "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
-      "name": "ArbitrumHub",
-      "daily_totals": [
-        {
-          "date": "2024-01-15",
-          "start_balance_wei": "1500000000000000000000",
-          "end_balance_wei": "1480000000000000000000",
-          "balance_change_wei": "-20000000000000000000",
-          "distributions_wei": "25000000000000000000",
-          "distributions_count": 5,
-          "total_wei": "5000000000000000000"
-        },
-        {
-          "date": "2024-01-16",
-          "start_balance_wei": "1480000000000000000000",
-          "end_balance_wei": "1490000000000000000000",
-          "balance_change_wei": "10000000000000000000",
-          "distributions_wei": "15000000000000000000",
-          "distributions_count": 3,
-          "total_wei": "25000000000000000000"
-        }
-      ]
-    }
+    "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+      {
+        "date": "2024-01-15",
+        "start_balance_wei": "1500000000000000000000",
+        "end_balance_wei": "1480000000000000000000",
+        "balance_change_wei": "-20000000000000000000",
+        "distributions_wei": "25000000000000000000",
+        "distributions_count": 5,
+        "total_wei": "5000000000000000000"
+      },
+      {
+        "date": "2024-01-16",
+        "start_balance_wei": "1480000000000000000000",
+        "end_balance_wei": "1490000000000000000000",
+        "balance_change_wei": "10000000000000000000",
+        "distributions_wei": "15000000000000000000",
+        "distributions_count": 3,
+        "total_wei": "25000000000000000000"
+      }
+    ]
   }
 }
 ```
