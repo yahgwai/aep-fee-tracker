@@ -264,10 +264,10 @@ The following test data needs to be generated:
 const calculator = new FeeCalculator(fileManager);
 
 // Calculate totals for all distributors
-await calculator.calculateFees();
+calculator.calculateFees();
 
 // Calculate totals for specific distributor
-await calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
+calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
 ```
 
 ### Sample Input/Output
