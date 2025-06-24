@@ -94,7 +94,7 @@ calculateFees(distributorAddress?: string): Promise<void>
 - **Purpose**: Calculate daily totals for all distributors or a specific distributor
 - **Parameters**:
   - `distributorAddress` (optional): If provided, only calculate fees for this distributor
-- **Returns**: Promise that resolves when total calculations are complete (returns a Promise for future extensibility, even though current operations are synchronous)
+- **Returns**: Promise that resolves when total calculations are complete
 - **Behavior**:
   - Reads all necessary data through FileManager
   - Calculates daily totals for each distributor
@@ -199,32 +199,9 @@ interface FeeReport {
 
 ## 8. Implementation Requirements
 
-### Validation Rules
-
-1. **Address Validation**:
-
-   - All addresses must be valid Ethereum addresses
-   - Addresses normalized to checksummed format
-
-2. **Date Validation**:
-
-   - All dates in ISO format (YYYY-MM-DD)
-   - Dates must be chronologically ordered
-
-3. **Amount Validation**:
-
-   - All amounts must be valid numeric strings
-   - Handle large numbers using bigint internally
-   - Convert back to strings for output
-
-4. **Data Completeness**:
-   - Throw error if critical data is missing
-
 ### Security Considerations
 
-1. **FileManager ensures atomic file operations**
-
-2. **Error Handling**:
+1. **Error Handling**:
    - Never expose system paths in error messages
    - Fail gracefully with descriptive error messages
 
@@ -254,11 +231,7 @@ Integration tests require real blockchain data from Arbitrum Nova:
    - Varying distribution amounts
 
 4. **Test Scenarios**:
-   - Distributor with consistent daily totals
-   - Distributor with sporadic activity
-   - Distributor with no distributions (totals from balance changes only)
-   - Distributor created mid-period
-   - Full pipeline test: all distributors for complete date range
+   - The implementer of the integration tests should choose what tests to write at their discretion based on the available data and edge cases they identify
 
 ### Available Test Data
 
@@ -266,6 +239,11 @@ Test data available in `__tests__/test-data/`:
 
 - **Distributor list**: Available in `distributor-detector/distributor-creation-events-raw.json` with 5 distributors
 - **Historical balance snapshots**: Available in `distributor-detector/balance_data/` for all 5 distributors across 9 dates (2022-07-11 to 2023-03-17)
+  - **Note**: Need to create a test script that uses the balance fetcher to populate at least 30 dates worth of balance data. The script should:
+    - Use the block finder to populate blocks per date
+    - Use the balance fetcher to get balances for those blocks
+    - Be configurable with a date range parameter
+    - This should be one of the first tickets when creating implementation tasks from this spec
 - **Distribution event records**: Available in `recipient-recieved/` directory with RecipientRecieved events for 3 of the 5 distributors (320 total events)
 
 ### Missing Test Data
@@ -277,6 +255,7 @@ The following test data needs to be generated:
   - Daily distribution totals
   - Calculated daily totals (balance change + distributions)
   - Should cover edge cases like first day, missing events, data gaps
+  - **Note**: An independent script should be created to generate this test data from the available data. This should be one of the first tickets when creating implementation tasks from this spec.
 
 ## 10. Examples
 
