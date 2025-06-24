@@ -98,24 +98,6 @@ export class BalanceFetcher {
       return {};
     }
 
-    // Validate block numbers data
-    for (const [date, block] of Object.entries(blockNumbersData.blocks)) {
-      // Validate date format
-      if (!this.isValidDateFormat(date)) {
-        throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
-      }
-      // Additional check for invalid date values
-      if (!this.isValidDate(date)) {
-        throw new Error(`Invalid date: ${date}`);
-      }
-      // Validate block number
-      if (!Number.isInteger(block) || block <= 0) {
-        throw new Error(
-          `Invalid block number: ${block}. Must be a positive integer`,
-        );
-      }
-    }
-
     // Process distributors
     const distributorsToProcess = distributorAddress
       ? {
@@ -123,9 +105,6 @@ export class BalanceFetcher {
             distributorsData.distributors[distributorAddress],
         }
       : distributorsData.distributors;
-
-    // We'll get current block number later if needed for validation
-    let currentBlock: number | undefined;
 
     // Map to track existing balances per distributor for merging
     const existingBalancesByDistributor: Record<
@@ -142,45 +121,8 @@ export class BalanceFetcher {
     )) {
       if (!distributorInfo) continue;
 
-      // Validate distributor address
-      if (!ethers.isAddress(address)) {
-        throw new Error(`Invalid Ethereum address: ${address}`);
-      }
-
       const creationDate = distributorInfo.date;
       const creationBlock = distributorInfo.block;
-
-      // Validate creation date format
-      if (!this.isValidDateFormat(creationDate)) {
-        throw new Error(
-          `Invalid date format: ${creationDate}. Expected YYYY-MM-DD`,
-        );
-      }
-
-      // Additional check for invalid date values (like month 13)
-      if (!this.isValidDate(creationDate)) {
-        throw new Error(`Invalid date: ${creationDate}`);
-      }
-
-      // Validate creation block number
-      if (!Number.isInteger(creationBlock) || creationBlock <= 0) {
-        throw new Error(
-          `Invalid block number: ${creationBlock}. Must be a positive integer`,
-        );
-      }
-
-      // Get current block number if not already fetched (for reorg protection)
-      if (currentBlock === undefined) {
-        currentBlock = await this.provider.getBlockNumber();
-      }
-
-      // Validate creation block is old enough (reorg protection)
-      const creationBlockAge = currentBlock - creationBlock;
-      if (creationBlockAge < 1000) {
-        throw new Error(
-          `Block ${creationBlock} is too recent. Must be at least 1000 blocks old (current block: ${currentBlock})`,
-        );
-      }
 
       // Load existing balance data for this distributor
       const existingBalances =
@@ -223,18 +165,6 @@ export class BalanceFetcher {
       return {};
     }
 
-    // Validate all blocks are old enough (reorg protection)
-    if (currentBlock !== undefined) {
-      for (const fetch of allFetches) {
-        const blockAge = currentBlock - fetch.block;
-        if (blockAge < 1000) {
-          throw new Error(
-            `Block ${fetch.block} is too recent. Must be at least 1000 blocks old (current block: ${currentBlock})`,
-          );
-        }
-      }
-    }
-
     // Collect balances by distributor and date
     const collectedBalances: Record<string, Record<string, string>> = {};
 
@@ -273,39 +203,5 @@ export class BalanceFetcher {
     }
 
     return collectedBalances;
-  }
-
-  /**
-   * Validates that a string is in YYYY-MM-DD format.
-   * @private
-   */
-  private isValidDateFormat(date: string): boolean {
-    // Check format with regex
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    return dateRegex.test(date);
-  }
-
-  /**
-   * Validates that a date string represents a valid date.
-   * @private
-   */
-  private isValidDate(date: string): boolean {
-    const parts = date.split("-");
-    if (parts.length !== 3) {
-      return false;
-    }
-
-    const year = parseInt(parts[0]!, 10);
-    const month = parseInt(parts[1]!, 10);
-    const day = parseInt(parts[2]!, 10);
-
-    const dateObj = new Date(year, month - 1, day);
-
-    // Check if the date is valid by comparing components
-    return (
-      dateObj.getFullYear() === year &&
-      dateObj.getMonth() === month - 1 &&
-      dateObj.getDate() === day
-    );
   }
 }
