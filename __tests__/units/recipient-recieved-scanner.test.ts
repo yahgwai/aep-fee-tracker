@@ -148,6 +148,7 @@ describe("RecipientRecievedScanner", () => {
       };
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers = jest.fn().mockReturnValue(undefined);
 
       await scanner.scan();
 
@@ -190,6 +191,7 @@ describe("RecipientRecievedScanner", () => {
       mockFileManager = {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -226,6 +228,7 @@ describe("RecipientRecievedScanner", () => {
           "2022-07-13": 300,
         },
       });
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
 
       await scanner.scan();
 
@@ -627,6 +630,8 @@ describe("RecipientRecievedScanner", () => {
     beforeEach(() => {
       mockFileManager = {
         readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -667,6 +672,7 @@ describe("RecipientRecievedScanner", () => {
 
     it("processes all distributors when no distributorAddress is provided", async () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(undefined);
 
       await scanner.scan();
 
@@ -676,6 +682,7 @@ describe("RecipientRecievedScanner", () => {
 
     it("filters to a specific distributor when distributorAddress is provided", async () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(undefined);
       const targetAddress = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
 
       await scanner.scan(targetAddress);
@@ -686,6 +693,7 @@ describe("RecipientRecievedScanner", () => {
 
     it("finds distributor with case-insensitive address comparison", async () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(undefined);
       const targetAddress = "0x37daa99b1caae0c22670963e103a66ca2c5db2db"; // lowercase
 
       await scanner.scan(targetAddress);
