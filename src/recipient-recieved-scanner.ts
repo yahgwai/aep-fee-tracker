@@ -70,23 +70,16 @@ export class RecipientRecievedScanner {
     )) {
       if (!distributorInfo) continue;
 
-      const datesToProcess = this.determineDateRangeForDistributor(
+      const blockRanges = this.determineBlockRangesToProcess(
         address,
         distributorInfo,
         blockNumbersData,
         yesterdayStr,
       );
 
-      if (datesToProcess.length === 0) {
+      if (blockRanges.length === 0) {
         continue;
       }
-
-      // Convert dates to block ranges and validate block numbers
-      const blockRanges = this.convertDatesToBlockRanges(
-        datesToProcess,
-        blockNumbersData,
-        address,
-      );
 
       // TODO: Process the block ranges (out of scope for this issue)
       void blockRanges; // Suppress unused variable warning
@@ -140,15 +133,15 @@ export class RecipientRecievedScanner {
   }
 
   /**
-   * Determines the date range to process for a distributor.
+   * Determines the block ranges to process for a distributor.
    * @private
    */
-  private determineDateRangeForDistributor(
+  private determineBlockRangesToProcess(
     address: string,
     distributorInfo: DistributorInfo,
     blockNumbersData: BlockNumberData,
     yesterdayStr: string,
-  ): string[] {
+  ): Array<{ date: string; startBlock: number; endBlock: number }> {
     // Check if distributor is created in the future
     if (distributorInfo.date > yesterdayStr) {
       return [];
@@ -186,8 +179,36 @@ export class RecipientRecievedScanner {
       return [];
     }
 
-    // Determine date range to process
-    return this.getDateRange(startDate, yesterdayStr);
+    // Get date range to process
+    const dates = this.getDateRange(startDate, yesterdayStr);
+
+    // Return empty if no dates
+    if (dates.length === 0) {
+      return [];
+    }
+
+    // Validate and convert dates to block ranges in one pass
+    const blockRanges: Array<{
+      date: string;
+      startBlock: number;
+      endBlock: number;
+    }> = [];
+
+    for (const date of dates) {
+      if (!(date in blockNumbersData.blocks)) {
+        throw new Error(
+          `Missing block number for date ${date} for distributor ${address}`,
+        );
+      }
+
+      const { startBlock, endBlock } = this.convertDateToBlockRange(
+        date,
+        blockNumbersData,
+      );
+      blockRanges.push({ date, startBlock, endBlock });
+    }
+
+    return blockRanges;
   }
 
   /**
@@ -205,50 +226,6 @@ export class RecipientRecievedScanner {
     }
 
     return dates;
-  }
-
-  /**
-   * Converts dates to block ranges with validation.
-   * @private
-   */
-  private convertDatesToBlockRanges(
-    dates: string[],
-    blockNumbersData: BlockNumberData,
-    distributorAddress: string,
-  ): Array<{ date: string; startBlock: number; endBlock: number }> {
-    // First validate all dates have block numbers
-    this.validateBlockNumbersForDates(
-      dates,
-      blockNumbersData,
-      distributorAddress,
-    );
-
-    // Then convert each date to a block range
-    return dates.map((date) => {
-      const { startBlock, endBlock } = this.convertDateToBlockRange(
-        date,
-        blockNumbersData,
-      );
-      return { date, startBlock, endBlock };
-    });
-  }
-
-  /**
-   * Validates that block numbers exist for all dates in the range.
-   * @private
-   */
-  private validateBlockNumbersForDates(
-    dates: string[],
-    blockNumbersData: BlockNumberData,
-    distributorAddress: string,
-  ): void {
-    for (const date of dates) {
-      if (!(date in blockNumbersData.blocks)) {
-        throw new Error(
-          `Missing block number for date ${date} for distributor ${distributorAddress}`,
-        );
-      }
-    }
   }
 
   /**
