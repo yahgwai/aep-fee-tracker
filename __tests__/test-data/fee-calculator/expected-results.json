@@ -20929,18 +20929,18 @@
         "start_balance_wei": "51210689486590000000",
         "end_balance_wei": "51950805931250000000",
         "balance_change_wei": "740116444660000000",
-        "distributions_wei": "52525233903790000000",
-        "distributions_count": 7,
-        "total_wei": "53265350348450000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "740116444660000000"
       },
       {
         "date": "2023-09-29",
         "start_balance_wei": "51950805931250000000",
         "end_balance_wei": "159895024520000000",
         "balance_change_wei": "-51790910906730000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-51790910906730000000"
+        "distributions_wei": "52525233903790000000",
+        "distributions_count": 7,
+        "total_wei": "734322997060000000"
       },
       {
         "date": "2023-09-30",
@@ -21226,18 +21226,18 @@
         "start_balance_wei": "24794097159790000000",
         "end_balance_wei": "25665965386360000000",
         "balance_change_wei": "871868226570000000",
-        "distributions_wei": "25957551634210000000",
-        "distributions_count": 7,
-        "total_wei": "26829419860780000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "871868226570000000"
       },
       {
         "date": "2023-11-01",
         "start_balance_wei": "25665965386360000000",
         "end_balance_wei": "576324778820000000",
         "balance_change_wei": "-25089640607540000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-25089640607540000000"
+        "distributions_wei": "25957551634210000000",
+        "distributions_count": 7,
+        "total_wei": "867911026670000000"
       },
       {
         "date": "2023-11-02",
@@ -21721,18 +21721,18 @@
         "start_balance_wei": "49581077078680000000",
         "end_balance_wei": "50590869968560000000",
         "balance_change_wei": "1009792889880000000",
-        "distributions_wei": "51408168898930000000",
-        "distributions_count": 7,
-        "total_wei": "52417961788810000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "1009792889880000000"
       },
       {
         "date": "2023-12-26",
         "start_balance_wei": "50590869968560000000",
         "end_balance_wei": "281888727070000000",
         "balance_change_wei": "-50308981241490000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-50308981241490000000"
+        "distributions_wei": "51408168898930000000",
+        "distributions_count": 7,
+        "total_wei": "1099187657440000000"
       },
       {
         "date": "2023-12-27",
@@ -22027,18 +22027,18 @@
         "start_balance_wei": "41623951279580000000",
         "end_balance_wei": "43358173790720000000",
         "balance_change_wei": "1734222511140000000",
-        "distributions_wei": "44200274872240000000",
-        "distributions_count": 7,
-        "total_wei": "45934497383380000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "1734222511140000000"
       },
       {
         "date": "2024-01-29",
         "start_balance_wei": "43358173790720000000",
         "end_balance_wei": "971264269770000000",
         "balance_change_wei": "-42386909520950000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-42386909520950000000"
+        "distributions_wei": "44200274872240000000",
+        "distributions_count": 7,
+        "total_wei": "1813365351290000000"
       },
       {
         "date": "2024-01-30",
@@ -22216,18 +22216,18 @@
         "start_balance_wei": "36660243045720000000",
         "end_balance_wei": "41091699077560000000",
         "balance_change_wei": "4431456031840000000",
-        "distributions_wei": "44386799292920000000",
-        "distributions_count": 7,
-        "total_wei": "48818255324760000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "4431456031840000000"
       },
       {
         "date": "2024-02-19",
         "start_balance_wei": "41091699077560000000",
         "end_balance_wei": "300735552030000000",
         "balance_change_wei": "-40790963525530000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-40790963525530000000"
+        "distributions_wei": "44386799292920000000",
+        "distributions_count": 7,
+        "total_wei": "3595835767390000000"
       },
       {
         "date": "2024-02-20",
@@ -22837,18 +22837,18 @@
         "start_balance_wei": "368053378317390000000",
         "end_balance_wei": "374092091359310000000",
         "balance_change_wei": "6038713041920000000",
-        "distributions_wei": "374095993105030000000",
-        "distributions_count": 7,
-        "total_wei": "380134706146950000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "6038713041920000000"
       },
       {
         "date": "2024-04-28",
         "start_balance_wei": "374092091359310000000",
         "end_balance_wei": "6023190315790000000",
         "balance_change_wei": "-368068901043520000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-368068901043520000000"
+        "distributions_wei": "374095993105030000000",
+        "distributions_count": 7,
+        "total_wei": "6027092061510000000"
       },
       {
         "date": "2024-04-29",
@@ -22900,18 +22900,18 @@
         "start_balance_wei": "35853425894480000000",
         "end_balance_wei": "41893631755450000000",
         "balance_change_wei": "6040205860970000000",
-        "distributions_wei": "41898384719900000000",
-        "distributions_count": 7,
-        "total_wei": "47938590580870000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "6040205860970000000"
       },
       {
         "date": "2024-05-05",
         "start_balance_wei": "41893631755450000000",
         "end_balance_wei": "6051935557500000000",
         "balance_change_wei": "-35841696197950000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-35841696197950000000"
+        "distributions_wei": "41898384719900000000",
+        "distributions_count": 7,
+        "total_wei": "6056688521950000000"
       },
       {
         "date": "2024-05-06",
@@ -22963,18 +22963,18 @@
         "start_balance_wei": "36170709709270000000",
         "end_balance_wei": "42224431702280000000",
         "balance_change_wei": "6053721993010000000",
-        "distributions_wei": "42228864257740000000",
-        "distributions_count": 7,
-        "total_wei": "48282586250750000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "6053721993010000000"
       },
       {
         "date": "2024-05-12",
         "start_balance_wei": "42224431702280000000",
         "end_balance_wei": "5968897380880000000",
         "balance_change_wei": "-36255534321400000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-36255534321400000000"
+        "distributions_wei": "42228864257740000000",
+        "distributions_count": 7,
+        "total_wei": "5973329936340000000"
       },
       {
         "date": "2024-05-13",
@@ -23026,18 +23026,18 @@
         "start_balance_wei": "36206321989030000000",
         "end_balance_wei": "42242326852890000000",
         "balance_change_wei": "6036004863860000000",
-        "distributions_wei": "42246945031520000000",
-        "distributions_count": 7,
-        "total_wei": "48282949895380000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "6036004863860000000"
       },
       {
         "date": "2024-05-19",
         "start_balance_wei": "42242326852890000000",
         "end_balance_wei": "5989051517090000000",
         "balance_change_wei": "-36253275335800000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-36253275335800000000"
+        "distributions_wei": "42246945031520000000",
+        "distributions_count": 7,
+        "total_wei": "5993669695720000000"
       },
       {
         "date": "2024-05-20",
@@ -23089,18 +23089,18 @@
         "start_balance_wei": "29438738409880000000",
         "end_balance_wei": "35482373157150000000",
         "balance_change_wei": "6043634747270000000",
-        "distributions_wei": "35487158876680000000",
-        "distributions_count": 7,
-        "total_wei": "41530793623950000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "6043634747270000000"
       },
       {
         "date": "2024-05-26",
         "start_balance_wei": "35482373157150000000",
         "end_balance_wei": "6037840072790000000",
         "balance_change_wei": "-29444533084360000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-29444533084360000000"
+        "distributions_wei": "35487158876680000000",
+        "distributions_count": 7,
+        "total_wei": "6042625792320000000"
       },
       {
         "date": "2024-05-27",
@@ -23152,18 +23152,18 @@
         "start_balance_wei": "27736110165320000000",
         "end_balance_wei": "27833036888650000000",
         "balance_change_wei": "96926723330000000",
-        "distributions_wei": "27833100408630000000",
-        "distributions_count": 7,
-        "total_wei": "27930027131960000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "96926723330000000"
       },
       {
         "date": "2024-06-02",
         "start_balance_wei": "27833036888650000000",
         "end_balance_wei": "69105598900000000",
         "balance_change_wei": "-27763931289750000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-27763931289750000000"
+        "distributions_wei": "27833100408630000000",
+        "distributions_count": 7,
+        "total_wei": "69169118880000000"
       },
       {
         "date": "2024-06-03",
@@ -23278,18 +23278,18 @@
         "start_balance_wei": "15800764293610000000",
         "end_balance_wei": "15826890830840000000",
         "balance_change_wei": "26126537230000000",
-        "distributions_wei": "15826900371860000000",
-        "distributions_count": 7,
-        "total_wei": "15853026909090000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "26126537230000000"
       },
       {
         "date": "2024-06-16",
         "start_balance_wei": "15826890830840000000",
         "end_balance_wei": "33120794840000000",
         "balance_change_wei": "-15793770036000000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-15793770036000000000"
+        "distributions_wei": "15826900371860000000",
+        "distributions_count": 7,
+        "total_wei": "33130335860000000"
       },
       {
         "date": "2024-06-17",
@@ -23467,18 +23467,18 @@
         "start_balance_wei": "1022130291580000000",
         "end_balance_wei": "1073051179830000000",
         "balance_change_wei": "50920888250000000",
-        "distributions_wei": "1073057226900000000",
-        "distributions_count": 7,
-        "total_wei": "1123978115150000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "50920888250000000"
       },
       {
         "date": "2024-07-07",
         "start_balance_wei": "1073051179830000000",
         "end_balance_wei": "41647092240000000",
         "balance_change_wei": "-1031404087590000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-1031404087590000000"
+        "distributions_wei": "1073057226900000000",
+        "distributions_count": 7,
+        "total_wei": "41653139310000000"
       },
       {
         "date": "2024-07-08",
@@ -23719,18 +23719,18 @@
         "start_balance_wei": "1223614208900000000",
         "end_balance_wei": "1285832005740000000",
         "balance_change_wei": "62217796840000000",
-        "distributions_wei": "1285837253720000000",
-        "distributions_count": 7,
-        "total_wei": "1348055050560000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "62217796840000000"
       },
       {
         "date": "2024-08-04",
         "start_balance_wei": "1285832005740000000",
         "end_balance_wei": "43643347840000000",
         "balance_change_wei": "-1242188657900000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-1242188657900000000"
+        "distributions_wei": "1285837253720000000",
+        "distributions_count": 7,
+        "total_wei": "43648595820000000"
       },
       {
         "date": "2024-08-05",
@@ -23935,18 +23935,18 @@
         "start_balance_wei": "835791004460000000",
         "end_balance_wei": "862540839850000000",
         "balance_change_wei": "26749835390000000",
-        "distributions_wei": "865056142420010000",
-        "distributions_count": 7,
-        "total_wei": "891805977810010000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "26749835390000000"
       },
       {
         "date": "2024-08-28",
         "start_balance_wei": "862540839850000000",
         "end_balance_wei": "20991819960000000",
         "balance_change_wei": "-841549019890000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-841549019890000000"
+        "distributions_wei": "865056142420010000",
+        "distributions_count": 7,
+        "total_wei": "23507122530010000"
       },
       {
         "date": "2024-08-29",
@@ -24205,18 +24205,18 @@
         "start_balance_wei": "1425921225240000000",
         "end_balance_wei": "1493650629580000000",
         "balance_change_wei": "67729404340000000",
-        "distributions_wei": "1542489234060000000",
-        "distributions_count": 7,
-        "total_wei": "1610218638400000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "67729404340000000"
       },
       {
         "date": "2024-09-27",
         "start_balance_wei": "1493650629580000000",
         "end_balance_wei": "17321696270000000",
         "balance_change_wei": "-1476328933310000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-1476328933310000000"
+        "distributions_wei": "1542489234060000000",
+        "distributions_count": 7,
+        "total_wei": "66160300750000000"
       },
       {
         "date": "2024-09-28",
@@ -24502,18 +24502,18 @@
         "start_balance_wei": "2017141137540000000",
         "end_balance_wei": "2097769157070000000",
         "balance_change_wei": "80628019530000000",
-        "distributions_wei": "2187004237430000000",
-        "distributions_count": 7,
-        "total_wei": "2267632256960000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "80628019530000000"
       },
       {
         "date": "2024-10-30",
         "start_balance_wei": "2097769157070000000",
         "end_balance_wei": "18912793290000000",
         "balance_change_wei": "-2078856363780000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-2078856363780000000"
+        "distributions_wei": "2187004237430000000",
+        "distributions_count": 7,
+        "total_wei": "108147873650000000"
       },
       {
         "date": "2024-10-31",
@@ -24763,18 +24763,18 @@
         "start_balance_wei": "1827238699240000000",
         "end_balance_wei": "1907996966040000000",
         "balance_change_wei": "80758266800000000",
-        "distributions_wei": "1960103105560000000",
-        "distributions_count": 7,
-        "total_wei": "2040861372360000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "80758266800000000"
       },
       {
         "date": "2024-11-28",
         "start_balance_wei": "1907996966040000000",
         "end_balance_wei": "30544304480000000",
         "balance_change_wei": "-1877452661560000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-1877452661560000000"
+        "distributions_wei": "1960103105560000000",
+        "distributions_count": 7,
+        "total_wei": "82650444000000000"
       },
       {
         "date": "2024-11-29",
@@ -25123,27 +25123,27 @@
         "start_balance_wei": "2924517139940000000",
         "end_balance_wei": "2979694119590000000",
         "balance_change_wei": "55176979650000000",
-        "distributions_wei": "3030494527190000000",
-        "distributions_count": 7,
-        "total_wei": "3085671506840000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "55176979650000000"
       },
       {
         "date": "2025-01-07",
         "start_balance_wei": "2979694119590000000",
         "end_balance_wei": "1333882100000000",
         "balance_change_wei": "-2978360237490000000",
-        "distributions_wei": "53568039170000000",
+        "distributions_wei": "3030494527190000000",
         "distributions_count": 7,
-        "total_wei": "-2924792198320000000"
+        "total_wei": "52134289700000000"
       },
       {
         "date": "2025-01-08",
         "start_balance_wei": "1333882100000000",
         "end_balance_wei": "3320136230000000",
         "balance_change_wei": "1986254130000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "1986254130000000"
+        "distributions_wei": "53568039170000000",
+        "distributions_count": 7,
+        "total_wei": "55554293300000000"
       },
       {
         "date": "2025-01-09",
@@ -25195,18 +25195,18 @@
         "start_balance_wei": "288794756320000000",
         "end_balance_wei": "343941695990000000",
         "balance_change_wei": "55146939670000000",
-        "distributions_wei": "398731023040000000",
-        "distributions_count": 7,
-        "total_wei": "453877962710000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "55146939670000000"
       },
       {
         "date": "2025-01-15",
         "start_balance_wei": "343941695990000000",
         "end_balance_wei": "3781882060000000",
         "balance_change_wei": "-340159813930000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-340159813930000000"
+        "distributions_wei": "398731023040000000",
+        "distributions_count": 7,
+        "total_wei": "58571209110000000"
       },
       {
         "date": "2025-01-16",
@@ -25321,18 +25321,18 @@
         "start_balance_wei": "707264818080000000",
         "end_balance_wei": "765411100390000000",
         "balance_change_wei": "58146282310000000",
-        "distributions_wei": "810281201020000000",
-        "distributions_count": 7,
-        "total_wei": "868427483330000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "58146282310000000"
       },
       {
         "date": "2025-01-29",
         "start_balance_wei": "765411100390000000",
         "end_balance_wei": "3481246390000000",
         "balance_change_wei": "-761929854000000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-761929854000000000"
+        "distributions_wei": "810281201020000000",
+        "distributions_count": 7,
+        "total_wei": "48351347020000000"
       },
       {
         "date": "2025-01-30",
@@ -25384,18 +25384,18 @@
         "start_balance_wei": "215319589910000000",
         "end_balance_wei": "259188541990000000",
         "balance_change_wei": "43868952080000000",
-        "distributions_wei": "298547659530000000",
-        "distributions_count": 7,
-        "total_wei": "342416611610000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "43868952080000000"
       },
       {
         "date": "2025-02-05",
         "start_balance_wei": "259188541990000000",
         "end_balance_wei": "2741612750000000",
         "balance_change_wei": "-256446929240000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-256446929240000000"
+        "distributions_wei": "298547659530000000",
+        "distributions_count": 7,
+        "total_wei": "42100730290000000"
       },
       {
         "date": "2025-02-06",
@@ -25447,18 +25447,18 @@
         "start_balance_wei": "193706803660000000",
         "end_balance_wei": "234690359750000000",
         "balance_change_wei": "40983556090000000",
-        "distributions_wei": "276499947750000000",
-        "distributions_count": 7,
-        "total_wei": "317483503840000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "40983556090000000"
       },
       {
         "date": "2025-02-12",
         "start_balance_wei": "234690359750000000",
         "end_balance_wei": "4465308840000000",
         "balance_change_wei": "-230225050910000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-230225050910000000"
+        "distributions_wei": "276499947750000000",
+        "distributions_count": 7,
+        "total_wei": "46274896840000000"
       },
       {
         "date": "2025-02-13",
@@ -25573,18 +25573,18 @@
         "start_balance_wei": "547932090220000000",
         "end_balance_wei": "586245097920000000",
         "balance_change_wei": "38313007700000000",
-        "distributions_wei": "625099314230000000",
-        "distributions_count": 7,
-        "total_wei": "663412321930000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "38313007700000000"
       },
       {
         "date": "2025-02-26",
         "start_balance_wei": "586245097920000000",
         "end_balance_wei": "4272665240000000",
         "balance_change_wei": "-581972432680000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-581972432680000000"
+        "distributions_wei": "625099314230000000",
+        "distributions_count": 7,
+        "total_wei": "43126881550000000"
       },
       {
         "date": "2025-02-27",
@@ -25636,18 +25636,18 @@
         "start_balance_wei": "241472607230000000",
         "end_balance_wei": "286907755050000000",
         "balance_change_wei": "45435147820000000",
-        "distributions_wei": "359717205920000000",
-        "distributions_count": 7,
-        "total_wei": "405152353740000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "45435147820000000"
       },
       {
         "date": "2025-03-05",
         "start_balance_wei": "286907755050000000",
         "end_balance_wei": "4322486590000000",
         "balance_change_wei": "-282585268460000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-282585268460000000"
+        "distributions_wei": "359717205920000000",
+        "distributions_count": 7,
+        "total_wei": "77131937460000000"
       },
       {
         "date": "2025-03-06",
@@ -25699,18 +25699,18 @@
         "start_balance_wei": "281942408540000000",
         "end_balance_wei": "419943658450000000",
         "balance_change_wei": "138001249910000000",
-        "distributions_wei": "461590259410000000",
-        "distributions_count": 7,
-        "total_wei": "599591509320000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "138001249910000000"
       },
       {
         "date": "2025-03-12",
         "start_balance_wei": "419943658450000000",
         "end_balance_wei": "3198861000000000",
         "balance_change_wei": "-416744797450000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-416744797450000000"
+        "distributions_wei": "461590259410000000",
+        "distributions_count": 7,
+        "total_wei": "44845461960000000"
       },
       {
         "date": "2025-03-13",
@@ -25762,18 +25762,18 @@
         "start_balance_wei": "282712077120000000",
         "end_balance_wei": "293744943280000000",
         "balance_change_wei": "11032866160000000",
-        "distributions_wei": "301788317190000000",
-        "distributions_count": 7,
-        "total_wei": "312821183350000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "11032866160000000"
       },
       {
         "date": "2025-03-19",
         "start_balance_wei": "293744943280000000",
         "end_balance_wei": "4030292820000000",
         "balance_change_wei": "-289714650460000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-289714650460000000"
+        "distributions_wei": "301788317190000000",
+        "distributions_count": 7,
+        "total_wei": "12073666730000000"
       },
       {
         "date": "2025-03-20",
@@ -25888,18 +25888,18 @@
         "start_balance_wei": "305713004570000000",
         "end_balance_wei": "354280509310000000",
         "balance_change_wei": "48567504740000000",
-        "distributions_wei": "363759168950000000",
-        "distributions_count": 7,
-        "total_wei": "412326673690000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "48567504740000000"
       },
       {
         "date": "2025-04-02",
         "start_balance_wei": "354280509310000000",
         "end_balance_wei": "3894941770000000",
         "balance_change_wei": "-350385567540000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-350385567540000000"
+        "distributions_wei": "363759168950000000",
+        "distributions_count": 7,
+        "total_wei": "13373601410000000"
       },
       {
         "date": "2025-04-03",
@@ -25951,18 +25951,18 @@
         "start_balance_wei": "75470598720000000",
         "end_balance_wei": "92583925000000000",
         "balance_change_wei": "17113326280000000",
-        "distributions_wei": "104355406280000000",
-        "distributions_count": 7,
-        "total_wei": "121468732560000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "17113326280000000"
       },
       {
         "date": "2025-04-09",
         "start_balance_wei": "92583925000000000",
         "end_balance_wei": "6211635370000000",
         "balance_change_wei": "-86372289630000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-86372289630000000"
+        "distributions_wei": "104355406280000000",
+        "distributions_count": 7,
+        "total_wei": "17983116650000000"
       },
       {
         "date": "2025-04-10",
@@ -26032,18 +26032,18 @@
         "start_balance_wei": "114265446930000000",
         "end_balance_wei": "128416358150000000",
         "balance_change_wei": "14150911220000000",
-        "distributions_wei": "133055306520000000",
-        "distributions_count": 7,
-        "total_wei": "147206217740000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "14150911220000000"
       },
       {
         "date": "2025-04-18",
         "start_balance_wei": "128416358150000000",
         "end_balance_wei": "3119773840000000",
         "balance_change_wei": "-125296584310000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-125296584310000000"
+        "distributions_wei": "133055306520000000",
+        "distributions_count": 7,
+        "total_wei": "7758722210000000"
       },
       {
         "date": "2025-04-19",
@@ -26266,18 +26266,18 @@
         "start_balance_wei": "166943393240000000",
         "end_balance_wei": "172084486520000000",
         "balance_change_wei": "5141093280000000",
-        "distributions_wei": "173930917420000000",
-        "distributions_count": 14,
-        "total_wei": "179072010700000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "5141093280000000"
       },
       {
         "date": "2025-05-14",
         "start_balance_wei": "172084486520000000",
         "end_balance_wei": "1506513380000000",
         "balance_change_wei": "-170577973140000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-170577973140000000"
+        "distributions_wei": "173930917420000000",
+        "distributions_count": 14,
+        "total_wei": "3352944280000000"
       },
       {
         "date": "2025-05-15",
@@ -26329,18 +26329,18 @@
         "start_balance_wei": "18650930110000000",
         "end_balance_wei": "21834493880000000",
         "balance_change_wei": "3183563770000000",
-        "distributions_wei": "23539431150000000",
-        "distributions_count": 7,
-        "total_wei": "26722994920000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "3183563770000000"
       },
       {
         "date": "2025-05-21",
         "start_balance_wei": "21834493880000000",
         "end_balance_wei": "1813119750000000",
         "balance_change_wei": "-20021374130000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-20021374130000000"
+        "distributions_wei": "23539431150000000",
+        "distributions_count": 7,
+        "total_wei": "3518057020000000"
       },
       {
         "date": "2025-05-22",
@@ -26401,18 +26401,18 @@
         "start_balance_wei": "20222850230000000",
         "end_balance_wei": "23407310830000000",
         "balance_change_wei": "3184460600000000",
-        "distributions_wei": "26464547550000000",
-        "distributions_count": 7,
-        "total_wei": "29649008150000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "3184460600000000"
       },
       {
         "date": "2025-05-29",
         "start_balance_wei": "23407310830000000",
         "end_balance_wei": "969816180000000",
         "balance_change_wei": "-22437494650000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-22437494650000000"
+        "distributions_wei": "26464547550000000",
+        "distributions_count": 7,
+        "total_wei": "4027052900000000"
       },
       {
         "date": "2025-05-30",
@@ -26428,18 +26428,18 @@
         "start_balance_wei": "5413088040000000",
         "end_balance_wei": "7967873890000000",
         "balance_change_wei": "2554785850000000",
-        "distributions_wei": "9239802180000000",
-        "distributions_count": 7,
-        "total_wei": "11794588030000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "2554785850000000"
       },
       {
         "date": "2025-06-01",
         "start_balance_wei": "7967873890000000",
         "end_balance_wei": "891630380000000",
         "balance_change_wei": "-7076243510000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-7076243510000000"
+        "distributions_wei": "9239802180000000",
+        "distributions_count": 7,
+        "total_wei": "2163558670000000"
       },
       {
         "date": "2025-06-02",
@@ -26455,18 +26455,18 @@
         "start_balance_wei": "3922188140000000",
         "end_balance_wei": "7246302520000000",
         "balance_change_wei": "3324114380000000",
-        "distributions_wei": "8675369170000000",
-        "distributions_count": 7,
-        "total_wei": "11999483550000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "3324114380000000"
       },
       {
         "date": "2025-06-04",
         "start_balance_wei": "7246302520000000",
         "end_balance_wei": "1419926620000000",
         "balance_change_wei": "-5826375900000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-5826375900000000"
+        "distributions_wei": "8675369170000000",
+        "distributions_count": 7,
+        "total_wei": "2848993270000000"
       },
       {
         "date": "2025-06-05",
@@ -26491,18 +26491,18 @@
         "start_balance_wei": "8374277340000000",
         "end_balance_wei": "10750872970000000",
         "balance_change_wei": "2376595630000000",
-        "distributions_wei": "11884143240000000",
-        "distributions_count": 7,
-        "total_wei": "14260738870000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "2376595630000000"
       },
       {
         "date": "2025-06-08",
         "start_balance_wei": "10750872970000000",
         "end_balance_wei": "803323390000000",
         "balance_change_wei": "-9947549580000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-9947549580000000"
+        "distributions_wei": "11884143240000000",
+        "distributions_count": 7,
+        "total_wei": "1936593660000000"
       },
       {
         "date": "2025-06-09",
@@ -26518,18 +26518,18 @@
         "start_balance_wei": "3793358290000000",
         "end_balance_wei": "7590574240000000",
         "balance_change_wei": "3797215950000000",
-        "distributions_wei": "9846154880000000",
-        "distributions_count": 7,
-        "total_wei": "13643370830000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "3797215950000000"
       },
       {
         "date": "2025-06-11",
         "start_balance_wei": "7590574240000000",
         "end_balance_wei": "2472599170000000",
         "balance_change_wei": "-5117975070000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-5117975070000000"
+        "distributions_wei": "9846154880000000",
+        "distributions_count": 7,
+        "total_wei": "4728179810000000"
       },
       {
         "date": "2025-06-12",
@@ -26554,18 +26554,18 @@
         "start_balance_wei": "9294539180000000",
         "end_balance_wei": "11806307080000000",
         "balance_change_wei": "2511767900000000",
-        "distributions_wei": "13137606220000000",
-        "distributions_count": 7,
-        "total_wei": "15649374120000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "2511767900000000"
       },
       {
         "date": "2025-06-15",
         "start_balance_wei": "11806307080000000",
         "end_balance_wei": "800787720000000",
         "balance_change_wei": "-11005519360000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-11005519360000000"
+        "distributions_wei": "13137606220000000",
+        "distributions_count": 7,
+        "total_wei": "2132086860000000"
       },
       {
         "date": "2025-06-16",
@@ -26581,18 +26581,18 @@
         "start_balance_wei": "3816963880000000",
         "end_balance_wei": "7347927740000000",
         "balance_change_wei": "3530963860000000",
-        "distributions_wei": "8661481920000000",
-        "distributions_count": 7,
-        "total_wei": "12192445780000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "3530963860000000"
       },
       {
         "date": "2025-06-18",
         "start_balance_wei": "7347927740000000",
         "end_balance_wei": "1622160730000000",
         "balance_change_wei": "-5725767010000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-5725767010000000"
+        "distributions_wei": "8661481920000000",
+        "distributions_count": 7,
+        "total_wei": "2935714910000000"
       },
       {
         "date": "2025-06-19",
@@ -26617,18 +26617,18 @@
         "start_balance_wei": "6955336420000000",
         "end_balance_wei": "10031523960000000",
         "balance_change_wei": "3076187540000000",
-        "distributions_wei": "11191483780000000",
-        "distributions_count": 7,
-        "total_wei": "14267671320000000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "3076187540000000"
       },
       {
         "date": "2025-06-22",
         "start_balance_wei": "10031523960000000",
         "end_balance_wei": "1668658840000000",
         "balance_change_wei": "-8362865120000000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-8362865120000000"
+        "distributions_wei": "11191483780000000",
+        "distributions_count": 7,
+        "total_wei": "2828618660000000"
       },
       {
         "date": "2025-06-23",
@@ -31416,18 +31416,18 @@
         "start_balance_wei": "0",
         "end_balance_wei": "0",
         "balance_change_wei": "0",
-        "distributions_wei": "10000",
-        "distributions_count": 1,
-        "total_wei": "10000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2024-08-28",
         "start_balance_wei": "0",
         "end_balance_wei": "0",
         "balance_change_wei": "0",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "0"
+        "distributions_wei": "10000",
+        "distributions_count": 1,
+        "total_wei": "10000"
       },
       {
         "date": "2024-08-29",
@@ -37799,18 +37799,18 @@
         "start_balance_wei": "960183343858500922832",
         "end_balance_wei": "975814138229322808632",
         "balance_change_wei": "15630794370821885800",
-        "distributions_wei": "975837350022616960000",
-        "distributions_count": 1,
-        "total_wei": "991468144393438845800"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "15630794370821885800"
       },
       {
         "date": "2024-04-28",
         "start_balance_wei": "975814138229322808632",
         "end_balance_wei": "12795571332347483848",
         "balance_change_wei": "-963018566896975324784",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-963018566896975324784"
+        "distributions_wei": "975837350022616960000",
+        "distributions_count": 1,
+        "total_wei": "12818783125641635216"
       },
       {
         "date": "2024-04-29",
@@ -37862,18 +37862,18 @@
         "start_balance_wei": "60345010218318920536",
         "end_balance_wei": "65567846204378187112",
         "balance_change_wei": "5222835986059266576",
-        "distributions_wei": "65574728029119790000",
-        "distributions_count": 1,
-        "total_wei": "70797564015179056576"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "5222835986059266576"
       },
       {
         "date": "2024-05-05",
         "start_balance_wei": "65567846204378187112",
         "end_balance_wei": "19749703854297807776",
         "balance_change_wei": "-45818142350080379336",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-45818142350080379336"
+        "distributions_wei": "65574728029119790000",
+        "distributions_count": 1,
+        "total_wei": "19756585679039410664"
       },
       {
         "date": "2024-05-06",
@@ -37925,18 +37925,18 @@
         "start_balance_wei": "56873943610084820840",
         "end_balance_wei": "78651855912728323248",
         "balance_change_wei": "21777912302643502408",
-        "distributions_wei": "78668551773320700000",
-        "distributions_count": 1,
-        "total_wei": "100446464075964202408"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "21777912302643502408"
       },
       {
         "date": "2024-05-12",
         "start_balance_wei": "78651855912728323248",
         "end_balance_wei": "13393036588955625248",
         "balance_change_wei": "-65258819323772698000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-65258819323772698000"
+        "distributions_wei": "78668551773320700000",
+        "distributions_count": 1,
+        "total_wei": "13409732449548002000"
       },
       {
         "date": "2024-05-13",
@@ -37988,18 +37988,18 @@
         "start_balance_wei": "92701502585191342392",
         "end_balance_wei": "107952869204675355168",
         "balance_change_wei": "15251366619484012776",
-        "distributions_wei": "107955994436465310000",
-        "distributions_count": 1,
-        "total_wei": "123207361055949322776"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "15251366619484012776"
       },
       {
         "date": "2024-05-19",
         "start_balance_wei": "107952869204675355168",
         "end_balance_wei": "1232875285197146136",
         "balance_change_wei": "-106719993919478209032",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-106719993919478209032"
+        "distributions_wei": "107955994436465310000",
+        "distributions_count": 1,
+        "total_wei": "1236000516987100968"
       },
       {
         "date": "2024-05-20",
@@ -38051,18 +38051,18 @@
         "start_balance_wei": "10365781740620146664",
         "end_balance_wei": "10394585411249274400",
         "balance_change_wei": "28803670629127736",
-        "distributions_wei": "10394624423443750000",
-        "distributions_count": 1,
-        "total_wei": "10423428094072877736"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "28803670629127736"
       },
       {
         "date": "2024-05-26",
         "start_balance_wei": "10394585411249274400",
         "end_balance_wei": "41480396806749440",
         "balance_change_wei": "-10353105014442524960",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-10353105014442524960"
+        "distributions_wei": "10394624423443750000",
+        "distributions_count": 1,
+        "total_wei": "41519409001225040"
       },
       {
         "date": "2024-05-27",
@@ -38240,18 +38240,18 @@
         "start_balance_wei": "6305344563673572528",
         "end_balance_wei": "6305344563673572528",
         "balance_change_wei": "0",
-        "distributions_wei": "6305344563673570000",
-        "distributions_count": 1,
-        "total_wei": "6305344563673570000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2024-06-16",
         "start_balance_wei": "6305344563673572528",
         "end_balance_wei": "2528",
         "balance_change_wei": "-6305344563673570000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-6305344563673570000"
+        "distributions_wei": "6305344563673570000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2024-06-17",
@@ -38897,18 +38897,18 @@
         "start_balance_wei": "820163132080160",
         "end_balance_wei": "820163132080160",
         "balance_change_wei": "0",
-        "distributions_wei": "825435102100000",
-        "distributions_count": 1,
-        "total_wei": "825435102100000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2024-08-28",
         "start_balance_wei": "820163132080160",
         "end_balance_wei": "3378049097600",
         "balance_change_wei": "-816785082982560",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-816785082982560"
+        "distributions_wei": "825435102100000",
+        "distributions_count": 1,
+        "total_wei": "8650019117440"
       },
       {
         "date": "2024-08-29",
@@ -40085,18 +40085,18 @@
         "start_balance_wei": "1648938887535792",
         "end_balance_wei": "1648938887535792",
         "balance_change_wei": "0",
-        "distributions_wei": "1717754997830000",
-        "distributions_count": 1,
-        "total_wei": "1717754997830000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-01-07",
         "start_balance_wei": "1648938887535792",
         "end_balance_wei": "9600",
         "balance_change_wei": "-1648938887526192",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-1648938887526192"
+        "distributions_wei": "1717754997830000",
+        "distributions_count": 1,
+        "total_wei": "68816110303808"
       },
       {
         "date": "2025-01-08",
@@ -40157,18 +40157,18 @@
         "start_balance_wei": "28140893656256",
         "end_balance_wei": "38084055273344",
         "balance_change_wei": "9943161617088",
-        "distributions_wei": "38084055270000",
-        "distributions_count": 1,
-        "total_wei": "48027216887088"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "9943161617088"
       },
       {
         "date": "2025-01-15",
         "start_balance_wei": "38084055273344",
         "end_balance_wei": "3344",
         "balance_change_wei": "-38084055270000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-38084055270000"
+        "distributions_wei": "38084055270000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-01-16",
@@ -40220,18 +40220,18 @@
         "start_balance_wei": "30831154901776",
         "end_balance_wei": "30831154901776",
         "balance_change_wei": "0",
-        "distributions_wei": "54976137240000",
-        "distributions_count": 1,
-        "total_wei": "54976137240000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-01-22",
         "start_balance_wei": "30831154901776",
         "end_balance_wei": "176",
         "balance_change_wei": "-30831154901600",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-30831154901600"
+        "distributions_wei": "54976137240000",
+        "distributions_count": 1,
+        "total_wei": "24144982338400"
       },
       {
         "date": "2025-01-23",
@@ -40283,18 +40283,18 @@
         "start_balance_wei": "19378414215952",
         "end_balance_wei": "19378414215952",
         "balance_change_wei": "0",
-        "distributions_wei": "19378414210000",
-        "distributions_count": 1,
-        "total_wei": "19378414210000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-01-29",
         "start_balance_wei": "19378414215952",
         "end_balance_wei": "5952",
         "balance_change_wei": "-19378414210000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-19378414210000"
+        "distributions_wei": "19378414210000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-01-30",
@@ -40346,18 +40346,18 @@
         "start_balance_wei": "8537848326464",
         "end_balance_wei": "8537848326464",
         "balance_change_wei": "0",
-        "distributions_wei": "8537848320000",
-        "distributions_count": 1,
-        "total_wei": "8537848320000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-02-05",
         "start_balance_wei": "8537848326464",
         "end_balance_wei": "6464",
         "balance_change_wei": "-8537848320000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-8537848320000"
+        "distributions_wei": "8537848320000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-02-06",
@@ -40409,18 +40409,18 @@
         "start_balance_wei": "24479496555728",
         "end_balance_wei": "24479496555728",
         "balance_change_wei": "0",
-        "distributions_wei": "24479496550000",
-        "distributions_count": 1,
-        "total_wei": "24479496550000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-02-12",
         "start_balance_wei": "24479496555728",
         "end_balance_wei": "5728",
         "balance_change_wei": "-24479496550000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-24479496550000"
+        "distributions_wei": "24479496550000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-02-13",
@@ -40472,18 +40472,18 @@
         "start_balance_wei": "3974706836032",
         "end_balance_wei": "3974706836032",
         "balance_change_wei": "0",
-        "distributions_wei": "3974706830000",
-        "distributions_count": 1,
-        "total_wei": "3974706830000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-02-19",
         "start_balance_wei": "3974706836032",
         "end_balance_wei": "6032",
         "balance_change_wei": "-3974706830000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-3974706830000"
+        "distributions_wei": "3974706830000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-02-20",
@@ -40598,18 +40598,18 @@
         "start_balance_wei": "16144141978816",
         "end_balance_wei": "18042713435472",
         "balance_change_wei": "1898571456656",
-        "distributions_wei": "18042713430000",
-        "distributions_count": 1,
-        "total_wei": "19941284886656"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "1898571456656"
       },
       {
         "date": "2025-03-05",
         "start_balance_wei": "18042713435472",
         "end_balance_wei": "5472",
         "balance_change_wei": "-18042713430000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-18042713430000"
+        "distributions_wei": "18042713430000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-03-06",
@@ -40661,18 +40661,18 @@
         "start_balance_wei": "4907046645632",
         "end_balance_wei": "21675602118412752",
         "balance_change_wei": "21670695071767120",
-        "distributions_wei": "21675602118410000",
-        "distributions_count": 1,
-        "total_wei": "43346297190177120"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "21670695071767120"
       },
       {
         "date": "2025-03-12",
         "start_balance_wei": "21675602118412752",
         "end_balance_wei": "2752",
         "balance_change_wei": "-21675602118410000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-21675602118410000"
+        "distributions_wei": "21675602118410000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-03-13",
@@ -40724,18 +40724,18 @@
         "start_balance_wei": "2752",
         "end_balance_wei": "3603108606336",
         "balance_change_wei": "3603108603584",
-        "distributions_wei": "3603108600000",
-        "distributions_count": 1,
-        "total_wei": "7206217203584"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "3603108603584"
       },
       {
         "date": "2025-03-19",
         "start_balance_wei": "3603108606336",
         "end_balance_wei": "6336",
         "balance_change_wei": "-3603108600000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-3603108600000"
+        "distributions_wei": "3603108600000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-03-20",
@@ -40850,18 +40850,18 @@
         "start_balance_wei": "18975409308080",
         "end_balance_wei": "18975409308080",
         "balance_change_wei": "0",
-        "distributions_wei": "18975409300000",
-        "distributions_count": 1,
-        "total_wei": "18975409300000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-04-02",
         "start_balance_wei": "18975409308080",
         "end_balance_wei": "4862434726592",
         "balance_change_wei": "-14112974581488",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-14112974581488"
+        "distributions_wei": "18975409300000",
+        "distributions_count": 1,
+        "total_wei": "4862434718512"
       },
       {
         "date": "2025-04-03",
@@ -40913,36 +40913,36 @@
         "start_balance_wei": "7649039606496",
         "end_balance_wei": "7649039606496",
         "balance_change_wei": "0",
-        "distributions_wei": "7649039600000",
-        "distributions_count": 1,
-        "total_wei": "7649039600000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-04-09",
         "start_balance_wei": "7649039606496",
         "end_balance_wei": "6496",
         "balance_change_wei": "-7649039600000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-7649039600000"
+        "distributions_wei": "7649039600000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-04-10",
         "start_balance_wei": "6496",
         "end_balance_wei": "1098635139840",
         "balance_change_wei": "1098635133344",
-        "distributions_wei": "1098635130000",
-        "distributions_count": 1,
-        "total_wei": "2197270263344"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "1098635133344"
       },
       {
         "date": "2025-04-11",
         "start_balance_wei": "1098635139840",
         "end_balance_wei": "9840",
         "balance_change_wei": "-1098635130000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-1098635130000"
+        "distributions_wei": "1098635130000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-04-12",
@@ -40994,18 +40994,18 @@
         "start_balance_wei": "4189037694752",
         "end_balance_wei": "5924524245200",
         "balance_change_wei": "1735486550448",
-        "distributions_wei": "6851105070000",
-        "distributions_count": 1,
-        "total_wei": "8586591620448"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "1735486550448"
       },
       {
         "date": "2025-04-18",
         "start_balance_wei": "5924524245200",
         "end_balance_wei": "4752",
         "balance_change_wei": "-5924524240448",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-5924524240448"
+        "distributions_wei": "6851105070000",
+        "distributions_count": 1,
+        "total_wei": "926580829552"
       },
       {
         "date": "2025-04-19",
@@ -41228,18 +41228,18 @@
         "start_balance_wei": "9708615622680",
         "end_balance_wei": "9708615622680",
         "balance_change_wei": "0",
-        "distributions_wei": "9708615620000",
-        "distributions_count": 1,
-        "total_wei": "9708615620000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-05-14",
         "start_balance_wei": "9708615622680",
         "end_balance_wei": "2680",
         "balance_change_wei": "-9708615620000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-9708615620000"
+        "distributions_wei": "9708615620000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-05-15",
@@ -41291,18 +41291,18 @@
         "start_balance_wei": "5501825081416",
         "end_balance_wei": "16639085130136",
         "balance_change_wei": "11137260048720",
-        "distributions_wei": "18945714710000",
-        "distributions_count": 1,
-        "total_wei": "30082974758720"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "11137260048720"
       },
       {
         "date": "2025-05-21",
         "start_balance_wei": "16639085130136",
         "end_balance_wei": "16875644344184",
         "balance_change_wei": "236559214048",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "236559214048"
+        "distributions_wei": "18945714710000",
+        "distributions_count": 1,
+        "total_wei": "19182273924048"
       },
       {
         "date": "2025-05-22",
@@ -41354,18 +41354,18 @@
         "start_balance_wei": "23945378073144",
         "end_balance_wei": "23945378073144",
         "balance_change_wei": "0",
-        "distributions_wei": "23945378070000",
-        "distributions_count": 1,
-        "total_wei": "23945378070000"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "0"
       },
       {
         "date": "2025-05-28",
         "start_balance_wei": "23945378073144",
         "end_balance_wei": "3144",
         "balance_change_wei": "-23945378070000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-23945378070000"
+        "distributions_wei": "23945378070000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-05-29",
@@ -41543,18 +41543,18 @@
         "start_balance_wei": "3144",
         "end_balance_wei": "806260211240",
         "balance_change_wei": "806260208096",
-        "distributions_wei": "806260210000",
-        "distributions_count": 1,
-        "total_wei": "1612520418096"
+        "distributions_wei": "0",
+        "distributions_count": 0,
+        "total_wei": "806260208096"
       },
       {
         "date": "2025-06-18",
         "start_balance_wei": "806260211240",
         "end_balance_wei": "1240",
         "balance_change_wei": "-806260210000",
-        "distributions_wei": "0",
-        "distributions_count": 0,
-        "total_wei": "-806260210000"
+        "distributions_wei": "806260210000",
+        "distributions_count": 1,
+        "total_wei": "0"
       },
       {
         "date": "2025-06-19",

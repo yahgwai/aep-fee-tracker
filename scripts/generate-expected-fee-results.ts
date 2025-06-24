@@ -31,6 +31,7 @@ function writeJsonFile(filePath: string, data: unknown): void {
 }
 
 // Map block number to date using block_numbers.json
+// The blocks in block_numbers.json represent the END of each day
 function blockToDate(
   blockNumber: number,
   blockData: BlockNumberData,
@@ -39,17 +40,17 @@ function blockToDate(
     a.localeCompare(b),
   );
 
+  // Find the first date whose end-of-day block is >= the given block
   for (let i = 0; i < dates.length; i++) {
-    const [date, block] = dates[i];
-    const nextBlock = i < dates.length - 1 ? dates[i + 1][1] : Infinity;
+    const [date, endOfDayBlock] = dates[i];
 
-    if (blockNumber >= block && blockNumber < nextBlock) {
+    if (blockNumber <= endOfDayBlock) {
       return date;
     }
   }
 
   // If block is beyond our data, return the last date
-  if (dates.length > 0 && blockNumber >= dates[dates.length - 1][1]) {
+  if (dates.length > 0) {
     return dates[dates.length - 1][0];
   }
 
