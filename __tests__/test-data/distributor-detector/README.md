@@ -7,10 +7,10 @@ This directory contains test data files used by the distributor detector test su
 This test data directory provides comprehensive data for testing the distributor detection and balance fetching functionality. The data includes:
 
 - Raw distributor creation events from Arbitrum Nova
-- Historical balance snapshots for multiple distributors
+- Historical balance snapshots for multiple distributors (500+ days)
 - Block number mappings for date-based lookups
 - Reference bytecode for contract verification
-- **Extended test data** with over 500 days of balance history (see EXTENDED_DATA_README.md)
+- Complete distributor metadata in structured format
 
 ## Files
 
@@ -178,7 +178,29 @@ The extended test data now includes continuous daily balance snapshots from 2022
 - Edge case testing with various balance patterns
 - Performance testing with large datasets
 
-See EXTENDED_DATA_README.md for detailed information about the extended dataset.
+## Data Generation
+
+The extended test data was generated using the `populate-test-balances` script:
+
+```bash
+npm run populate-test-balances -- --start 2022-07-11 --end 2023-12-31
+```
+
+This provides over 500 days of balance data for all test distributors, far exceeding the minimum 30-day requirement specified in the fee calculator spec.
+
+### Converted Distributor Events
+
+The `convert-distributor-events.ts` script was used to transform raw blockchain events into the structured format used by the distributor detector. This ensures test data accurately reflects real blockchain state.
+
+## Usage in Tests
+
+This extended data enables comprehensive integration testing of:
+
+- Multi-day fee calculations
+- Balance trend analysis
+- Edge cases (zero balances, large balances)
+- Long-term distributor behavior
+- Data consistency across components
 
 ## Data Sources
 
@@ -190,8 +212,18 @@ All test data is sourced from:
   - ArbOwner: 0x0000000000000000000000000000000000000070
   - Distributor addresses: Various (see events file)
 
+## Data Integrity
+
+All data was fetched from the Arbitrum Nova blockchain and represents actual on-chain state at the specified block numbers. The data has been validated for:
+
+- Correct date-to-block mappings
+- Valid balance values in wei
+- Proper distributor metadata
+- Consistent chain ID (42170)
+
 ## Related Documentation
 
 - Distributor Detector specification: `/docs/specs/distributor-detector.md`
 - BlockFinder specification: `/docs/specs/block-finder.md`
 - BalanceFetcher specification: `/docs/specs/balance-fetcher.md`
+- Fee Calculator specification: `/docs/specs/fee-calculator.md`
