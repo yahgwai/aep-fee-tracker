@@ -1518,7 +1518,7 @@ describe("RecipientRecievedScanner", () => {
           blockNumber: 150,
           transactionHash:
             "0xabc123def456789012345678901234567890123456789012345678901234567890",
-          logIndex: 0,
+          index: 0,
           address: distributorAddress,
           topics: mockTopics,
           data: mockData,
@@ -1527,14 +1527,46 @@ describe("RecipientRecievedScanner", () => {
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
-      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      // First call returns undefined (no existing data), subsequent calls return accumulated data
+      mockFileManager.readRecipientRecievedEvents
+        .mockReturnValueOnce(undefined)
+        .mockReturnValue({
+          metadata: {
+            chain_id: 42170,
+            reward_distributor: distributorAddress,
+            last_scanned_block: 150,
+          },
+          events: {
+            "0xabc123def456789012345678901234567890123456789012345678901234567890:0":
+              {
+                blockNumber: 150,
+                transactionHash:
+                  "0xabc123def456789012345678901234567890123456789012345678901234567890",
+                logIndex: 0,
+                address: distributorAddress,
+                topics: mockTopics,
+                data: mockData,
+                recipient: ethers.getAddress(mockRecipientAddress),
+                value: mockValue,
+              },
+          },
+        });
+
       mockProvider.getLogs.mockResolvedValue(mockLogs);
 
       await scanner.scan();
 
-      // Verify that the event was parsed and saved with the correct structure
-      expect(mockFileManager.writeRecipientRecievedEvents).toHaveBeenCalledWith(
-        distributorAddress,
+      // Verify that the event was parsed and saved
+      expect(mockFileManager.writeRecipientRecievedEvents).toHaveBeenCalled();
+
+      // Get the last call to writeRecipientRecievedEvents (final update with last_scanned_block)
+      const calls = mockFileManager.writeRecipientRecievedEvents.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const lastCall = calls[calls.length - 1];
+
+      expect(lastCall![0]).toBe(distributorAddress);
+      expect(lastCall![1]).toEqual(
         expect.objectContaining({
           metadata: {
             chain_id: 42170,
