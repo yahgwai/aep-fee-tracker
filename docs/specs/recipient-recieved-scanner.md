@@ -4,7 +4,7 @@
 
 The RecipientRecieved Scanner is a critical component in the fee calculation pipeline that collects and stores token distribution events from reward distributor contracts on the blockchain. This component bridges the gap between on-chain activity and off-chain analytics by systematically scanning blockchain events and transforming them into structured event data.
 
-The component fits into the data processing pipeline after the Balance Fetcher and before the Fee Calculator, providing essential outflow data that enables accurate fee calculations based on actual token distributions.
+The component fits into the data processing pipeline after the Balance Fetcher and before the Fee Calculator, providing essential distribution data that enables accurate fee calculations based on actual token distributions.
 
 ## 2. Purpose
 

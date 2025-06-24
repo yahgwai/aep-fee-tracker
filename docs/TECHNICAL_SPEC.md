@@ -38,9 +38,9 @@ event OwnerActs(bytes4 indexed method, address indexed owner, bytes data);
 - `0x934be07d` - L1 Surplus Fee
 - L1 Base Fee detection is being skipped for now (see OUTSTANDING.md)
 
-#### Outflow Tracking
+#### RecipientRecieved Event Tracking
 
-Track outflows using the `RecipientRecieved` event from [RewardDistributor.sol#L117](https://github.com/OffchainLabs/fund-distribution-contracts/blob/main/src/RewardDistributor.sol#L117)
+Track distributions using the `RecipientRecieved` event from [RewardDistributor.sol#L117](https://github.com/OffchainLabs/fund-distribution-contracts/blob/main/src/RewardDistributor.sol#L117)
 
 ```solidity
 event RecipientRecieved(address indexed recipient, uint256 value);
@@ -61,7 +61,7 @@ See the [File Manager Specification](specs/file-manager.md#data-schemas) for det
 To calculate fees collected on a specific day for a distributor:
 
 ```
-Daily_Fees = Balance_Today - Balance_Yesterday + Outflows_Today
+Daily_Fees = Balance_Today - Balance_Yesterday + Distributions_Today
 ```
 
 ### Cumulative Fees
@@ -69,5 +69,5 @@ Daily_Fees = Balance_Today - Balance_Yesterday + Outflows_Today
 To calculate total fees collected up to a specific date:
 
 ```
-Cumulative_Fees = Balance_Current + Σ(All_Outflows_To_Date)
+Cumulative_Fees = Balance_Current + Σ(All_Distributions_To_Date)
 ```
