@@ -969,4 +969,176 @@ describe("RecipientRecievedScanner", () => {
       expect(topicHash).toBe(RECIPIENT_RECIEVED_EVENT_TOPIC);
     });
   });
+
+  describe("queryRecipientRecievedEvents", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockProvider: jest.Mocked<ethers.Provider>;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockFileManager = {} as jest.Mocked<FileManager>;
+      mockProvider = {
+        getLogs: jest.fn(),
+      } as unknown as jest.Mocked<ethers.Provider>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+    });
+
+    it("exists as a method on RecipientRecievedScanner instance", () => {
+      expect(scanner.queryRecipientRecievedEvents).toBeDefined();
+      expect(typeof scanner.queryRecipientRecievedEvents).toBe("function");
+    });
+
+    it("returns a Promise of ethers.Log array", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      const result = scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        100,
+      );
+      expect(result).toBeInstanceOf(Promise);
+
+      const logs = await result;
+      expect(Array.isArray(logs)).toBe(true);
+    });
+
+    it("chunks large block ranges into 10000 block chunks", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.queryRecipientRecievedEvents(distributorAddress, 1, 25000);
+
+      // Should be called 3 times for ranges 1-10000, 10001-20000, 20001-25000
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          fromBlock: 1,
+          toBlock: 10000,
+        }),
+      );
+
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          fromBlock: 10001,
+          toBlock: 20000,
+        }),
+      );
+
+      expect(mockProvider.getLogs).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          fromBlock: 20001,
+          toBlock: 25000,
+        }),
+      );
+    });
+
+    it("queries events with correct filter parameters", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.queryRecipientRecievedEvents(distributorAddress, 100, 200);
+
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: distributorAddress,
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 100,
+        toBlock: 200,
+      });
+    });
+
+    it("returns all logs from multiple chunks", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      const mockLogs1 = [
+        { blockNumber: 5000, transactionHash: "0x111", index: 0 },
+        { blockNumber: 8000, transactionHash: "0x222", index: 1 },
+      ] as unknown as ethers.Log[];
+      const mockLogs2 = [
+        { blockNumber: 15000, transactionHash: "0x333", index: 0 },
+      ] as unknown as ethers.Log[];
+
+      mockProvider.getLogs
+        .mockResolvedValueOnce(mockLogs1)
+        .mockResolvedValueOnce(mockLogs2);
+
+      const result = await scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        20000,
+      );
+
+      expect(result).toHaveLength(3);
+      expect(result).toEqual([...mockLogs1, ...mockLogs2]);
+    });
+
+    it("handles empty results", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      const result = await scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        100,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("applies retry logic when RPC calls fail", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      const mockError = new Error("RPC error");
+
+      // Fail twice, then succeed
+      mockProvider.getLogs
+        .mockRejectedValueOnce(mockError)
+        .mockRejectedValueOnce(mockError)
+        .mockResolvedValueOnce([]);
+
+      const result = await scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        100,
+      );
+
+      expect(result).toEqual([]);
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+    });
+
+    it("throws error after max retries", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      const mockError = new Error("RPC error");
+
+      // Always fail
+      mockProvider.getLogs.mockRejectedValue(mockError);
+
+      await expect(
+        scanner.queryRecipientRecievedEvents(distributorAddress, 1, 100),
+      ).rejects.toThrow("RPC error");
+    });
+
+    it("processes multiple chunks even if some chunks have no events", async () => {
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      const mockLogs = [
+        { blockNumber: 15000, transactionHash: "0x123", index: 0 },
+      ] as unknown as ethers.Log[];
+
+      mockProvider.getLogs
+        .mockResolvedValueOnce([]) // First chunk empty
+        .mockResolvedValueOnce(mockLogs) // Second chunk has events
+        .mockResolvedValueOnce([]); // Third chunk empty
+
+      const result = await scanner.queryRecipientRecievedEvents(
+        distributorAddress,
+        1,
+        25000,
+      );
+
+      expect(result).toEqual(mockLogs);
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+    });
+  });
 });
