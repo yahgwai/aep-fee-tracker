@@ -235,6 +235,13 @@ export class RecipientRecievedScanner {
       return;
     }
 
+    // Get chain ID from distributors data
+    const distributorsData = this.fileManager.readDistributors();
+    const chainId = distributorsData?.metadata.chain_id || 0;
+
+    // Accumulate all events
+    const allEvents: ethers.Log[] = [];
+
     // Process one day at a time
     const currentDate = new Date(startDate);
     const endDate = new Date(yesterdayStr);
@@ -263,9 +270,9 @@ export class RecipientRecievedScanner {
         endBlock,
       );
 
-      // Parse and store events (will be accumulated)
+      // Accumulate events
       if (events.length > 0) {
-        await this.parseAndStoreEvents(address, events);
+        allEvents.push(...events);
       }
 
       // Track the last processed block
@@ -275,14 +282,15 @@ export class RecipientRecievedScanner {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // Update last scanned block to the final end block
-    if (lastProcessedBlock > 0) {
-      const finalEventData =
-        this.fileManager.readRecipientRecievedEvents(address);
-      if (finalEventData) {
-        finalEventData.metadata.last_scanned_block = lastProcessedBlock;
-        this.fileManager.writeRecipientRecievedEvents(address, finalEventData);
-      }
+    // Parse and store all accumulated events at once
+    if (allEvents.length > 0 || lastProcessedBlock > 0) {
+      await this.parseAndStoreEvents(
+        address,
+        allEvents,
+        chainId,
+        lastProcessedBlock,
+        existingEventData,
+      );
     }
   }
 
@@ -317,27 +325,19 @@ export class RecipientRecievedScanner {
   private async parseAndStoreEvents(
     distributorAddress: string,
     events: ethers.Log[],
+    chainId: number,
+    lastProcessedBlock: number,
+    existingData: RecipientRecievedEventData | undefined,
   ): Promise<void> {
-    // Load existing event data or initialize new structure
-    const existingData =
-      this.fileManager.readRecipientRecievedEvents(distributorAddress);
-
-    // Get chain ID from distributors data
-    const distributorsData = this.fileManager.readDistributors();
-    const chainId = distributorsData?.metadata.chain_id || 0;
-
     // Initialize event data structure
     const eventData: RecipientRecievedEventData = {
       metadata: {
         chain_id: chainId,
         reward_distributor: distributorAddress,
-        last_scanned_block: existingData?.metadata.last_scanned_block || 0,
+        last_scanned_block: lastProcessedBlock,
       },
       events: existingData?.events || {},
     };
-
-    // Keep track of the highest block number
-    let highestBlock = eventData.metadata.last_scanned_block;
 
     // Parse each event
     for (const log of events) {
@@ -365,16 +365,8 @@ export class RecipientRecievedScanner {
           recipient,
           value,
         };
-
-        // Update highest block
-        if (log.blockNumber > highestBlock) {
-          highestBlock = log.blockNumber;
-        }
       }
     }
-
-    // Update last scanned block
-    eventData.metadata.last_scanned_block = highestBlock;
 
     // Save the updated event data
     this.fileManager.writeRecipientRecievedEvents(

@@ -22,6 +22,7 @@ describe("RecipientRecievedScanner", () => {
   beforeEach(() => {
     mockFileManager = {
       readDistributors: jest.fn(),
+      writeRecipientRecievedEvents: jest.fn(),
     } as unknown as jest.Mocked<FileManager>;
     mockProvider = {
       getLogs: jest.fn().mockResolvedValue([]),
@@ -89,6 +90,7 @@ describe("RecipientRecievedScanner", () => {
     beforeEach(() => {
       mockFileManager = {
         readDistributors: jest.fn().mockReturnValue(undefined),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
     });
@@ -128,6 +130,7 @@ describe("RecipientRecievedScanner", () => {
     beforeEach(() => {
       mockFileManager = {
         readDistributors: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
     });
@@ -200,6 +203,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -271,6 +275,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -360,6 +365,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -611,6 +617,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -703,6 +710,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -1160,6 +1168,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       mockProvider = {
         getLogs: jest.fn(),
