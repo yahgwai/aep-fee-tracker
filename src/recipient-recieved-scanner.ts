@@ -81,7 +81,19 @@ export class RecipientRecievedScanner {
         continue;
       }
 
-      // TODO: Process the date range (out of scope for this issue)
+      // Validate all block numbers are available for the date range
+      this.validateBlockNumbersForDates(
+        datesToProcess,
+        blockNumbersData,
+        address,
+      );
+
+      // Convert dates to block ranges
+      datesToProcess.map((date) =>
+        this.convertDateToBlockRange(date, blockNumbersData),
+      );
+
+      // TODO: Process the block ranges (out of scope for this issue)
     }
   }
 
@@ -197,5 +209,47 @@ export class RecipientRecievedScanner {
     }
 
     return dates;
+  }
+
+  /**
+   * Validates that block numbers exist for all dates in the range.
+   * @private
+   */
+  private validateBlockNumbersForDates(
+    dates: string[],
+    blockNumbersData: BlockNumberData,
+    distributorAddress: string,
+  ): void {
+    for (const date of dates) {
+      if (!(date in blockNumbersData.blocks)) {
+        throw new Error(
+          `Missing block number for date ${date} for distributor ${distributorAddress}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Converts a date to a block range (start and end blocks).
+   * @private
+   */
+  private convertDateToBlockRange(
+    date: string,
+    blockNumbersData: BlockNumberData,
+  ): { startBlock: number; endBlock: number } {
+    const endBlock = blockNumbersData.blocks[date];
+    if (endBlock === undefined) {
+      throw new Error(`Block number not found for date ${date}`);
+    }
+
+    // Find the previous day's end block to calculate start block
+    const previousDate = new Date(date);
+    previousDate.setDate(previousDate.getDate() - 1);
+    const previousDateStr = this.formatDate(previousDate);
+
+    const previousBlock = blockNumbersData.blocks[previousDateStr];
+    const startBlock = previousBlock !== undefined ? previousBlock + 1 : 1;
+
+    return { startBlock, endBlock };
   }
 }
