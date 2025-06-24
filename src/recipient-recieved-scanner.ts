@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
+import { DistributorsData } from "./types";
 
 /**
  * Creates a new RecipientRecievedScanner instance with the specified dependencies.
@@ -27,6 +28,39 @@ export class RecipientRecievedScanner {
       !ethers.isAddress(distributorAddress)
     ) {
       throw new Error(`Invalid Ethereum address: ${distributorAddress}`);
+    }
+
+    const distributorsData = this.fileManager.readDistributors();
+
+    // Early return if no distributors data
+    if (
+      !distributorsData ||
+      Object.keys(distributorsData.distributors).length === 0
+    ) {
+      return;
+    }
+
+    // Validate distributor exists if specified
+    if (distributorAddress) {
+      this.validateDistributorExists(distributorsData, distributorAddress);
+    }
+  }
+
+  /**
+   * Validates that the specified distributor exists in the data.
+   * @private
+   */
+  private validateDistributorExists(
+    distributorsData: DistributorsData,
+    distributorAddress: string,
+  ): void {
+    // Find distributor with case-insensitive comparison
+    const foundAddress = Object.keys(distributorsData.distributors).find(
+      (address) => address.toLowerCase() === distributorAddress.toLowerCase(),
+    );
+
+    if (!foundAddress) {
+      throw new Error(`Distributor ${distributorAddress} not found`);
     }
   }
 }
