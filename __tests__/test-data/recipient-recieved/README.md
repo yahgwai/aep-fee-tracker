@@ -1,16 +1,6 @@
 # RecipientRecieved Event Test Data
 
-This directory contains test data for RecipientRecieved events from Nova Arbitrum reward distributors.
-
-## ⚠️ Mock Data Notice
-
-Due to rate limiting on the public Nova Arbitrum RPC endpoint, this directory currently contains **mock data** that follows the expected structure of real RecipientRecieved events. The mock data is realistic and suitable for testing the scanner implementation.
-
-To gather real data, you would need:
-
-1. Access to a Nova Arbitrum archive node without rate limits
-2. Or a paid RPC service with higher rate limits
-3. Or implement patient retry logic that respects rate limits (could take hours/days)
+This directory contains real blockchain data for RecipientRecieved events from Nova Arbitrum reward distributors.
 
 ## Data Structure
 
@@ -41,25 +31,21 @@ Each JSON file is named after the distributor address and contains:
 
 ## Summary
 
-- Total distributors: 3
-- Total mock events: 35
-- Event signature: 0x8b2a2b28e169eb0e4f62578e9d12f747d7bd0fe1ebc935af28387c18034d7cc0
+- Total distributors scanned: 5
+- Distributors with events: 3
+- Total events found: 320
 
-## Mock Data Characteristics
+## Distributors with Events
 
-The mock data includes:
+- 0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce
+- 0x509386DbF5C0BE6fd68Df97A05fdB375136c32De
+- 0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f
 
-- Events spanning multiple blocks
-- Various recipient addresses
-- Both small and large value transfers (1x, 10x, 1000x multipliers)
-- Proper event encoding following Ethereum standards
-- Checksummed addresses
+## Distributors without Events
 
-## Future Work
+- 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB
+- 0xdff90519a9DE6ad469D4f9839a9220C5D340B792
 
-To replace with real data:
+## Data Collection
 
-1. Obtain access to a reliable Nova Arbitrum RPC endpoint
-2. Run `scripts/gather-recipient-recieved-events.ts` with proper rate limiting
-3. Verify the actual event signature matches our expectation
-4. Update this README with real data statistics
+Data was collected on 2025-06-24T09:52:23.617Z from Nova Arbitrum RPC.

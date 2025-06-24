@@ -28,9 +28,8 @@ const DISTRIBUTOR_ADDRESSES = [
   "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
   "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
   "0x509386DbF5C0BE6fd68Df97A05fdB375136c32De",
-  // Limit to 3 for faster initial run
-  // "0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f",
-  // "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
+  "0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f",
+  "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
 ];
 
 const OUTPUT_DIR = join(__dirname, "../__tests__/test-data/recipient-recieved");
@@ -88,8 +87,8 @@ async function gatherEvents() {
       // Get current block - scan recent blocks where events are more likely
       const currentBlock = await provider.getBlockNumber();
 
-      // Start from a more recent block (last 10 million blocks)
-      const recentStartBlock = Math.max(currentBlock - 10000000, firstBlock);
+      // Start from a more recent block (last 1 million blocks for faster testing)
+      const recentStartBlock = Math.min(currentBlock, firstBlock);
       const endBlock = currentBlock;
 
       console.log(
@@ -99,7 +98,7 @@ async function gatherEvents() {
 
       // Search for events in chunks
       const events: RecipientRecievedEvent[] = [];
-      const chunkSize = 5000; // Bigger chunks for recent blocks
+      const chunkSize = 100000000; // Bigger chunks for recent blocks
       let minBlock = Infinity;
       let maxBlock = -Infinity;
       let processedBlocks = 0;
@@ -113,15 +112,15 @@ async function gatherEvents() {
         processedBlocks = toBlock - recentStartBlock;
 
         // Show progress every 50k blocks
-        if (processedBlocks % 50000 === 0 && processedBlocks > 0) {
-          const progress = (
-            (processedBlocks / (endBlock - recentStartBlock)) *
-            100
-          ).toFixed(1);
-          console.log(
-            `   Progress: ${progress}% (${processedBlocks} blocks scanned)`,
-          );
-        }
+        // if (processedBlocks % 1000000 === 0 && processedBlocks > 0) {
+        const progress = (
+          (processedBlocks / (endBlock - recentStartBlock)) *
+          100
+        ).toFixed(1);
+        console.log(
+          `   Progress: ${progress}% (${processedBlocks} blocks scanned)`,
+        );
+        // }
 
         try {
           const filter = {
