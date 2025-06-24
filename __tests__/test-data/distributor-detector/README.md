@@ -7,9 +7,10 @@ This directory contains test data files used by the distributor detector test su
 This test data directory provides comprehensive data for testing the distributor detection and balance fetching functionality. The data includes:
 
 - Raw distributor creation events from Arbitrum Nova
-- Historical balance snapshots for multiple distributors
+- Historical balance snapshots for multiple distributors (500+ days)
 - Block number mappings for date-based lookups
 - Reference bytecode for contract verification
+- Complete distributor metadata in structured format
 
 ## Files
 
@@ -43,6 +44,25 @@ Generated using BlockFinder to ensure consistency with production data formats.
 
 **Important**: The logs in the raw creation events can be parsed using the `DistributorDetector.parseDistributorCreation()` static function. This function extracts the distributor address and type from the raw event data.
 
+### distributors.json
+
+Contains complete distributor metadata in the format used by the distributor detector:
+
+- **Chain ID**: 42170 (Arbitrum Nova)
+- **ArbOwner Address**: 0x0000000000000000000000000000000000000070
+- **Last Scanned Block**: 3163115
+- **Distributors**: 5 reward distributors with full metadata
+
+Each distributor entry includes:
+
+- Type (L2_BASE_FEE, L2_SURPLUS_FEE, or L1_SURPLUS_FEE)
+- Creation block and date
+- Transaction hash
+- Method selector
+- Owner address
+- Event data
+- Reward distributor verification status
+
 ### reward-distributor-bytecode.json
 
 Reference bytecode for the reward distributor contract. Contains:
@@ -53,38 +73,40 @@ Reference bytecode for the reward distributor contract. Contains:
 
 ### balance_data/ Directory
 
-Contains historical balance snapshots for distributors. Each distributor has its own JSON file with balance data across multiple dates.
+Contains historical balance snapshots for distributors. Each distributor has its own directory with a `balances.json` file containing balance data across multiple dates.
+
+**Extended Dataset**: The balance data has been significantly expanded using the `populate-test-balances` script to include over 500 days of continuous daily snapshots from 2022-07-11 to 2023-12-31. This exceeds the fee calculator spec requirement of at least 30 days of data.
 
 **Available Distributors with Balance Data**:
 
-1. **0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB.json**
+1. **0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB/**
 
-   - L2_BASE_FEE distributor
+   - L2_SURPLUS_FEE distributor
    - Created: 2022-07-12 (Block 152)
-   - Has balance data for all 9 test dates
+   - Has balance data for 500+ days
 
-2. **0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce.json**
+2. **0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce/**
 
    - L1_SURPLUS_FEE distributor
-   - Created: 2023-03-16 (Block 3163115)
-   - Has balance data for all 9 test dates
+   - Created: 2023-08-10 (Block 26117659)
+   - Has balance data for 500+ days
 
-3. **0x509386DbF5C0BE6fd68Df97A05fdB375136c32De.json**
+3. **0x509386DbF5C0BE6fd68Df97A05fdB375136c32De/**
+
+   - L1_BASE_FEE distributor
+   - Created: 2022-07-12 (Block 168)
+   - Has balance data for 500+ days
+
+4. **0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f/**
 
    - L2_SURPLUS_FEE distributor
-   - Created: 2023-03-16 (Block 3163115)
-   - Has balance data for all 9 test dates
+   - Created: 2023-03-15 (Block 3141957)
+   - Has balance data for 500+ days
 
-4. **0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f.json**
-
+5. **0xdff90519a9DE6ad469D4f9839a9220C5D340B792/**
    - L2_BASE_FEE distributor
-   - Created: 2023-03-16 (Block 3163115)
-   - Has balance data for all 9 test dates
-
-5. **0xdff90519a9DE6ad469D4f9839a9220C5D340B792.json**
-   - L2_SURPLUS_FEE distributor
-   - Created: 2022-08-09 (Block 684)
-   - Has balance data for all 9 test dates
+   - Created: 2022-06-24 (Block 5)
+   - Has balance data for 500+ days
 
 **Balance Data Format**:
 
@@ -133,7 +155,9 @@ The function handles all three distributor types:
 
 ## Test Dates Coverage
 
-The test data covers 9 specific dates from 2022-07-11 to 2023-03-17:
+### Original Test Data
+
+The original test data covers 9 specific dates from 2022-07-11 to 2023-03-17:
 
 1. **2022-07-11** - Day before first distributor creation
 2. **2022-08-08** - Between first and second distributor creation
@@ -145,6 +169,39 @@ The test data covers 9 specific dates from 2022-07-11 to 2023-03-17:
 8. **2023-01-23** - Mid-period data point
 9. **2023-03-17** - Day after last three distributor creations
 
+### Extended Test Data
+
+The extended test data now includes continuous daily balance snapshots from 2022-07-11 to 2023-12-31, providing over 500 days of balance history. This comprehensive dataset enables:
+
+- Testing of long-term fee calculations
+- Validation of multi-month aggregations
+- Edge case testing with various balance patterns
+- Performance testing with large datasets
+
+## Data Generation
+
+The extended test data was generated using the `populate-test-balances` script:
+
+```bash
+npm run populate-test-balances -- --start 2022-07-11 --end 2023-12-31
+```
+
+This provides over 500 days of balance data for all test distributors, far exceeding the minimum 30-day requirement specified in the fee calculator spec.
+
+### Converted Distributor Events
+
+The `convert-distributor-events.ts` script was used to transform raw blockchain events into the structured format used by the distributor detector. This ensures test data accurately reflects real blockchain state.
+
+## Usage in Tests
+
+This extended data enables comprehensive integration testing of:
+
+- Multi-day fee calculations
+- Balance trend analysis
+- Edge cases (zero balances, large balances)
+- Long-term distributor behavior
+- Data consistency across components
+
 ## Data Sources
 
 All test data is sourced from:
@@ -155,8 +212,18 @@ All test data is sourced from:
   - ArbOwner: 0x0000000000000000000000000000000000000070
   - Distributor addresses: Various (see events file)
 
+## Data Integrity
+
+All data was fetched from the Arbitrum Nova blockchain and represents actual on-chain state at the specified block numbers. The data has been validated for:
+
+- Correct date-to-block mappings
+- Valid balance values in wei
+- Proper distributor metadata
+- Consistent chain ID (42170)
+
 ## Related Documentation
 
 - Distributor Detector specification: `/docs/specs/distributor-detector.md`
 - BlockFinder specification: `/docs/specs/block-finder.md`
 - BalanceFetcher specification: `/docs/specs/balance-fetcher.md`
+- Fee Calculator specification: `/docs/specs/fee-calculator.md`
