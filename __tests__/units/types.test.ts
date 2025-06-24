@@ -106,20 +106,17 @@ describe("Core Types", () => {
           chain_id: 42170,
         },
         distributors: {
-          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
-            name: "ArbitrumHub",
-            daily_totals: [
-              {
-                date: "2024-01-15",
-                start_balance_wei: "1500000000000000000000",
-                end_balance_wei: "1480000000000000000000",
-                balance_change_wei: "-20000000000000000000",
-                distributions_wei: "25000000000000000000",
-                distributions_count: 5,
-                total_wei: "5000000000000000000",
-              },
-            ],
-          },
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+            {
+              date: "2024-01-15",
+              start_balance_wei: "1500000000000000000000",
+              end_balance_wei: "1480000000000000000000",
+              balance_change_wei: "-20000000000000000000",
+              distributions_wei: "25000000000000000000",
+              distributions_count: 5,
+              total_wei: "5000000000000000000",
+            },
+          ],
         },
       };
       expect(data.metadata.chain_id).toBe(42170);
@@ -127,8 +124,7 @@ describe("Core Types", () => {
       const distributor =
         data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"];
       expect(distributor).toBeDefined();
-      expect(distributor?.name).toBe("ArbitrumHub");
-      expect(distributor?.daily_totals).toHaveLength(1);
+      expect(distributor).toHaveLength(1);
     });
 
     it("should support multiple distributors with multiple daily totals", () => {
@@ -137,53 +133,45 @@ describe("Core Types", () => {
           chain_id: 42170,
         },
         distributors: {
-          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
-            name: "ArbitrumHub",
-            daily_totals: [
-              {
-                date: "2024-01-15",
-                start_balance_wei: "1500000000000000000000",
-                end_balance_wei: "1480000000000000000000",
-                balance_change_wei: "-20000000000000000000",
-                distributions_wei: "25000000000000000000",
-                distributions_count: 5,
-                total_wei: "5000000000000000000",
-              },
-              {
-                date: "2024-01-16",
-                start_balance_wei: "1480000000000000000000",
-                end_balance_wei: "1490000000000000000000",
-                balance_change_wei: "10000000000000000000",
-                distributions_wei: "15000000000000000000",
-                distributions_count: 3,
-                total_wei: "25000000000000000000",
-              },
-            ],
-          },
-          "0x8f7492DE823025b4CfaAB1D34c58963F2af5DEDA": {
-            name: "ArbLab",
-            daily_totals: [
-              {
-                date: "2024-01-15",
-                start_balance_wei: "2000000000000000000000",
-                end_balance_wei: "2100000000000000000000",
-                balance_change_wei: "100000000000000000000",
-                distributions_wei: "0",
-                distributions_count: 0,
-                total_wei: "100000000000000000000",
-              },
-            ],
-          },
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+            {
+              date: "2024-01-15",
+              start_balance_wei: "1500000000000000000000",
+              end_balance_wei: "1480000000000000000000",
+              balance_change_wei: "-20000000000000000000",
+              distributions_wei: "25000000000000000000",
+              distributions_count: 5,
+              total_wei: "5000000000000000000",
+            },
+            {
+              date: "2024-01-16",
+              start_balance_wei: "1480000000000000000000",
+              end_balance_wei: "1490000000000000000000",
+              balance_change_wei: "10000000000000000000",
+              distributions_wei: "15000000000000000000",
+              distributions_count: 3,
+              total_wei: "25000000000000000000",
+            },
+          ],
+          "0x8f7492DE823025b4CfaAB1D34c58963F2af5DEDA": [
+            {
+              date: "2024-01-15",
+              start_balance_wei: "2000000000000000000000",
+              end_balance_wei: "2100000000000000000000",
+              balance_change_wei: "100000000000000000000",
+              distributions_wei: "0",
+              distributions_count: 0,
+              total_wei: "100000000000000000000",
+            },
+          ],
         },
       };
       expect(Object.keys(data.distributors)).toHaveLength(2);
       expect(
-        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"]
-          ?.daily_totals,
+        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"],
       ).toHaveLength(2);
       expect(
-        data.distributors["0x8f7492DE823025b4CfaAB1D34c58963F2af5DEDA"]
-          ?.daily_totals,
+        data.distributors["0x8f7492DE823025b4CfaAB1D34c58963F2af5DEDA"],
       ).toHaveLength(1);
     });
 
@@ -193,26 +181,22 @@ describe("Core Types", () => {
           chain_id: 42170,
         },
         distributors: {
-          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
-            name: "ArbitrumHub",
-            daily_totals: [
-              {
-                date: "2024-01-15",
-                start_balance_wei: "1500000000000000000000",
-                end_balance_wei: "1480000000000000000000",
-                balance_change_wei: "-20000000000000000000",
-                distributions_wei: "25000000000000000000",
-                distributions_count: 5,
-                total_wei: "5000000000000000000",
-              },
-            ],
-          },
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+            {
+              date: "2024-01-15",
+              start_balance_wei: "1500000000000000000000",
+              end_balance_wei: "1480000000000000000000",
+              balance_change_wei: "-20000000000000000000",
+              distributions_wei: "25000000000000000000",
+              distributions_count: 5,
+              total_wei: "5000000000000000000",
+            },
+          ],
         },
       };
 
       const dailyTotal =
-        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"]
-          ?.daily_totals[0];
+        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"]?.[0];
       expect(dailyTotal).toBeDefined();
       expect(dailyTotal?.date).toBe("2024-01-15");
       expect(dailyTotal?.start_balance_wei).toBe("1500000000000000000000");
@@ -229,26 +213,22 @@ describe("Core Types", () => {
           chain_id: 42170,
         },
         distributors: {
-          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
-            name: "ArbitrumHub",
-            daily_totals: [
-              {
-                date: "2024-01-15",
-                start_balance_wei: "1500000000000000000000",
-                end_balance_wei: "1480000000000000000000",
-                balance_change_wei: "-20000000000000000000",
-                distributions_wei: "25000000000000000000",
-                distributions_count: 5,
-                total_wei: "5000000000000000000",
-              },
-            ],
-          },
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+            {
+              date: "2024-01-15",
+              start_balance_wei: "1500000000000000000000",
+              end_balance_wei: "1480000000000000000000",
+              balance_change_wei: "-20000000000000000000",
+              distributions_wei: "25000000000000000000",
+              distributions_count: 5,
+              total_wei: "5000000000000000000",
+            },
+          ],
         },
       };
 
       const dailyTotal =
-        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"]
-          ?.daily_totals[0];
+        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"]?.[0];
       expect(typeof dailyTotal?.start_balance_wei).toBe("string");
       expect(typeof dailyTotal?.end_balance_wei).toBe("string");
       expect(typeof dailyTotal?.balance_change_wei).toBe("string");

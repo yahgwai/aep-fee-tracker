@@ -92,18 +92,15 @@ export interface FeeReport {
     chain_id: number; // Network chain ID
   };
   distributors: {
-    [distributorAddress: string]: {
-      name: string; // Distributor name
-      daily_totals: Array<{
-        date: string; // Date in YYYY-MM-DD format
-        start_balance_wei: string; // Balance at start of day
-        end_balance_wei: string; // Balance at end of day
-        balance_change_wei: string; // Change in balance (can be negative)
-        distributions_wei: string; // Total distributions for the day
-        distributions_count: number; // Number of distribution events
-        total_wei: string; // Total fees collected (balance_change + distributions)
-      }>;
-    };
+    [distributorAddress: string]: Array<{
+      date: string; // Date in YYYY-MM-DD format
+      start_balance_wei: string; // Balance at start of day
+      end_balance_wei: string; // Balance at end of day
+      balance_change_wei: string; // Change in balance (can be negative)
+      distributions_wei: string; // Total distributions for the day
+      distributions_count: number; // Number of distribution events
+      total_wei: string; // Total fees collected (balance_change + distributions)
+    }>;
   };
 }
 
