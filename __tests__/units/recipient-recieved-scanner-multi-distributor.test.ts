@@ -18,8 +18,6 @@ describe("RecipientRecievedScanner - Multi-distributor error isolation", () => {
   let mockFileManager: jest.Mocked<FileManager>;
   let mockProvider: jest.Mocked<ethers.Provider>;
   let scanner: RecipientRecievedScanner;
-  let consoleErrorSpy: jest.SpyInstance;
-  let consoleLogSpy: jest.SpyInstance;
   let mockDate: Date;
 
   const validDistributor1 = "0x1111111111111111111111111111111111111111";
@@ -101,14 +99,9 @@ describe("RecipientRecievedScanner - Multi-distributor error isolation", () => {
     } as unknown as jest.Mocked<ethers.Provider>;
 
     scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
-
-    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    consoleErrorSpy.mockRestore();
-    consoleLogSpy.mockRestore();
     jest.useRealTimers();
   });
 
@@ -180,81 +173,6 @@ describe("RecipientRecievedScanner - Multi-distributor error isolation", () => {
     });
   });
 
-  describe("Error logging", () => {
-    it("logs individual distributor errors with context", async () => {
-      // Arrange
-      const error = new Error("RPC timeout");
-      mockProvider.getLogs
-        .mockResolvedValueOnce([]) // distributor1 day1
-        .mockResolvedValueOnce([]) // distributor1 day2
-        .mockResolvedValueOnce([]) // distributor1 day3
-        .mockRejectedValueOnce(error) // distributor2 day1 fails
-        .mockResolvedValueOnce([]) // distributor3 day1
-        .mockResolvedValueOnce([]) // distributor3 day2
-        .mockResolvedValue([]); // distributor3 day3
-
-      // Act
-      await scanner.scan();
-
-      // Assert
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        `Failed to scan distributor ${validDistributor2}:`,
-        error,
-      );
-    });
-
-    it("logs summary after processing all distributors", async () => {
-      // Arrange
-      mockProvider.getLogs
-        .mockResolvedValueOnce([]) // distributor1 succeeds
-        .mockRejectedValueOnce(new Error("RPC error")) // distributor2 fails
-        .mockResolvedValue([]); // distributor3 succeeds
-
-      // Act
-      await scanner.scan();
-
-      // Assert
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        "Scanned 2 distributors successfully",
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        "Failed to scan 1 distributors",
-      );
-    });
-
-    it("logs only success message when all distributors succeed", async () => {
-      // Arrange
-      mockProvider.getLogs.mockResolvedValue([]);
-
-      // Act
-      await scanner.scan();
-
-      // Assert
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        "Scanned 3 distributors successfully",
-      );
-      expect(consoleLogSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining("Failed to scan"),
-      );
-    });
-
-    it("logs only failure message when all distributors fail", async () => {
-      // Arrange
-      mockProvider.getLogs.mockRejectedValue(new Error("RPC error"));
-
-      // Act
-      await scanner.scan();
-
-      // Assert
-      expect(consoleLogSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining("successfully"),
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        "Failed to scan 3 distributors",
-      );
-    });
-  });
-
   describe("Critical error handling", () => {
     it("throws error when file read fails", async () => {
       // Arrange
@@ -310,9 +228,6 @@ describe("RecipientRecievedScanner - Multi-distributor error isolation", () => {
       // Act & Assert
       await expect(scanner.scan(validDistributor1)).rejects.toThrow(
         "RPC error",
-      );
-      expect(consoleLogSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining("Scanned"),
       );
     });
   });

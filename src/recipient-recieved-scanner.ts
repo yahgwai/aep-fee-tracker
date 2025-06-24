@@ -197,13 +197,10 @@ export class RecipientRecievedScanner {
           yesterdayStr,
         );
         successCount++;
-      } catch (error) {
-        console.error(`Failed to scan distributor ${address}:`, error);
+      } catch {
         failureCount++;
       }
     }
-
-    this.logScanSummary(successCount, failureCount);
 
     // Check for critical errors
     if (
@@ -214,19 +211,6 @@ export class RecipientRecievedScanner {
       )
     ) {
       await this.checkAndThrowCriticalError();
-    }
-  }
-
-  /**
-   * Logs the scan summary.
-   * @private
-   */
-  private logScanSummary(successCount: number, failureCount: number): void {
-    if (successCount > 0) {
-      console.log(`Scanned ${successCount} distributors successfully`);
-    }
-    if (failureCount > 0) {
-      console.log(`Failed to scan ${failureCount} distributors`);
     }
   }
 
