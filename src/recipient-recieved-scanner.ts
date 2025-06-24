@@ -127,12 +127,12 @@ export class RecipientRecievedScanner {
         }
       : distributorsData.distributors;
 
+    // Process distributors
     for (const [address, distributorInfo] of Object.entries(
       distributorsToProcess,
     )) {
       if (!distributorInfo) continue;
 
-      // Process this distributor day by day
       await this.processDistributor(
         address,
         distributorInfo,
