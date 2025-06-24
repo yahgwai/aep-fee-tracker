@@ -1433,4 +1433,130 @@ describe("RecipientRecievedScanner", () => {
       );
     });
   });
+
+  describe("scan - event parsing and storage", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockDistributorsData: DistributorsData;
+    let mockBlockNumbersData: BlockNumberData;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      mockProvider = {
+        getLogs: jest.fn(),
+      } as unknown as jest.Mocked<ethers.Provider>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+
+      // Set up a mock date for "today" to make tests deterministic
+      jest.useFakeTimers().setSystemTime(new Date("2022-07-15"));
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      mockBlockNumbersData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+          "2022-07-14": 400,
+        },
+      };
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("parses RecipientRecieved events using ethers interface", async () => {
+      const distributorAddress = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
+
+      // Mock event data - a RecipientRecieved event
+      const mockRecipientAddress = "0x1234567890123456789012345678901234567890";
+      const mockValue = "1000000000000000000"; // 1 ETH in wei
+
+      // Create encoded topics for RecipientRecieved event
+      // topic[0] = event signature hash
+      // topic[1] = indexed recipient address (padded to 32 bytes)
+      const mockTopics = [
+        RECIPIENT_RECIEVED_EVENT_TOPIC,
+        ethers.zeroPadValue(mockRecipientAddress, 32),
+      ];
+
+      // Create encoded data for the value (non-indexed parameter)
+      const mockData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256"],
+        [mockValue],
+      );
+
+      const mockLogs = [
+        {
+          blockNumber: 150,
+          transactionHash:
+            "0xabc123def456789012345678901234567890123456789012345678901234567890",
+          logIndex: 0,
+          address: distributorAddress,
+          topics: mockTopics,
+          data: mockData,
+        },
+      ] as unknown as ethers.Log[];
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue(mockLogs);
+
+      await scanner.scan();
+
+      // Verify that the event was parsed and saved with the correct structure
+      expect(mockFileManager.writeRecipientRecievedEvents).toHaveBeenCalledWith(
+        distributorAddress,
+        expect.objectContaining({
+          metadata: {
+            chain_id: 42170,
+            reward_distributor: distributorAddress,
+            last_scanned_block: 400, // Should be updated to the last block scanned
+          },
+          events: {
+            "0xabc123def456789012345678901234567890123456789012345678901234567890:0":
+              {
+                blockNumber: 150,
+                transactionHash:
+                  "0xabc123def456789012345678901234567890123456789012345678901234567890",
+                logIndex: 0,
+                address: distributorAddress,
+                topics: mockTopics,
+                data: mockData,
+                recipient: ethers.getAddress(mockRecipientAddress), // Should be checksummed
+                value: mockValue,
+              },
+          },
+        }),
+      );
+    });
+  });
 });
