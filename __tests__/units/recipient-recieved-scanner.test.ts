@@ -1,6 +1,12 @@
 import { ethers } from "ethers";
 import { FileManager } from "../../src/file-manager";
-import { RecipientRecievedScanner } from "../../src/recipient-recieved-scanner";
+import {
+  RecipientRecievedScanner,
+  RECIPIENT_RECIEVED_EVENT_SIGNATURE,
+  RECIPIENT_RECIEVED_EVENT_TOPIC,
+  RECIPIENT_RECIEVED_EVENT_ABI,
+  recipientRecievedInterface,
+} from "../../src/recipient-recieved-scanner";
 import {
   DistributorType,
   DistributorsData,
@@ -898,6 +904,69 @@ describe("RecipientRecievedScanner", () => {
 
       // Should convert dates for both distributors
       expect(convertDateToBlockRangeSpy).toHaveBeenCalledTimes(5); // 3 dates for first + 2 dates for second
+    });
+  });
+
+  describe("RecipientRecieved event constants", () => {
+    it("defines RECIPIENT_RECIEVED_EVENT_SIGNATURE with correct format", () => {
+      expect(RECIPIENT_RECIEVED_EVENT_SIGNATURE).toBeDefined();
+      expect(RECIPIENT_RECIEVED_EVENT_SIGNATURE).toBe(
+        "RecipientRecieved(address,uint256)",
+      );
+    });
+
+    it("defines RECIPIENT_RECIEVED_EVENT_TOPIC as the keccak256 hash of the signature", () => {
+      expect(RECIPIENT_RECIEVED_EVENT_TOPIC).toBeDefined();
+
+      // Calculate expected hash
+      const expectedHash = ethers.id("RecipientRecieved(address,uint256)");
+      expect(RECIPIENT_RECIEVED_EVENT_TOPIC).toBe(expectedHash);
+    });
+
+    it("event topic is a valid hex string", () => {
+      expect(RECIPIENT_RECIEVED_EVENT_TOPIC).toMatch(/^0x[a-fA-F0-9]{64}$/);
+    });
+  });
+
+  describe("RecipientRecieved event interface", () => {
+    it("defines RECIPIENT_RECIEVED_EVENT_ABI with correct event definition", () => {
+      expect(RECIPIENT_RECIEVED_EVENT_ABI).toBeDefined();
+      expect(RECIPIENT_RECIEVED_EVENT_ABI).toContain(
+        "event RecipientRecieved(address indexed recipient, uint256 value)",
+      );
+    });
+
+    it("creates recipientRecievedInterface as an ethers Interface", () => {
+      expect(recipientRecievedInterface).toBeDefined();
+      expect(recipientRecievedInterface).toBeInstanceOf(ethers.Interface);
+    });
+
+    it("interface contains RecipientRecieved event", () => {
+      const event = recipientRecievedInterface.getEvent("RecipientRecieved");
+      expect(event).toBeDefined();
+      expect(event!.name).toBe("RecipientRecieved");
+    });
+
+    it("RecipientRecieved event has correct inputs", () => {
+      const event = recipientRecievedInterface.getEvent("RecipientRecieved");
+      expect(event!.inputs).toHaveLength(2);
+
+      // Check recipient parameter
+      expect(event!.inputs[0]!.name).toBe("recipient");
+      expect(event!.inputs[0]!.type).toBe("address");
+      expect(event!.inputs[0]!.indexed).toBe(true);
+
+      // Check value parameter
+      expect(event!.inputs[1]!.name).toBe("value");
+      expect(event!.inputs[1]!.type).toBe("uint256");
+      expect(event!.inputs[1]!.indexed).toBeFalsy(); // Could be false or null
+    });
+
+    it("interface generates correct event topic", () => {
+      const eventFragment =
+        recipientRecievedInterface.getEvent("RecipientRecieved");
+      const topicHash = ethers.id(eventFragment!.format("sighash"));
+      expect(topicHash).toBe(RECIPIENT_RECIEVED_EVENT_TOPIC);
     });
   });
 });

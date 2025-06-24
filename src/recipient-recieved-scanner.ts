@@ -2,6 +2,23 @@ import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
 import { DistributorsData, BlockNumberData, DistributorInfo } from "./types";
 
+// Event signature and topic for RecipientRecieved event
+export const RECIPIENT_RECIEVED_EVENT_SIGNATURE =
+  "RecipientRecieved(address,uint256)";
+export const RECIPIENT_RECIEVED_EVENT_TOPIC = ethers.id(
+  RECIPIENT_RECIEVED_EVENT_SIGNATURE,
+);
+
+// Event ABI definition
+export const RECIPIENT_RECIEVED_EVENT_ABI = [
+  "event RecipientRecieved(address indexed recipient, uint256 value)",
+];
+
+// Create ethers Interface for event parsing
+export const recipientRecievedInterface = new ethers.Interface(
+  RECIPIENT_RECIEVED_EVENT_ABI,
+);
+
 /**
  * Creates a new RecipientRecievedScanner instance with the specified dependencies.
  *
