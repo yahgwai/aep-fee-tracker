@@ -146,6 +146,8 @@ export interface FileManager {
     address: Address,
     data: RecipientRecievedEventData,
   ): void;
+  readFeeReport(): FeeReport | undefined;
+  writeFeeReport(report: FeeReport): void;
   ensureStoreDirectory(): void;
   validateAddress(address: string): Address;
   formatDate(date: Date): DateString;

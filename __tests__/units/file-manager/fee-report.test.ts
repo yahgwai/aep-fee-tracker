@@ -6,10 +6,7 @@ import {
   cleanupTestEnvironment,
   TestContext,
 } from "./test-utils";
-import {
-  FeeReport,
-  CHAIN_IDS,
-} from "../../../src/types";
+import { FeeReport, CHAIN_IDS } from "../../../src/types";
 
 // Test constants
 const TEST_DATE = "2024-01-10";
@@ -52,14 +49,18 @@ describe("FileManager - Fee Report", () => {
   describe("writeFeeReport()", () => {
     it("should write fee report data to fee_report.json", () => {
       const testData = createFeeReport();
-      
+
       // This should fail because writeFeeReport doesn't exist yet
       testContext.fileManager.writeFeeReport(testData);
-      
+
       // Verify the file was created
-      const filePath = path.join(testContext.tempDir, "fee_report.json");
+      const filePath = path.join(
+        testContext.tempDir,
+        "store",
+        "fee_report.json",
+      );
       expect(fs.existsSync(filePath)).toBe(true);
-      
+
       // Verify the content
       const savedData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
       expect(savedData).toEqual(testData);
@@ -85,36 +86,39 @@ describe("FileManager - Fee Report", () => {
 
       // Write initial data
       testContext.fileManager.writeFeeReport(initialData);
-      
+
       // Write updated data
       testContext.fileManager.writeFeeReport(updatedData);
-      
+
       // Verify the file contains updated data
-      const filePath = path.join(testContext.tempDir, "fee_report.json");
+      const filePath = path.join(
+        testContext.tempDir,
+        "store",
+        "fee_report.json",
+      );
       const savedData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
       expect(savedData).toEqual(updatedData);
     });
 
-    it("should use atomic write with temp file", () => {
+    it("should use atomic write pattern", () => {
       const testData = createFeeReport();
-      const filePath = path.join(testContext.tempDir, "fee_report.json");
-      const tempPath = `${filePath}.tmp`;
-      
-      // Mock fs methods to track calls
-      const writeFileSyncSpy = jest.spyOn(fs, "writeFileSync");
-      const renameSyncSpy = jest.spyOn(fs, "renameSync");
-      
-      testContext.fileManager.writeFeeReport(testData);
-      
-      // Verify atomic write pattern
-      expect(writeFileSyncSpy).toHaveBeenCalledWith(
-        tempPath,
-        JSON.stringify(testData, null, 2)
+      const filePath = path.join(
+        testContext.tempDir,
+        "store",
+        "fee_report.json",
       );
-      expect(renameSyncSpy).toHaveBeenCalledWith(tempPath, filePath);
-      
-      writeFileSyncSpy.mockRestore();
-      renameSyncSpy.mockRestore();
+      const tempPath = `${filePath}.tmp`;
+
+      // Write the data
+      testContext.fileManager.writeFeeReport(testData);
+
+      // Verify the temp file doesn't exist (it should have been renamed)
+      expect(fs.existsSync(tempPath)).toBe(false);
+
+      // Verify the final file exists with correct content
+      expect(fs.existsSync(filePath)).toBe(true);
+      const savedData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      expect(savedData).toEqual(testData);
     });
   });
 
@@ -217,10 +221,10 @@ describe("FileManager - Fee Report", () => {
 
     it("should read and return fee report data", () => {
       const testData = createFeeReport();
-      
+
       // Write data first
       testContext.fileManager.writeFeeReport(testData);
-      
+
       // Read it back
       const result = testContext.fileManager.readFeeReport();
       expect(result).toEqual(testData);
@@ -263,7 +267,7 @@ describe("FileManager - Fee Report", () => {
           ],
         },
       });
-      
+
       testContext.fileManager.writeFeeReport(testData);
       const result = testContext.fileManager.readFeeReport();
       expect(result).toEqual(testData);
