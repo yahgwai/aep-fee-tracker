@@ -17,7 +17,6 @@ The Fee Calculator is the final component in the AEP Fee Calculator pipeline tha
 
 - Read distributor data, balances, and events through FileManager
 - Compute daily total amounts using balance changes and distributions
-- Validate data consistency before calculations
 - Output structured fee reports
 
 ### Success Criteria
@@ -81,20 +80,20 @@ All data access exclusively through FileManager functions:
 
 ```typescript
 interface FeeCalculator {
-  calculateFees(distributorAddress?: string): Promise<void>;
+  calculateFees(distributorAddress?: string): void;
 }
 ```
 
 ### Method Signatures
 
 ```typescript
-calculateFees(distributorAddress?: string): Promise<void>
+calculateFees(distributorAddress?: string): void
 ```
 
 - **Purpose**: Calculate daily totals for all distributors or a specific distributor
 - **Parameters**:
   - `distributorAddress` (optional): If provided, only calculate fees for this distributor
-- **Returns**: Promise that resolves when total calculations are complete
+- **Returns**: void
 - **Behavior**:
   - Reads all necessary data through FileManager
   - Calculates daily totals for each distributor
