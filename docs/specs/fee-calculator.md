@@ -2,30 +2,30 @@
 
 ## 1. Overview
 
-The Fee Calculator is the final component in the AEP Fee Calculator pipeline that computes daily fee metrics for reward distributors on the Arbitrum Nova network. It analyzes balance changes and distribution events to determine how much each distributor collected in fees for each day, providing transparent fee tracking for the Arbitrum Expansion Program.
+The Fee Calculator is the final component in the AEP Fee Calculator pipeline that computes daily total collection metrics for reward distributors on the Arbitrum Nova network. It analyzes balance changes and distribution events to determine how much each distributor collected in total for each day, providing transparent tracking for the Arbitrum Expansion Program.
 
 ## 2. Purpose
 
 ### Primary Objectives
 
-- Calculate daily fees for each tracked reward distributor
-- Analyze balance changes and distribution events to determine fee collection
-- Generate comprehensive fee reports showing daily breakdowns
+- Calculate daily totals for each tracked reward distributor
+- Analyze balance changes and distribution events to determine total collection
+- Generate comprehensive reports showing daily total breakdowns
 - Support incremental processing for efficient updates
 
 ### Component Responsibilities
 
 - Read distributor data, balances, and events through FileManager
-- Compute daily fee amounts using balance changes and distributions
+- Compute daily total amounts using balance changes and distributions
 - Validate data consistency before calculations
 - Output structured fee reports
 
 ### Success Criteria
 
-- All distributors have accurate daily fee calculations for applicable dates
-- Fee calculations correctly reflect the formula: Daily Fees = Balance Change + Distributions
-- Component handles missing or incomplete data gracefully
-- Reports clearly show fee breakdowns per distributor per day
+- All distributors have accurate daily total calculations for applicable dates
+- Total calculations correctly reflect the formula: Daily Total = Balance Change + Distributions
+- Component throws error if critical data is missing
+- Reports clearly show total breakdowns per distributor per day
 
 ## 3. Dependencies
 
@@ -41,7 +41,7 @@ The Fee Calculator is the final component in the AEP Fee Calculator pipeline tha
 ### Infrastructure Requirements
 
 - Read access to stored distributor, balance, and event data through FileManager
-- Write permissions for fee calculation results
+- Write permissions for total calculation results
 
 ## 4. Data Flow
 
@@ -53,7 +53,6 @@ All data access exclusively through FileManager functions:
 2. For each distributor:
    - Use FileManager to read balance history data
    - Use FileManager to read distribution event data
-3. Validate data completeness and consistency
 
 ### Process Flow
 
@@ -65,15 +64,15 @@ All data access exclusively through FileManager functions:
    - For each day with balance data:
      - Calculate balance change from previous day
      - Sum distributions for that day
-     - Compute daily fee = balance change + distributions
-   - Store calculated fees in memory
-3. Generate comprehensive fee report
+     - Compute daily total = balance change + distributions
+   - Store calculated totals in memory
+3. Generate comprehensive report
 4. Write results using FileManager
 
 ### Output Flow
 
-- Fee calculation results written through FileManager
-- Single report file containing all distributor daily fees
+- Total calculation results written through FileManager
+- Single report file containing all distributor daily totals (completely overwrites any existing report)
 - Structured format supporting easy querying and analysis
 
 ## 5. Public API
@@ -92,20 +91,17 @@ interface FeeCalculator {
 calculateFees(distributorAddress?: string): Promise<void>
 ```
 
-- **Purpose**: Calculate daily fees for all distributors or a specific distributor
+- **Purpose**: Calculate daily totals for all distributors or a specific distributor
 - **Parameters**:
   - `distributorAddress` (optional): If provided, only calculate fees for this distributor
-- **Returns**: Promise that resolves when fee calculations are complete
+- **Returns**: Promise that resolves when total calculations are complete (returns a Promise for future extensibility, even though current operations are synchronous)
 - **Behavior**:
   - Reads all necessary data through FileManager
-  - Validates data completeness before processing
-  - Calculates daily fees for each distributor
+  - Calculates daily totals for each distributor
   - Writes comprehensive report with results
   - Throws error if critical data is missing or invalid
 
-## 6. Algorithm Details
-
-### Fee Calculation Process
+## 6. Calculation Process
 
 1. **Initialize**: Create FileManager instance
 2. **Load Distributors**: Read distributor list using FileManager
@@ -120,23 +116,16 @@ calculateFees(distributorAddress?: string): Promise<void>
      - Otherwise: balance change = current balance - previous balance
      - Find all distribution events for this date
      - Sum distribution amounts: total distributions = sum of all values
-     - Calculate daily fee = balance change + total distributions
-     - Store result with date, balances, distributions, and fee
+     - Calculate daily total = balance change + total distributions
+     - Store result with date, balances, distributions, and total
 5. **Generate Report**: Compile all distributor results into structured report
-6. **Write Results**: Save report using FileManager
-
-### Data Validation
-
-- Ensure all dates are in ISO format (YYYY-MM-DD)
-- Verify balance values are valid numeric strings
-- Confirm distribution amounts are non-negative
-- Check for data gaps and report them without failing
+6. **Write Results**: Save report using FileManager (completely overwrites any existing report)
 
 ### Edge Case Handling
 
 1. **First Day**: No previous balance, so balance change = 0
 2. **Missing Events**: If no events for a date, distributions = 0
-3. **Data Gaps**: Report gaps but continue processing available data
+3. **Data Gaps**: Throw error if critical data is missing
 4. **Zero Balances**: Valid scenario, process normally
 
 ## 7. Data Structures
@@ -190,37 +179,21 @@ interface RecipientRecievedEventData {
 interface FeeReport {
   metadata: {
     chain_id: number;
-    generated_at: string;
-    report_type: "daily_fees";
   };
   distributors: {
     [distributorAddress: string]: {
       name: string;
-      daily_fees: Array<{
+      daily_totals: Array<{
         date: string;
         start_balance_wei: string;
         end_balance_wei: string;
         balance_change_wei: string;
         distributions_wei: string;
         distributions_count: number;
-        fee_wei: string;
+        total_wei: string;
       }>;
     };
   };
-}
-```
-
-### Internal Calculation Types
-
-```typescript
-interface DailyFeeCalculation {
-  date: string;
-  startBalance: bigint;
-  endBalance: bigint;
-  balanceChange: bigint;
-  distributions: bigint;
-  distributionCount: number;
-  totalFee: bigint;
 }
 ```
 
@@ -237,7 +210,6 @@ interface DailyFeeCalculation {
 
    - All dates in ISO format (YYYY-MM-DD)
    - Dates must be chronologically ordered
-   - Cannot calculate fees for future dates
 
 3. **Amount Validation**:
 
@@ -246,16 +218,11 @@ interface DailyFeeCalculation {
    - Convert back to strings for output
 
 4. **Data Completeness**:
-   - Log warnings for missing data but continue processing
-   - Clearly indicate data gaps in output
+   - Throw error if critical data is missing
 
 ### Security Considerations
 
-1. **Data Integrity**:
-
-   - Validate all numeric values before processing
-   - Use bigint to prevent overflow with large wei values
-   - FileManager ensures atomic file operations
+1. **FileManager ensures atomic file operations**
 
 2. **Error Handling**:
    - Never expose system paths in error messages
@@ -287,20 +254,29 @@ Integration tests require real blockchain data from Arbitrum Nova:
    - Varying distribution amounts
 
 4. **Test Scenarios**:
-   - Distributor with consistent daily fees
+   - Distributor with consistent daily totals
    - Distributor with sporadic activity
-   - Distributor with no distributions (fees from balance changes only)
+   - Distributor with no distributions (totals from balance changes only)
    - Distributor created mid-period
    - Full pipeline test: all distributors for complete date range
 
-### Data Sources
+### Available Test Data
 
 Test data available in `__tests__/test-data/`:
 
-- Distributor list with metadata
-- Historical balance snapshots
-- Distribution event records
-- Expected fee calculation results for validation
+- **Distributor list**: Available in `distributor-detector/distributor-creation-events-raw.json` with 5 distributors
+- **Historical balance snapshots**: Available in `distributor-detector/balance_data/` for all 5 distributors across 9 dates (2022-07-11 to 2023-03-17)
+- **Distribution event records**: Available in `recipient-recieved/` directory with RecipientRecieved events for 3 of the 5 distributors (320 total events)
+
+### Missing Test Data
+
+The following test data needs to be generated:
+
+- **Expected total calculation results**: JSON files with pre-calculated expected daily totals for each distributor to validate the fee calculator output. This should include:
+  - Daily balance changes
+  - Daily distribution totals
+  - Calculated daily totals (balance change + distributions)
+  - Should cover edge cases like first day, missing events, data gaps
 
 ## 10. Examples
 
@@ -309,10 +285,10 @@ Test data available in `__tests__/test-data/`:
 ```typescript
 const calculator = new FeeCalculator(fileManager);
 
-// Calculate fees for all distributors
+// Calculate totals for all distributors
 await calculator.calculateFees();
 
-// Calculate fees for specific distributor
+// Calculate totals for specific distributor
 await calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
 ```
 
@@ -329,14 +305,12 @@ await calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
 ```json
 {
   "metadata": {
-    "chain_id": 42170,
-    "generated_at": "2024-06-24T10:30:00Z",
-    "report_type": "daily_fees"
+    "chain_id": 42170
   },
   "distributors": {
     "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
       "name": "ArbitrumHub",
-      "daily_fees": [
+      "daily_totals": [
         {
           "date": "2024-01-15",
           "start_balance_wei": "1500000000000000000000",
@@ -344,7 +318,7 @@ await calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
           "balance_change_wei": "-20000000000000000000",
           "distributions_wei": "25000000000000000000",
           "distributions_count": 5,
-          "fee_wei": "5000000000000000000"
+          "total_wei": "5000000000000000000"
         },
         {
           "date": "2024-01-16",
@@ -353,7 +327,7 @@ await calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
           "balance_change_wei": "10000000000000000000",
           "distributions_wei": "15000000000000000000",
           "distributions_count": 3,
-          "fee_wei": "25000000000000000000"
+          "total_wei": "25000000000000000000"
         }
       ]
     }
@@ -367,26 +341,26 @@ The following features are explicitly NOT part of this component:
 
 ### Calculation Features
 
-- **Cumulative fee calculations** (only daily fees are calculated)
+- **Cumulative total calculations** (only daily totals are calculated)
 - Multi-period aggregations (weekly, monthly totals)
-- Fee rate calculations or percentages
-- Predictive fee modeling
-- Anomaly detection in fee patterns
+- Total rate calculations or percentages
+- Predictive modeling
+- Anomaly detection in collection patterns
 
 ### Performance Optimizations
 
 - Parallel processing of distributors
-- Incremental fee calculations (always recalculate from source data)
+- Incremental total calculations (always recalculate from source data)
 - Caching of intermediate results
 - Database storage for faster queries
 
 ### Additional Analytics
 
-- Fee comparisons between distributors
+- Total comparisons between distributors
 - Historical trend analysis
 - Statistical summaries or averages
 - Visualization or charting capabilities
-- Real-time fee monitoring
+- Real-time monitoring
 
 ### Data Management
 
@@ -402,4 +376,4 @@ The following features are explicitly NOT part of this component:
 - Export to formats other than JSON
 - Email or notification systems
 
-These features should be implemented in separate components to maintain focus on the core fee calculation logic.
+These features should be implemented in separate components to maintain focus on the core total calculation logic.
