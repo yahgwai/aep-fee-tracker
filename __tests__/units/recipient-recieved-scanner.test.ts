@@ -10,7 +10,9 @@ describe("RecipientRecievedScanner", () => {
   let mockProvider: jest.Mocked<ethers.Provider>;
 
   beforeEach(() => {
-    mockFileManager = {} as jest.Mocked<FileManager>;
+    mockFileManager = {
+      readDistributors: jest.fn(),
+    } as unknown as jest.Mocked<FileManager>;
     mockProvider = {} as jest.Mocked<ethers.Provider>;
   });
 
@@ -73,6 +75,9 @@ describe("RecipientRecievedScanner", () => {
     let scanner: RecipientRecievedScanner;
 
     beforeEach(() => {
+      mockFileManager = {
+        readDistributors: jest.fn().mockReturnValue(undefined),
+      } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
     });
 

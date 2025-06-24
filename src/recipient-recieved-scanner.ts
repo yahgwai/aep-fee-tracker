@@ -28,5 +28,35 @@ export class RecipientRecievedScanner {
     ) {
       throw new Error(`Invalid Ethereum address: ${distributorAddress}`);
     }
+
+    const distributorsData = this.fileManager.readDistributors();
+
+    // Early return if no distributors data
+    if (
+      !distributorsData ||
+      Object.keys(distributorsData.distributors).length === 0
+    ) {
+      return;
+    }
+
+    // If specific distributor requested, validate it exists
+    if (distributorAddress) {
+      // Find distributor with case-insensitive comparison
+      const foundDistributor = Object.keys(distributorsData.distributors).find(
+        (address) => address.toLowerCase() === distributorAddress.toLowerCase(),
+      );
+
+      if (!foundDistributor) {
+        throw new Error(`Distributor ${distributorAddress} not found`);
+      }
+
+      console.log(`Scanning distributor: ${distributorAddress}`);
+    } else {
+      // Process all distributors
+      const distributorCount = Object.keys(
+        distributorsData.distributors,
+      ).length;
+      console.log(`Scanning all ${distributorCount} distributors`);
+    }
   }
 }
