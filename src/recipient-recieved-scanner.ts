@@ -70,18 +70,13 @@ export class RecipientRecievedScanner {
     )) {
       if (!distributorInfo) continue;
 
-      const datesToProcess = this.determineDateRangeForDistributor(
+      // Process this distributor day by day
+      await this.processDistributor(
         address,
         distributorInfo,
         blockNumbersData,
         yesterdayStr,
       );
-
-      if (datesToProcess.length === 0) {
-        continue;
-      }
-
-      // TODO: Process the date range (out of scope for this issue)
     }
   }
 
@@ -132,18 +127,18 @@ export class RecipientRecievedScanner {
   }
 
   /**
-   * Determines the date range to process for a distributor.
+   * Processes a distributor day by day from last scanned date to yesterday.
    * @private
    */
-  private determineDateRangeForDistributor(
+  private async processDistributor(
     address: string,
     distributorInfo: DistributorInfo,
     blockNumbersData: BlockNumberData,
     yesterdayStr: string,
-  ): string[] {
+  ): Promise<void> {
     // Check if distributor is created in the future
     if (distributorInfo.date > yesterdayStr) {
-      return [];
+      return;
     }
 
     // Load existing event data
@@ -175,27 +170,58 @@ export class RecipientRecievedScanner {
 
     // Skip if start date is after yesterday (all dates processed)
     if (startDate > yesterdayStr) {
-      return [];
+      return;
     }
 
-    // Determine date range to process
-    return this.getDateRange(startDate, yesterdayStr);
+    // Process one day at a time
+    const currentDate = new Date(startDate);
+    const endDate = new Date(yesterdayStr);
+
+    while (currentDate <= endDate) {
+      const dateStr = this.formatDate(currentDate);
+
+      // Check if block number exists for this date
+      if (!(dateStr in blockNumbersData.blocks)) {
+        throw new Error(
+          `Missing block number for date ${dateStr} for distributor ${address}`,
+        );
+      }
+
+      // Calculate block range for this day
+      const { startBlock, endBlock } = this.convertDateToBlockRange(
+        dateStr,
+        blockNumbersData,
+      );
+
+      // TODO: Fetch and process receipts for this block range (out of scope for this issue)
+      void { date: dateStr, startBlock, endBlock }; // Suppress unused variable warning
+
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
   }
 
   /**
-   * Gets an array of dates between start and end (inclusive).
+   * Converts a date to a block range (start and end blocks).
    * @private
    */
-  private getDateRange(startDate: string, endDate: string): string[] {
-    const dates: string[] = [];
-    const current = new Date(startDate);
-    const end = new Date(endDate);
-
-    while (current <= end) {
-      dates.push(this.formatDate(current));
-      current.setDate(current.getDate() + 1);
+  private convertDateToBlockRange(
+    date: string,
+    blockNumbersData: BlockNumberData,
+  ): { startBlock: number; endBlock: number } {
+    const endBlock = blockNumbersData.blocks[date];
+    if (endBlock === undefined) {
+      throw new Error(`Block number not found for date ${date}`);
     }
 
-    return dates;
+    // Calculate start block from previous day's end block
+    const previousDate = new Date(date);
+    previousDate.setDate(previousDate.getDate() - 1);
+    const previousDateStr = this.formatDate(previousDate);
+
+    const previousBlock = blockNumbersData.blocks[previousDateStr];
+    const startBlock = previousBlock !== undefined ? previousBlock + 1 : 1;
+
+    return { startBlock, endBlock };
   }
 }
