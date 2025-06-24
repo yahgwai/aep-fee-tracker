@@ -35,23 +35,32 @@ function parseArguments(): ScriptOptions {
     if (arg === "--help" || arg === "-h") {
       options.help = true;
     } else if (arg === "--start") {
-      const nextArg = args[++i];
-      options.startDate = nextArg ?? "";
+      options.startDate = getNextArgument(args, i, "--start");
+      i++; // Skip the next argument since we consumed it
     } else if (arg === "--end") {
-      const nextArg = args[++i];
-      options.endDate = nextArg ?? "";
+      options.endDate = getNextArgument(args, i, "--end");
+      i++; // Skip the next argument since we consumed it
     } else if (arg === "--test-mode") {
       options.testMode = true;
     } else if (arg === "--output-dir") {
-      const nextArg = args[++i];
-      options.outputDir = nextArg;
+      options.outputDir = getNextArgument(args, i, "--output-dir");
+      i++; // Skip the next argument since we consumed it
     } else if (arg === "--rpc-url") {
-      const nextArg = args[++i];
-      options.rpcUrl = nextArg;
+      options.rpcUrl = getNextArgument(args, i, "--rpc-url");
+      i++; // Skip the next argument since we consumed it
     }
   }
 
   return options;
+}
+
+function getNextArgument(args: string[], index: number, flag: string): string {
+  const nextArg = args[index + 1];
+  if (!nextArg || nextArg.startsWith("--")) {
+    console.error(`Error: ${flag} requires a value`);
+    process.exit(1);
+  }
+  return nextArg;
 }
 
 function validateDateFormat(date: string): boolean {
@@ -116,6 +125,69 @@ Examples:
 `);
 }
 
+async function runTestMode(options: ScriptOptions): Promise<void> {
+  console.log("Running in test mode");
+  console.log("Processing 5 distributors");
+  console.log("Fetching balances for distributors");
+
+  // In test mode, create mock output
+  if (options.outputDir) {
+    if (!fs.existsSync(options.outputDir)) {
+      fs.mkdirSync(options.outputDir, { recursive: true });
+    }
+
+    const mockDistributorDir = path.join(
+      options.outputDir,
+      "0x1234567890123456789012345678901234567890",
+    );
+    fs.mkdirSync(mockDistributorDir, { recursive: true });
+
+    const mockBalance = {
+      metadata: {
+        chain_id: 42170,
+        reward_distributor: "0x1234567890123456789012345678901234567890",
+      },
+      balances: {
+        [options.startDate]: {
+          block_number: 12345,
+          balance_wei: "1000000000000000000",
+        },
+      },
+    };
+
+    fs.writeFileSync(
+      path.join(mockDistributorDir, "balances.json"),
+      JSON.stringify(mockBalance, null, 2),
+    );
+  }
+}
+
+async function setupRpcProvider(
+  rpcUrl?: string | undefined,
+): Promise<ethers.JsonRpcProvider> {
+  const url = rpcUrl || process.env["RPC_URL"];
+  if (!url) {
+    console.error(
+      "Error: RPC URL is required. Set RPC_URL environment variable or use --rpc-url option",
+    );
+    process.exit(1);
+  }
+
+  const provider = new ethers.JsonRpcProvider(url);
+
+  // Test RPC connection
+  try {
+    await provider.getBlockNumber();
+  } catch {
+    console.error(
+      "Error: Network connection failed. Please check your RPC URL and network connectivity",
+    );
+    process.exit(1);
+  }
+
+  return provider;
+}
+
 async function main(): Promise<void> {
   try {
     const options = parseArguments();
@@ -131,63 +203,12 @@ async function main(): Promise<void> {
     console.log(`Start: ${options.startDate}, End: ${options.endDate}`);
 
     if (options.testMode) {
-      console.log("Running in test mode");
-      console.log("Processing 5 distributors");
-      console.log("Fetching balances for distributors");
-
-      // In test mode, create mock output
-      if (options.outputDir) {
-        if (!fs.existsSync(options.outputDir)) {
-          fs.mkdirSync(options.outputDir, { recursive: true });
-        }
-
-        const mockDistributorDir = path.join(
-          options.outputDir,
-          "0x1234567890123456789012345678901234567890",
-        );
-        fs.mkdirSync(mockDistributorDir, { recursive: true });
-
-        const mockBalance = {
-          metadata: {
-            chain_id: 42170,
-            reward_distributor: "0x1234567890123456789012345678901234567890",
-          },
-          balances: {
-            [options.startDate]: {
-              block_number: 12345,
-              balance_wei: "1000000000000000000",
-            },
-          },
-        };
-
-        fs.writeFileSync(
-          path.join(mockDistributorDir, "balances.json"),
-          JSON.stringify(mockBalance, null, 2),
-        );
-      }
-
+      await runTestMode(options);
       return;
     }
 
-    // Set up RPC provider
-    const rpcUrl = options.rpcUrl || process.env["RPC_URL"];
-    if (!rpcUrl) {
-      console.error(
-        "Error: RPC URL is required. Set RPC_URL environment variable or use --rpc-url option",
-      );
-      process.exit(1);
-    }
-
-    // Test RPC connection
-    try {
-      const provider = new ethers.JsonRpcProvider(rpcUrl);
-      await provider.getBlockNumber();
-    } catch {
-      console.error(
-        "Error: Network connection failed. Please check your RPC URL and network connectivity",
-      );
-      process.exit(1);
-    }
+    // Set up and validate RPC provider
+    const provider = await setupRpcProvider(options.rpcUrl);
 
     // Set up components
     const storeDirectory =
@@ -200,7 +221,6 @@ async function main(): Promise<void> {
         "distributor-detector",
       );
     const fileManager = new FileManager(storeDirectory);
-    const provider = new ethers.JsonRpcProvider(rpcUrl);
     const blockFinder = new BlockFinder(fileManager, provider);
     const balanceFetcher = new BalanceFetcher(fileManager, provider);
 
