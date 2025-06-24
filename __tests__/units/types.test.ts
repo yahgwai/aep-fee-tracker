@@ -379,6 +379,11 @@ describe("Core Types", () => {
           events: {},
         }),
         writeRecipientRecievedEvents: () => {},
+        readFeeReport: () => ({
+          metadata: { chain_id: 42170 },
+          distributors: {},
+        }),
+        writeFeeReport: () => {},
         ensureStoreDirectory: () => {},
         validateAddress: (address: string) => address as Address,
         formatDate: (date: Date) =>

@@ -11,6 +11,7 @@ import {
   DistributorType,
   BalanceData,
   RecipientRecievedEventData,
+  FeeReport,
   DISTRIBUTORS_DIR,
 } from "./types";
 
@@ -23,6 +24,7 @@ const BLOCK_NUMBERS_FILE = "block_numbers.json";
 const DISTRIBUTORS_FILE = "distributors.json";
 const BALANCES_FILE = "balances.json";
 const RECIPIENT_RECIEVED_EVENTS_FILE = "recipient-recieved-events.json";
+const FEE_REPORT_FILE = "fee_report.json";
 const JSON_INDENT_SIZE = 2;
 
 // Ethereum constants
@@ -121,6 +123,18 @@ export class FileManager implements FileManagerInterface {
       ),
       data,
     );
+  }
+
+  readFeeReport(): FeeReport | undefined {
+    return this.readJsonFileOrUndefined(
+      path.join(this.storeDirectory, FEE_REPORT_FILE),
+    );
+  }
+
+  writeFeeReport(report: FeeReport): void {
+    this.validateFeeReport(report);
+    this.ensureStoreDirectory();
+    this.writeJsonFile(path.join(this.storeDirectory, FEE_REPORT_FILE), report);
   }
 
   ensureStoreDirectory(): void {
@@ -408,6 +422,55 @@ export class FileManager implements FileManagerInterface {
 
       // Validate value
       this.validateWeiValue(event.value, "event.value", key);
+    }
+  }
+
+  private validateFeeReport(report: FeeReport): void {
+    // Validate distributors
+    for (const [address, entries] of Object.entries(report.distributors)) {
+      // Validate checksummed address
+      if (address !== this.validateAddress(address)) {
+        throw new Error(`Distributor address must be checksummed: ${address}`);
+      }
+
+      // Validate each entry
+      for (const entry of entries) {
+        // Validate date format
+        this.validateDateFormat(entry.date);
+
+        // Validate wei values
+        this.validateWeiValue(
+          entry.start_balance_wei,
+          "start_balance_wei",
+          entry.date,
+        );
+        this.validateWeiValue(
+          entry.end_balance_wei,
+          "end_balance_wei",
+          entry.date,
+        );
+        this.validateWeiValue(
+          entry.balance_change_wei,
+          "balance_change_wei",
+          entry.date,
+        );
+        this.validateWeiValue(
+          entry.distributions_wei,
+          "distributions_wei",
+          entry.date,
+        );
+        this.validateWeiValue(entry.total_wei, "total_wei", entry.date);
+
+        // Validate distributions count
+        if (
+          !Number.isInteger(entry.distributions_count) ||
+          entry.distributions_count < 0
+        ) {
+          throw new Error(
+            `distributions_count must be a non-negative integer for date ${entry.date}, got: ${entry.distributions_count}`,
+          );
+        }
+      }
     }
   }
 }
