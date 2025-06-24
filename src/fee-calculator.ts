@@ -1,4 +1,9 @@
-import { FileManager, FeeReport } from "./types";
+import { FileManager, FeeReport, CHAIN_IDS } from "./types";
+
+// Constants for fee calculation
+const FIRST_DAY_BALANCE_CHANGE = "0";
+const NO_DISTRIBUTIONS = "0";
+const NO_DISTRIBUTIONS_COUNT = 0;
 
 export class FeeCalculator {
   constructor(public readonly fileManager: FileManager) {}
@@ -7,38 +12,31 @@ export class FeeCalculator {
   calculateFees(_distributorAddress?: string): void {
     // Read distributor list
     const distributorsData = this.fileManager.readDistributors();
+    if (!distributorsData) return;
 
-    // Handle empty distributor data
-    if (
-      !distributorsData ||
-      Object.keys(distributorsData.distributors).length === 0
-    ) {
-      return;
-    }
+    // Get first distributor
+    const distributorAddresses = Object.keys(distributorsData.distributors);
+    if (distributorAddresses.length === 0) return;
 
-    // Get the first distributor
-    const firstDistributorAddress = Object.keys(
-      distributorsData.distributors,
-    )[0]!;
+    const firstDistributorAddress = distributorAddresses[0]!;
 
     // Read balance data for the first distributor
     const balanceData = this.fileManager.readDistributorBalances(
       firstDistributorAddress,
     );
+    if (!balanceData) return;
 
-    // Handle missing or empty balance data
-    if (!balanceData || Object.keys(balanceData.balances).length === 0) {
-      return;
-    }
+    // Get first date from balance data
+    const balanceDates = Object.keys(balanceData.balances).sort();
+    if (balanceDates.length === 0) return;
 
-    // Get the first date from balance data
-    const firstDate = Object.keys(balanceData.balances).sort()[0]!;
+    const firstDate = balanceDates[0]!;
     const firstBalance = balanceData.balances[firstDate]!;
 
     // Create fee report
     const feeReport: FeeReport = {
       metadata: {
-        chain_id: 42170,
+        chain_id: CHAIN_IDS.ARBITRUM_NOVA,
       },
       distributors: {
         [firstDistributorAddress]: [
@@ -46,10 +44,10 @@ export class FeeCalculator {
             date: firstDate,
             start_balance_wei: firstBalance.balance_wei,
             end_balance_wei: firstBalance.balance_wei,
-            balance_change_wei: "0", // Always 0 for first day
-            distributions_wei: "0", // No event processing
-            distributions_count: 0,
-            total_wei: "0", // balance_change + distributions = 0 + 0
+            balance_change_wei: FIRST_DAY_BALANCE_CHANGE,
+            distributions_wei: NO_DISTRIBUTIONS,
+            distributions_count: NO_DISTRIBUTIONS_COUNT,
+            total_wei: FIRST_DAY_BALANCE_CHANGE, // balance_change + distributions = 0 + 0
           },
         ],
       },
