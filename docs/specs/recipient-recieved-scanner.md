@@ -189,7 +189,7 @@ interface RecipientRecievedEvent {
   value: string; // Decimal string representation of value
 }
 
-interface EventData {
+interface RecipientRecievedEventData {
   metadata: {
     chain_id: number; // Network chain ID
     reward_distributor: string; // Distributor contract address
