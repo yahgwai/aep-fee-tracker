@@ -45,7 +45,6 @@ The component fits into the data processing pipeline after the Balance Fetcher a
 - `withRetry` utility: Provides retry logic for RPC calls
 - `chunkBlockRange` utility: Splits large block ranges for efficient querying
 
-
 ## 4. Data Flow
 
 ### Input Flow
@@ -184,7 +183,7 @@ interface RecipientRecievedEvent {
   address: string; // Contract address that emitted the event
   topics: string[]; // Raw event topics
   data: string; // Raw event data
-  
+
   // Parsed fields
   recipient: string; // Checksummed recipient address
   value: string; // Decimal string representation of value
@@ -217,39 +216,15 @@ interface RecipientRecievedEvent {
 
 ## 8. Implementation Requirements
 
-### Validation Rules
-
-1. **Input Validation**
-
-   - Distributor address must be valid Ethereum address
-   - Distributor must exist in distributors.json
-   - Block numbers file must contain required date ranges
-   - Dates must be in YYYY-MM-DD format
-
-2. **Event Validation**
-
-   - Event must be from specified distributor contract
-   - Recipient must be valid Ethereum address
-   - Value must be valid uint256 (non-negative, within bounds)
-   - Transaction hash must be 66 characters (0x + 64 hex)
-
-3. **Output Validation**
-   - All monetary values stored as decimal strings
-   - Addresses stored in checksummed format
-   - No duplicate events within a day
-
 ### Security Considerations
 
 1. **Data Integrity**
 
    - Validate all blockchain data before processing
    - Use checksummed addresses for consistency
-   - Atomic file updates (write to temp, then rename)
 
 2. **Error Handling**
 
-   - Never partially update outflow data
-   - Preserve existing data on failure
    - Clear error messages with context
 
 3. **Resource Management**
@@ -273,9 +248,34 @@ interface RecipientRecievedEvent {
 
 ### Data Sources
 
-- Mainnet Arbitrum reward distributor contracts
-- Historical blockchain data via archive node
+- Nova Arbitrum reward distributor contracts (already available in test files)
+- Historical blockchain data via standard RPC (same as used in other tests)
 - Test fixtures for edge cases
+
+**Note**: A ticket is needed to collect all Nova RecipientRecieved events. This should involve creating a one-off script to scan through all blocks looking for these events from the known distributors.
+
+### Expected Test Data Format
+
+The collected test data should be stored as JSON files with the following structure:
+
+```json
+{
+  "chain_id": 42170,
+  "distributor_address": "0x...",
+  "events": [
+    {
+      "blockNumber": 12345678,
+      "transactionHash": "0x...",
+      "logIndex": 0,
+      "address": "0x...",
+      "topics": ["0x...", "0x..."],
+      "data": "0x...",
+      "recipient": "0x...",
+      "value": "1000000000000000000"
+    }
+  ]
+}
+```
 
 ## 10. Examples
 
@@ -328,7 +328,10 @@ Outflow data written through FileManager:
       "transactionHash": "0x9876543210987654321098765432109876543210987654321098765432109876",
       "logIndex": 0,
       "address": "0x1234567890123456789012345678901234567890",
-      "topics": ["0x...", "0x000000000000000000000000abcdef0123456789012345678901234567890123"],
+      "topics": [
+        "0x...",
+        "0x000000000000000000000000abcdef0123456789012345678901234567890123"
+      ],
       "data": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
       "recipient": "0xAbCdEf0123456789012345678901234567890123",
       "value": "1000000000000000000"
@@ -338,7 +341,10 @@ Outflow data written through FileManager:
       "transactionHash": "0x1234567890123456789012345678901234567890123456789012345678901234",
       "logIndex": 1,
       "address": "0x1234567890123456789012345678901234567890",
-      "topics": ["0x...", "0x000000000000000000000000fedcba0123456789012345678901234567890123"],
+      "topics": [
+        "0x...",
+        "0x000000000000000000000000fedcba0123456789012345678901234567890123"
+      ],
       "data": "0x00000000000000000000000000000000000000000000000006f05b59d3b20000",
       "recipient": "0xFeDcBa0123456789012345678901234567890123",
       "value": "500000000000000000"
