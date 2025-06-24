@@ -1,8 +1,8 @@
-# Event Scanner Component Technical Specification
+# RecipientRecieved Scanner Component Technical Specification
 
 ## 1. Overview
 
-The Event Scanner is a critical component in the fee calculation pipeline that collects and aggregates token distribution events from reward distributor contracts on the blockchain. This component bridges the gap between on-chain activity and off-chain analytics by systematically scanning blockchain events and transforming them into structured outflow data.
+The RecipientRecieved Scanner is a critical component in the fee calculation pipeline that collects and stores token distribution events from reward distributor contracts on the blockchain. This component bridges the gap between on-chain activity and off-chain analytics by systematically scanning blockchain events and transforming them into structured event data.
 
 The component fits into the data processing pipeline after the Balance Fetcher and before the Fee Calculator, providing essential outflow data that enables accurate fee calculations based on actual token distributions.
 
@@ -11,7 +11,7 @@ The component fits into the data processing pipeline after the Balance Fetcher a
 ### Primary Objectives
 
 - Scan blockchain for `RecipientRecieved` events from known reward distributor contracts
-- Aggregate daily outflow data for each distributor
+- Store all collected events for each distributor
 - Maintain incremental processing state to support efficient updates
 - Provide accurate, validated data for downstream fee calculations
 
@@ -20,14 +20,14 @@ The component fits into the data processing pipeline after the Balance Fetcher a
 - Read distributor addresses and creation dates from persistent storage
 - Query blockchain events within specified date ranges
 - Parse and validate event data
-- Calculate daily outflow totals
-- Persist outflow data in the required format
+- Store events organized by date
+- Persist event data in the required format
 - Handle incremental updates without data duplication
 
 ### Success Criteria
 
 - All `RecipientRecieved` events are captured for each distributor from creation date onward
-- Daily outflow totals match the sum of all events for that day
+- All events are stored with their original values and transaction details
 - Incremental processing correctly handles interrupted scans
 - Output files conform to the expected schema and validation rules
 - Component integrates seamlessly with existing file-based data flow
@@ -45,35 +45,31 @@ The component fits into the data processing pipeline after the Balance Fetcher a
 - `withRetry` utility: Provides retry logic for RPC calls
 - `chunkBlockRange` utility: Splits large block ranges for efficient querying
 
-### Infrastructure Requirements
-
-- Access to an Ethereum-compatible JSON-RPC provider
-- Read/write access to the `store/` directory structure
-- Sufficient memory to process event batches (estimated <100MB per day)
 
 ## 4. Data Flow
 
 ### Input Flow
 
-1. Read distributor list from `store/distributors.json`
+1. Read distributor list from FileManager
 2. For each distributor:
    - Read creation date from distributor data
-   - Read master block numbers from `store/block_numbers.json`
+   - Read master block numbers from FileManager
    - Determine date ranges to process (from creation date to latest available)
 
 ### Process Flow
 
 1. For each processing date:
    - Calculate block range (previous day's block + 1 to current day's block)
-   - Query blockchain for `RecipientRecieved` events in range
-   - Parse event data and extract recipient, value, and transaction hash
-   - Aggregate events and calculate total outflow
-   - Update or create outflow data structure
+   - Query blockchain for `RecipientRecieved` events using chunkBlockRange utility
+   - For each event:
+     - Store raw event data
+     - Parse recipient and value using ethers interface
+     - Store event keyed by transactionHash:logIndex
 
 ### Output Flow
 
-1. Write/update `store/distributors/{address}/outflows.json` for each distributor
-2. File contains complete outflow history from creation to latest processed date
+1. Write/update outflow data for each distributor through FileManager
+2. Output contains complete event history from creation to latest processed date
 
 ### Integration Points
 
@@ -85,21 +81,14 @@ The component fits into the data processing pipeline after the Balance Fetcher a
 ### Interface Definition
 
 ```typescript
-interface EventScanner {
+interface RecipientRecievedScanner {
   /**
-   * Scans all distributors for RecipientRecieved events and updates outflow data
-   * @returns Promise that resolves when all distributors are processed
-   * @throws Error if critical failures occur (file access, RPC connection)
+   * Scans for RecipientRecieved events and updates outflow data
+   * @param distributorAddress - Optional distributor address. If provided, scans only that distributor. If omitted, scans all distributors
+   * @returns Promise that resolves when scanning is complete
+   * @throws Error if critical failures occur (file access, RPC connection, distributor not found)
    */
-  scanAll(): Promise<void>;
-
-  /**
-   * Scans a specific distributor for RecipientRecieved events
-   * @param distributorAddress - The distributor contract address to scan
-   * @returns Promise that resolves when distributor is processed
-   * @throws Error if distributor not found or processing fails
-   */
-  scanDistributor(distributorAddress: string): Promise<void>;
+  scan(distributorAddress?: string): Promise<void>;
 }
 ```
 
@@ -124,6 +113,7 @@ constructor(
 2. **Scan All Distributors**
 
    - Load distributor list from storage
+   - Load master block numbers for date mapping (once for all distributors)
    - For each distributor, execute single distributor scan
    - Continue processing even if individual distributors fail
    - Report summary of successes and failures
@@ -132,15 +122,16 @@ constructor(
 
    - Load distributor metadata (address, creation date, chain ID)
    - Load existing outflow data or initialize empty structure
-   - Load master block numbers for date mapping
    - Determine unprocessed date ranges
    - For each date:
      - Calculate block range for the date
      - Query events using block range
-     - Parse and validate each event
-     - Aggregate daily totals
-     - Update outflow data structure
-   - Persist updated outflow data
+     - For each event:
+       - Parse recipient and value using ethers interface
+       - Store event with raw and parsed data
+       - Key by transactionHash:logIndex
+   - Update last_scanned_block in metadata
+   - Persist updated event data
 
 4. **Query Events**
 
@@ -150,10 +141,11 @@ constructor(
    - Handle rate limiting gracefully
 
 5. **Parse Events**
-   - Extract recipient address from event topics
-   - Extract value from event data
-   - Validate addresses and values
-   - Build event record with transaction hash
+   - Use ethers interface to decode event data
+   - Extract recipient address from decoded event
+   - Extract value from decoded event
+   - Store both raw event data and parsed fields
+   - Create unique key using transactionHash:logIndex
 
 ## 7. Data Structures
 
@@ -184,25 +176,28 @@ interface BlockNumbers {
 ### Output Types
 
 ```typescript
-interface OutflowEvent {
-  recipient: string; // Checksummed Ethereum address
-  value_wei: string; // Decimal string representation
-  tx_hash: string; // 0x-prefixed transaction hash
+interface RecipientRecievedEvent {
+  // Raw event data
+  blockNumber: number;
+  transactionHash: string;
+  logIndex: number;
+  address: string; // Contract address that emitted the event
+  topics: string[]; // Raw event topics
+  data: string; // Raw event data
+  
+  // Parsed fields
+  recipient: string; // Checksummed recipient address
+  value: string; // Decimal string representation of value
 }
 
-interface DailyOutflow {
-  block_number: number; // Last block of the day
-  total_outflow_wei: string; // Sum of all event values
-  events: OutflowEvent[]; // All events for the day
-}
-
-interface OutflowData {
+interface EventData {
   metadata: {
     chain_id: number; // Network chain ID
     reward_distributor: string; // Distributor contract address
+    last_scanned_block: number; // Last block that was successfully scanned
   };
-  outflows: {
-    [date: string]: DailyOutflow; // YYYY-MM-DD format
+  events: {
+    [key: string]: RecipientRecievedEvent; // Key format: "transactionHash:logIndex"
   };
 }
 ```
@@ -239,7 +234,6 @@ interface RecipientRecievedEvent {
    - Transaction hash must be 66 characters (0x + 64 hex)
 
 3. **Output Validation**
-   - Total outflow must equal sum of event values
    - All monetary values stored as decimal strings
    - Addresses stored in checksummed format
    - No duplicate events within a day
@@ -290,16 +284,19 @@ interface RecipientRecievedEvent {
 ```typescript
 // Initialize components
 const provider = new ethers.JsonRpcProvider(RPC_URL);
-const fileManager = new FileManager("./store");
-const scanner = new EventScanner(provider, fileManager);
+const fileManager = new FileManager();
+const scanner = new RecipientRecievedScanner(provider, fileManager);
 
 // Scan all distributors
-await scanner.scanAll();
+await scanner.scan();
+
+// Or scan a specific distributor
+await scanner.scan("0x1234567890123456789012345678901234567890");
 ```
 
 ### Sample Input
 
-`store/distributors.json`:
+Distributor data from FileManager:
 
 ```json
 {
@@ -316,30 +313,35 @@ await scanner.scanAll();
 
 ### Expected Output
 
-`store/distributors/0x1234567890123456789012345678901234567890/outflows.json`:
+Outflow data written through FileManager:
 
 ```json
 {
   "metadata": {
     "chain_id": 42161,
-    "reward_distributor": "0x1234567890123456789012345678901234567890"
+    "reward_distributor": "0x1234567890123456789012345678901234567890",
+    "last_scanned_block": 100123456
   },
-  "outflows": {
-    "2024-01-15": {
-      "block_number": 100123456,
-      "total_outflow_wei": "1500000000000000000",
-      "events": [
-        {
-          "recipient": "0xAbCdEf0123456789012345678901234567890123",
-          "value_wei": "1000000000000000000",
-          "tx_hash": "0x9876543210987654321098765432109876543210987654321098765432109876"
-        },
-        {
-          "recipient": "0xFeDcBa0123456789012345678901234567890123",
-          "value_wei": "500000000000000000",
-          "tx_hash": "0x1234567890123456789012345678901234567890123456789012345678901234"
-        }
-      ]
+  "events": {
+    "0x9876543210987654321098765432109876543210987654321098765432109876:0": {
+      "blockNumber": 100123456,
+      "transactionHash": "0x9876543210987654321098765432109876543210987654321098765432109876",
+      "logIndex": 0,
+      "address": "0x1234567890123456789012345678901234567890",
+      "topics": ["0x...", "0x000000000000000000000000abcdef0123456789012345678901234567890123"],
+      "data": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+      "recipient": "0xAbCdEf0123456789012345678901234567890123",
+      "value": "1000000000000000000"
+    },
+    "0x1234567890123456789012345678901234567890123456789012345678901234:1": {
+      "blockNumber": 100123456,
+      "transactionHash": "0x1234567890123456789012345678901234567890123456789012345678901234",
+      "logIndex": 1,
+      "address": "0x1234567890123456789012345678901234567890",
+      "topics": ["0x...", "0x000000000000000000000000fedcba0123456789012345678901234567890123"],
+      "data": "0x00000000000000000000000000000000000000000000000006f05b59d3b20000",
+      "recipient": "0xFeDcBa0123456789012345678901234567890123",
+      "value": "500000000000000000"
     }
   }
 }
@@ -380,4 +382,4 @@ The following features are explicitly NOT part of this implementation:
 - Interactive configuration
 - Notification systems
 
-Remember: This component's sole responsibility is to accurately collect and aggregate `RecipientRecieved` events into the required data structure for fee calculation. Keep it simple, reliable, and focused on this single purpose.
+Remember: This component's sole responsibility is to accurately collect and store `RecipientRecieved` events into the required data structure for fee calculation. Keep it simple, reliable, and focused on this single purpose.
