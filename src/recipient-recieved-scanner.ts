@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
-import { DistributorsData, BlockNumberData } from "./types";
+import { DistributorsData, BlockNumberData, DistributorInfo } from "./types";
 
 /**
  * Creates a new RecipientRecievedScanner instance with the specified dependencies.
@@ -70,57 +70,18 @@ export class RecipientRecievedScanner {
     )) {
       if (!distributorInfo) continue;
 
-      // Load existing event data
-      const existingEventData =
-        this.fileManager.readRecipientRecievedEvents(address);
+      const datesToProcess = this.determineDateRangeForDistributor(
+        address,
+        distributorInfo,
+        blockNumbersData,
+        yesterdayStr,
+      );
 
-      // Determine start date
-      let startDate: string;
-      if (existingEventData && existingEventData.metadata.last_scanned_block) {
-        // Find the date of the last scanned block
-        const lastScannedBlock = existingEventData.metadata.last_scanned_block;
-        const lastScannedDate = this.findDateForBlock(
-          blockNumbersData,
-          lastScannedBlock,
-        );
-        if (!lastScannedDate) {
-          console.log(
-            `Warning: Could not find date for block ${lastScannedBlock} for ${address}`,
-          );
-          continue;
-        }
-        // Start from day after last scanned date
-        const nextDay = new Date(lastScannedDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        startDate = this.formatDate(nextDay);
-      } else {
-        // No existing data, start from creation date
-        startDate = distributorInfo.date;
-      }
-
-      // Check if distributor is created in the future
-      if (distributorInfo.date > yesterdayStr) {
-        console.log(`Skipping ${address} - created in the future`);
-        continue;
-      }
-
-      // Skip if start date is after yesterday (all dates processed)
-      if (startDate > yesterdayStr) {
-        console.log(`Skipping ${address} - no new dates to process`);
-        continue;
-      }
-
-      // Determine date range to process
-      const datesToProcess = this.getDateRange(startDate, yesterdayStr);
-
-      // Skip if no new dates to process
       if (datesToProcess.length === 0) {
-        console.log(`Skipping ${address} - no new dates to process`);
         continue;
       }
 
-      // Log date range being processed
-      console.log(`Processing ${address} from ${startDate} to ${yesterdayStr}`);
+      // TODO: Process the date range (out of scope for this issue)
     }
   }
 
@@ -168,6 +129,57 @@ export class RecipientRecievedScanner {
       }
     }
     return null;
+  }
+
+  /**
+   * Determines the date range to process for a distributor.
+   * @private
+   */
+  private determineDateRangeForDistributor(
+    address: string,
+    distributorInfo: DistributorInfo,
+    blockNumbersData: BlockNumberData,
+    yesterdayStr: string,
+  ): string[] {
+    // Check if distributor is created in the future
+    if (distributorInfo.date > yesterdayStr) {
+      return [];
+    }
+
+    // Load existing event data
+    const existingEventData =
+      this.fileManager.readRecipientRecievedEvents(address);
+
+    // Determine start date
+    let startDate: string;
+    if (existingEventData && existingEventData.metadata.last_scanned_block) {
+      // Find the date of the last scanned block
+      const lastScannedBlock = existingEventData.metadata.last_scanned_block;
+      const lastScannedDate = this.findDateForBlock(
+        blockNumbersData,
+        lastScannedBlock,
+      );
+      if (!lastScannedDate) {
+        throw new Error(
+          `Cannot find date for block ${lastScannedBlock} for distributor ${address}`,
+        );
+      }
+      // Start from day after last scanned date
+      const nextDay = new Date(lastScannedDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      startDate = this.formatDate(nextDay);
+    } else {
+      // No existing data, start from creation date
+      startDate = distributorInfo.date;
+    }
+
+    // Skip if start date is after yesterday (all dates processed)
+    if (startDate > yesterdayStr) {
+      return [];
+    }
+
+    // Determine date range to process
+    return this.getDateRange(startDate, yesterdayStr);
   }
 
   /**
