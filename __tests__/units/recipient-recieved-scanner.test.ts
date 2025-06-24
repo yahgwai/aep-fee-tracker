@@ -661,4 +661,224 @@ describe("RecipientRecievedScanner", () => {
       expect(mockFileManager.readDistributors).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("scan - block number conversion", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockDistributorsData: DistributorsData;
+    let mockBlockNumbersData: BlockNumberData;
+
+    beforeEach(() => {
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+
+      // Set up a mock date for "today" to make tests deterministic
+      jest.useFakeTimers().setSystemTime(new Date("2022-07-15"));
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      mockBlockNumbersData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+          "2022-07-14": 400,
+        },
+      };
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("converts each date in the range to block numbers", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      const scannerWithSpy = new RecipientRecievedScanner(
+        mockProvider,
+        mockFileManager,
+      );
+      const convertDateToBlockRangeSpy = jest.spyOn(
+        scannerWithSpy as unknown as { convertDateToBlockRange: jest.Mock },
+        "convertDateToBlockRange",
+      );
+
+      await scannerWithSpy.scan();
+
+      // Should convert dates 2022-07-12, 2022-07-13, and 2022-07-14
+      expect(convertDateToBlockRangeSpy).toHaveBeenCalledWith(
+        "2022-07-12",
+        mockBlockNumbersData,
+      );
+      expect(convertDateToBlockRangeSpy).toHaveBeenCalledWith(
+        "2022-07-13",
+        mockBlockNumbersData,
+      );
+      expect(convertDateToBlockRangeSpy).toHaveBeenCalledWith(
+        "2022-07-14",
+        mockBlockNumbersData,
+      );
+      expect(convertDateToBlockRangeSpy).toHaveBeenCalledTimes(3);
+    });
+
+    it("creates block ranges with start and end blocks for each date", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      const scannerWithSpy = new RecipientRecievedScanner(
+        mockProvider,
+        mockFileManager,
+      );
+      const convertDateToBlockRangeSpy = jest.spyOn(
+        scannerWithSpy as unknown as { convertDateToBlockRange: jest.Mock },
+        "convertDateToBlockRange",
+      );
+
+      await scannerWithSpy.scan();
+
+      // Check that the method returns correct block ranges
+      expect(convertDateToBlockRangeSpy).toHaveReturnedWith({
+        startBlock: 101, // Previous day's end block + 1
+        endBlock: 200,
+      });
+      expect(convertDateToBlockRangeSpy).toHaveReturnedWith({
+        startBlock: 201,
+        endBlock: 300,
+      });
+      expect(convertDateToBlockRangeSpy).toHaveReturnedWith({
+        startBlock: 301,
+        endBlock: 400,
+      });
+    });
+
+    it("throws error when block number is missing for a date", async () => {
+      const distributor =
+        mockDistributorsData.distributors[
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
+        ];
+      if (distributor) {
+        distributor.date = "2022-07-10"; // Date before available block data
+      }
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      await expect(scanner.scan()).rejects.toThrow(
+        "Missing block number for date 2022-07-10 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
+    });
+
+    it("validates all required block numbers before processing", async () => {
+      // Add a gap in block numbers
+      delete mockBlockNumbersData.blocks["2022-07-13"];
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      await expect(scanner.scan()).rejects.toThrow(
+        "Missing block number for date 2022-07-13 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
+    });
+
+    it("handles first date in block data correctly", async () => {
+      // Set distributor to start from the first date in block data
+      const distributor =
+        mockDistributorsData.distributors[
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
+        ];
+      if (distributor) {
+        distributor.date = "2022-07-11";
+      }
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      const scannerWithSpy = new RecipientRecievedScanner(
+        mockProvider,
+        mockFileManager,
+      );
+      const convertDateToBlockRangeSpy = jest.spyOn(
+        scannerWithSpy as unknown as { convertDateToBlockRange: jest.Mock },
+        "convertDateToBlockRange",
+      );
+
+      await scannerWithSpy.scan();
+
+      // First date should start from block 1
+      expect(convertDateToBlockRangeSpy).toHaveBeenNthCalledWith(
+        1,
+        "2022-07-11",
+        mockBlockNumbersData,
+      );
+      expect(convertDateToBlockRangeSpy).toHaveNthReturnedWith(1, {
+        startBlock: 1, // No previous day, so start from block 1
+        endBlock: 100,
+      });
+    });
+
+    it("processes block ranges for multiple distributors", async () => {
+      // Add another distributor
+      mockDistributorsData.distributors[
+        "0x1234567890123456789012345678901234567890"
+      ] = {
+        type: DistributorType.L1_BASE_FEE,
+        block: 250,
+        date: "2022-07-13",
+        tx_hash: "0xabc",
+        method: "0x57f585db",
+        owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+        event_data: "0x...",
+        is_reward_distributor: true,
+        distributor_address: "0x1234567890123456789012345678901234567890",
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      const scannerWithSpy = new RecipientRecievedScanner(
+        mockProvider,
+        mockFileManager,
+      );
+      const convertDateToBlockRangeSpy = jest.spyOn(
+        scannerWithSpy as unknown as { convertDateToBlockRange: jest.Mock },
+        "convertDateToBlockRange",
+      );
+
+      await scannerWithSpy.scan();
+
+      // Should convert dates for both distributors
+      expect(convertDateToBlockRangeSpy).toHaveBeenCalledTimes(5); // 3 dates for first + 2 dates for second
+    });
+  });
 });
