@@ -284,7 +284,7 @@ export class RecipientRecievedScanner {
 
     // Parse and store all accumulated events at once
     if (allEvents.length > 0 || lastProcessedBlock > 0) {
-      await this.parseAndStoreEvents(
+      this.parseAndStoreEvents(
         address,
         allEvents,
         chainId,
@@ -322,13 +322,13 @@ export class RecipientRecievedScanner {
    * Parses events and stores them using FileManager.
    * @private
    */
-  private async parseAndStoreEvents(
+  private parseAndStoreEvents(
     distributorAddress: string,
     events: ethers.Log[],
     chainId: number,
     lastProcessedBlock: number,
     existingData: RecipientRecievedEventData | undefined,
-  ): Promise<void> {
+  ): void {
     // Initialize event data structure
     const eventData: RecipientRecievedEventData = {
       metadata: {
