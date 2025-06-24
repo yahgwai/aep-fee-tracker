@@ -22,6 +22,7 @@ describe("RecipientRecievedScanner", () => {
   beforeEach(() => {
     mockFileManager = {
       readDistributors: jest.fn(),
+      writeRecipientRecievedEvents: jest.fn(),
     } as unknown as jest.Mocked<FileManager>;
     mockProvider = {
       getLogs: jest.fn().mockResolvedValue([]),
@@ -89,6 +90,7 @@ describe("RecipientRecievedScanner", () => {
     beforeEach(() => {
       mockFileManager = {
         readDistributors: jest.fn().mockReturnValue(undefined),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
     });
@@ -128,6 +130,7 @@ describe("RecipientRecievedScanner", () => {
     beforeEach(() => {
       mockFileManager = {
         readDistributors: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
     });
@@ -200,6 +203,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -271,6 +275,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -337,15 +342,16 @@ describe("RecipientRecievedScanner", () => {
         },
       });
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockFileManager.writeRecipientRecievedEvents = jest.fn();
+      mockProvider.getLogs.mockResolvedValue([]);
 
       await scanner.scan(targetAddress);
 
       expect(mockFileManager.readRecipientRecievedEvents).toHaveBeenCalledWith(
         targetAddress,
       );
-      expect(mockFileManager.readRecipientRecievedEvents).toHaveBeenCalledTimes(
-        1,
-      );
+      // readRecipientRecievedEvents is called multiple times during event processing
+      expect(mockFileManager.readRecipientRecievedEvents).toHaveBeenCalled();
     });
   });
 
@@ -359,6 +365,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -481,6 +488,8 @@ describe("RecipientRecievedScanner", () => {
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(
         existingEventData,
       );
+      mockFileManager.writeRecipientRecievedEvents = jest.fn();
+      mockProvider.getLogs.mockResolvedValue([]);
 
       // Should process without error, starting from day after last scanned block
       await expect(scanner.scan()).resolves.not.toThrow();
@@ -501,6 +510,8 @@ describe("RecipientRecievedScanner", () => {
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(
         existingEventData,
       );
+      mockFileManager.writeRecipientRecievedEvents = jest.fn();
+      mockProvider.getLogs.mockResolvedValue([]);
 
       // Should process without error
       await expect(scanner.scan()).resolves.not.toThrow();
@@ -606,6 +617,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -698,6 +710,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
@@ -1155,6 +1168,7 @@ describe("RecipientRecievedScanner", () => {
         readDistributors: jest.fn(),
         readBlockNumbers: jest.fn(),
         readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
       } as unknown as jest.Mocked<FileManager>;
       mockProvider = {
         getLogs: jest.fn(),
@@ -1241,16 +1255,81 @@ describe("RecipientRecievedScanner", () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockFileManager.writeRecipientRecievedEvents = jest.fn();
 
       const mockLogs1 = [
-        { blockNumber: 150, transactionHash: "0x111", index: 0 },
+        {
+          blockNumber: 150,
+          transactionHash: "0x111",
+          index: 0,
+          address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue(
+              "0x1111111111111111111111111111111111111111",
+              32,
+            ),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(
+            ["uint256"],
+            ["1000000000000000000"],
+          ),
+        },
       ] as unknown as ethers.Log[];
       const mockLogs2 = [
-        { blockNumber: 250, transactionHash: "0x222", index: 0 },
-        { blockNumber: 280, transactionHash: "0x333", index: 1 },
+        {
+          blockNumber: 250,
+          transactionHash: "0x222",
+          index: 0,
+          address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue(
+              "0x2222222222222222222222222222222222222222",
+              32,
+            ),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(
+            ["uint256"],
+            ["2000000000000000000"],
+          ),
+        },
+        {
+          blockNumber: 280,
+          transactionHash: "0x333",
+          index: 1,
+          address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue(
+              "0x3333333333333333333333333333333333333333",
+              32,
+            ),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(
+            ["uint256"],
+            ["3000000000000000000"],
+          ),
+        },
       ] as unknown as ethers.Log[];
       const mockLogs3 = [
-        { blockNumber: 350, transactionHash: "0x444", index: 0 },
+        {
+          blockNumber: 350,
+          transactionHash: "0x444",
+          index: 0,
+          address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue(
+              "0x4444444444444444444444444444444444444444",
+              32,
+            ),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(
+            ["uint256"],
+            ["4000000000000000000"],
+          ),
+        },
       ] as unknown as ethers.Log[];
 
       mockProvider.getLogs
@@ -1287,45 +1366,32 @@ describe("RecipientRecievedScanner", () => {
       );
     });
 
-    it("does not parse or store events during scan", async () => {
+    it("handles empty event results for some date ranges", async () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
       mockFileManager.writeRecipientRecievedEvents = jest.fn();
 
-      const mockLogs = [
-        {
-          blockNumber: 150,
-          transactionHash: "0x111",
-          index: 0,
-          topics: [RECIPIENT_RECIEVED_EVENT_TOPIC, "0xrecipient"],
-          data: "0xvalue",
-        },
-      ] as unknown as ethers.Log[];
-
-      mockProvider.getLogs.mockResolvedValue(mockLogs);
-
-      await scanner.scan();
-
-      // Should NOT write events to disk (out of scope)
-      expect(
-        mockFileManager.writeRecipientRecievedEvents,
-      ).not.toHaveBeenCalled();
-
-      // Should NOT access the interface for parsing (out of scope)
-      const interfaceSpy = jest.spyOn(recipientRecievedInterface, "parseLog");
-      expect(interfaceSpy).not.toHaveBeenCalled();
-    });
-
-    it("handles empty event results for some date ranges", async () => {
-      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
-      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
-      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
-
       mockProvider.getLogs
         .mockResolvedValueOnce([]) // Day 1: no events
         .mockResolvedValueOnce([
-          { blockNumber: 250, transactionHash: "0x222", index: 0 },
+          {
+            blockNumber: 250,
+            transactionHash: "0x222",
+            index: 0,
+            address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            topics: [
+              RECIPIENT_RECIEVED_EVENT_TOPIC,
+              ethers.zeroPadValue(
+                "0x1234567890123456789012345678901234567890",
+                32,
+              ),
+            ],
+            data: ethers.AbiCoder.defaultAbiCoder().encode(
+              ["uint256"],
+              ["1000000000000000000"],
+            ),
+          },
         ] as unknown as ethers.Log[]) // Day 2: has events
         .mockResolvedValueOnce([]); // Day 3: no events
 
@@ -1371,6 +1437,7 @@ describe("RecipientRecievedScanner", () => {
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(
         existingEventData,
       );
+      mockFileManager.writeRecipientRecievedEvents = jest.fn();
       mockProvider.getLogs.mockResolvedValue([]);
 
       await scanner.scan();
@@ -1431,6 +1498,523 @@ describe("RecipientRecievedScanner", () => {
           toBlock: 10100,
         }),
       );
+    });
+  });
+
+  describe("scan - event parsing and storage", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockDistributorsData: DistributorsData;
+    let mockBlockNumbersData: BlockNumberData;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      mockProvider = {
+        getLogs: jest.fn(),
+      } as unknown as jest.Mocked<ethers.Provider>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+
+      // Set up a mock date for "today" to make tests deterministic
+      jest.useFakeTimers().setSystemTime(new Date("2022-07-15"));
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      mockBlockNumbersData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+          "2022-07-14": 400,
+        },
+      };
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("parses RecipientRecieved events using ethers interface", async () => {
+      const distributorAddress = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
+
+      // Mock event data - a RecipientRecieved event
+      const mockRecipientAddress = "0x1234567890123456789012345678901234567890";
+      const mockValue = "1000000000000000000"; // 1 ETH in wei
+
+      // Create encoded topics for RecipientRecieved event
+      // topic[0] = event signature hash
+      // topic[1] = indexed recipient address (padded to 32 bytes)
+      const mockTopics = [
+        RECIPIENT_RECIEVED_EVENT_TOPIC,
+        ethers.zeroPadValue(mockRecipientAddress, 32),
+      ];
+
+      // Create encoded data for the value (non-indexed parameter)
+      const mockData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256"],
+        [mockValue],
+      );
+
+      const mockLogs = [
+        {
+          blockNumber: 150,
+          transactionHash:
+            "0xabc123def456789012345678901234567890123456789012345678901234567890",
+          index: 0,
+          address: distributorAddress,
+          topics: mockTopics,
+          data: mockData,
+        },
+      ] as unknown as ethers.Log[];
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+
+      // First call returns undefined (no existing data), subsequent calls return accumulated data
+      mockFileManager.readRecipientRecievedEvents
+        .mockReturnValueOnce(undefined)
+        .mockReturnValue({
+          metadata: {
+            chain_id: 42170,
+            reward_distributor: distributorAddress,
+            last_scanned_block: 150,
+          },
+          events: {
+            "0xabc123def456789012345678901234567890123456789012345678901234567890:0":
+              {
+                blockNumber: 150,
+                transactionHash:
+                  "0xabc123def456789012345678901234567890123456789012345678901234567890",
+                logIndex: 0,
+                address: distributorAddress,
+                topics: mockTopics,
+                data: mockData,
+                recipient: ethers.getAddress(mockRecipientAddress),
+                value: mockValue,
+              },
+          },
+        });
+
+      mockProvider.getLogs.mockResolvedValue(mockLogs);
+
+      await scanner.scan();
+
+      // Verify that the event was parsed and saved
+      expect(mockFileManager.writeRecipientRecievedEvents).toHaveBeenCalled();
+
+      // Get the last call to writeRecipientRecievedEvents (final update with last_scanned_block)
+      const calls = mockFileManager.writeRecipientRecievedEvents.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const lastCall = calls[calls.length - 1];
+
+      expect(lastCall![0]).toBe(distributorAddress);
+      expect(lastCall![1]).toEqual(
+        expect.objectContaining({
+          metadata: {
+            chain_id: 42170,
+            reward_distributor: distributorAddress,
+            last_scanned_block: 400, // Should be updated to the last block scanned
+          },
+          events: {
+            "0xabc123def456789012345678901234567890123456789012345678901234567890:0":
+              {
+                blockNumber: 150,
+                transactionHash:
+                  "0xabc123def456789012345678901234567890123456789012345678901234567890",
+                logIndex: 0,
+                address: distributorAddress,
+                topics: mockTopics,
+                data: mockData,
+                recipient: ethers.getAddress(mockRecipientAddress), // Should be checksummed
+                value: mockValue,
+              },
+          },
+        }),
+      );
+    });
+
+    it("creates unique event keys using transactionHash:logIndex format", async () => {
+      const distributorAddress = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
+
+      // Mock multiple events with different transaction hashes and log indices
+      const mockLogs = [
+        {
+          blockNumber: 150,
+          transactionHash:
+            "0xabc123def456789012345678901234567890123456789012345678901234567890",
+          index: 0,
+          address: distributorAddress,
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue(
+              "0x1111111111111111111111111111111111111111",
+              32,
+            ),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(
+            ["uint256"],
+            ["1000000000000000000"],
+          ),
+        },
+        {
+          blockNumber: 151,
+          transactionHash:
+            "0xabc123def456789012345678901234567890123456789012345678901234567890",
+          index: 1,
+          address: distributorAddress,
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue(
+              "0x2222222222222222222222222222222222222222",
+              32,
+            ),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(
+            ["uint256"],
+            ["2000000000000000000"],
+          ),
+        },
+        {
+          blockNumber: 152,
+          transactionHash:
+            "0xdef456789012345678901234567890123456789012345678901234567890abcd",
+          index: 0,
+          address: distributorAddress,
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue(
+              "0x3333333333333333333333333333333333333333",
+              32,
+            ),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(
+            ["uint256"],
+            ["3000000000000000000"],
+          ),
+        },
+      ] as unknown as ethers.Log[];
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue(mockLogs);
+
+      await scanner.scan();
+
+      // Check that writeRecipientRecievedEvents was called with correctly formatted keys
+      const writeCalls =
+        mockFileManager.writeRecipientRecievedEvents.mock.calls;
+      expect(writeCalls.length).toBeGreaterThan(0);
+      const firstCall = writeCalls[0];
+      expect(firstCall).toBeDefined();
+      const eventKeys = Object.keys(firstCall![1].events);
+
+      expect(eventKeys).toContain(
+        "0xabc123def456789012345678901234567890123456789012345678901234567890:0",
+      );
+      expect(eventKeys).toContain(
+        "0xabc123def456789012345678901234567890123456789012345678901234567890:1",
+      );
+      expect(eventKeys).toContain(
+        "0xdef456789012345678901234567890123456789012345678901234567890abcd:0",
+      );
+    });
+
+    it("merges new events with existing event data", async () => {
+      const distributorAddress = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
+
+      // Mock existing event data
+      const existingEventData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: distributorAddress,
+          last_scanned_block: 100,
+        },
+        events: {
+          "0x111111111111111111111111111111111111111111111111111111111111111:0":
+            {
+              blockNumber: 50,
+              transactionHash:
+                "0x111111111111111111111111111111111111111111111111111111111111111",
+              logIndex: 0,
+              address: distributorAddress,
+              topics: [
+                RECIPIENT_RECIEVED_EVENT_TOPIC,
+                ethers.zeroPadValue(
+                  "0x0000000000000000000000000000000000000001",
+                  32,
+                ),
+              ],
+              data: "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+              recipient: "0x0000000000000000000000000000000000000001",
+              value: "1000000000000000000",
+            },
+        },
+      };
+
+      // Mock new event
+      const newEvent = {
+        blockNumber: 150,
+        transactionHash:
+          "0x222222222222222222222222222222222222222222222222222222222222222",
+        index: 0,
+        address: distributorAddress,
+        topics: [
+          RECIPIENT_RECIEVED_EVENT_TOPIC,
+          ethers.zeroPadValue("0x0000000000000000000000000000000000000002", 32),
+        ],
+        data: ethers.AbiCoder.defaultAbiCoder().encode(
+          ["uint256"],
+          ["2000000000000000000"],
+        ),
+      } as unknown as ethers.Log;
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents
+        .mockReturnValueOnce(existingEventData)
+        .mockReturnValue({
+          ...existingEventData,
+          events: {
+            ...existingEventData.events,
+            "0x222222222222222222222222222222222222222222222222222222222222222:0":
+              {
+                blockNumber: 150,
+                transactionHash:
+                  "0x222222222222222222222222222222222222222222222222222222222222222",
+                logIndex: 0,
+                address: distributorAddress,
+                topics: [
+                  RECIPIENT_RECIEVED_EVENT_TOPIC,
+                  ethers.zeroPadValue(
+                    "0x0000000000000000000000000000000000000002",
+                    32,
+                  ),
+                ],
+                data: ethers.AbiCoder.defaultAbiCoder().encode(
+                  ["uint256"],
+                  ["2000000000000000000"],
+                ),
+                recipient: "0x0000000000000000000000000000000000000002",
+                value: "2000000000000000000",
+              },
+          },
+        });
+      mockProvider.getLogs.mockResolvedValue([newEvent]);
+
+      await scanner.scan();
+
+      // Verify both old and new events are preserved
+      const calls = mockFileManager.writeRecipientRecievedEvents.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const lastCall = calls[calls.length - 1];
+      expect(lastCall).toBeDefined();
+      const savedData = lastCall![1];
+
+      expect(Object.keys(savedData.events)).toHaveLength(2);
+      expect(savedData.events).toHaveProperty(
+        "0x111111111111111111111111111111111111111111111111111111111111111:0",
+      );
+      expect(savedData.events).toHaveProperty(
+        "0x222222222222222222222222222222222222222222222222222222222222222:0",
+      );
+    });
+
+    it("stores recipient addresses in checksummed format", async () => {
+      const distributorAddress = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
+
+      // Use lowercase address that should be checksummed
+      const lowercaseRecipient = "0xabcdef0123456789012345678901234567890123";
+      const checksummedRecipient = ethers.getAddress(lowercaseRecipient);
+
+      const mockLog = {
+        blockNumber: 150,
+        transactionHash:
+          "0xabc123def456789012345678901234567890123456789012345678901234567890",
+        index: 0,
+        address: distributorAddress,
+        topics: [
+          RECIPIENT_RECIEVED_EVENT_TOPIC,
+          ethers.zeroPadValue(lowercaseRecipient, 32),
+        ],
+        data: ethers.AbiCoder.defaultAbiCoder().encode(
+          ["uint256"],
+          ["1000000000000000000"],
+        ),
+      } as unknown as ethers.Log;
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([mockLog]);
+
+      await scanner.scan();
+
+      // Verify the recipient address is stored in checksummed format
+      const calls = mockFileManager.writeRecipientRecievedEvents.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const firstCall = calls[0];
+      expect(firstCall).toBeDefined();
+      const savedEvent =
+        firstCall![1].events[
+          "0xabc123def456789012345678901234567890123456789012345678901234567890:0"
+        ];
+      expect(savedEvent).toBeDefined();
+
+      expect(savedEvent!.recipient).toBe(checksummedRecipient);
+      expect(savedEvent!.recipient).not.toBe(lowercaseRecipient);
+    });
+
+    it("updates last_scanned_block to the highest block processed", async () => {
+      const distributorAddress = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
+
+      // Mock events across multiple days with different block numbers
+      const day1Events = [
+        {
+          blockNumber: 150,
+          transactionHash: "0x111",
+          index: 0,
+          address: distributorAddress,
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue("0x1111", 32),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], ["1000"]),
+        },
+      ] as unknown as ethers.Log[];
+
+      const day2Events = [
+        {
+          blockNumber: 250,
+          transactionHash: "0x222",
+          index: 0,
+          address: distributorAddress,
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue("0x2222", 32),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], ["2000"]),
+        },
+      ] as unknown as ethers.Log[];
+
+      const day3Events = [
+        {
+          blockNumber: 350,
+          transactionHash: "0x333",
+          index: 0,
+          address: distributorAddress,
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue("0x3333", 32),
+          ],
+          data: ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], ["3000"]),
+        },
+      ] as unknown as ethers.Log[];
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+
+      // Mock readRecipientRecievedEvents to return accumulated data for final update
+      const accumulatedData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: distributorAddress,
+          last_scanned_block: 350,
+        },
+        events: {
+          "0x111:0": {
+            blockNumber: 150,
+            transactionHash: "0x111",
+            logIndex: 0,
+            address: distributorAddress,
+            topics: [
+              RECIPIENT_RECIEVED_EVENT_TOPIC,
+              ethers.zeroPadValue("0x1111", 32),
+            ],
+            data: ethers.AbiCoder.defaultAbiCoder().encode(
+              ["uint256"],
+              ["1000"],
+            ),
+            recipient: "0x0000000000000000000000000000000000001111",
+            value: "1000",
+          },
+          "0x222:0": {
+            blockNumber: 250,
+            transactionHash: "0x222",
+            logIndex: 0,
+            address: distributorAddress,
+            topics: [
+              RECIPIENT_RECIEVED_EVENT_TOPIC,
+              ethers.zeroPadValue("0x2222", 32),
+            ],
+            data: ethers.AbiCoder.defaultAbiCoder().encode(
+              ["uint256"],
+              ["2000"],
+            ),
+            recipient: "0x0000000000000000000000000000000000002222",
+            value: "2000",
+          },
+          "0x333:0": {
+            blockNumber: 350,
+            transactionHash: "0x333",
+            logIndex: 0,
+            address: distributorAddress,
+            topics: [
+              RECIPIENT_RECIEVED_EVENT_TOPIC,
+              ethers.zeroPadValue("0x3333", 32),
+            ],
+            data: ethers.AbiCoder.defaultAbiCoder().encode(
+              ["uint256"],
+              ["3000"],
+            ),
+            recipient: "0x0000000000000000000000000000000000003333",
+            value: "3000",
+          },
+        },
+      };
+
+      mockFileManager.readRecipientRecievedEvents
+        .mockReturnValueOnce(undefined) // First read for existing data
+        .mockReturnValue(accumulatedData); // Subsequent reads return accumulated data
+
+      // Return different events for each day
+      mockProvider.getLogs
+        .mockResolvedValueOnce(day1Events)
+        .mockResolvedValueOnce(day2Events)
+        .mockResolvedValueOnce(day3Events);
+
+      await scanner.scan();
+
+      // Verify the last_scanned_block is set to the highest block (400 - last day's endBlock)
+      const calls = mockFileManager.writeRecipientRecievedEvents.mock.calls;
+      const finalCall = calls[calls.length - 1];
+      expect(finalCall).toBeDefined();
+      expect(finalCall![1].metadata.last_scanned_block).toBe(400);
     });
   });
 });

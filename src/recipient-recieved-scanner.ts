@@ -4,6 +4,7 @@ import {
   DistributorsData,
   BlockNumberData,
   DistributorInfo,
+  RecipientRecievedEventData,
   withRetry,
 } from "./types";
 import { chunkBlockRange } from "./utils/block-range-chunking";
@@ -234,9 +235,17 @@ export class RecipientRecievedScanner {
       return;
     }
 
+    // Get chain ID from distributors data
+    const distributorsData = this.fileManager.readDistributors();
+    const chainId = distributorsData?.metadata.chain_id || 0;
+
+    // Accumulate all events
+    const allEvents: ethers.Log[] = [];
+
     // Process one day at a time
     const currentDate = new Date(startDate);
     const endDate = new Date(yesterdayStr);
+    let lastProcessedBlock = 0;
 
     while (currentDate <= endDate) {
       const dateStr = this.formatDate(currentDate);
@@ -261,11 +270,27 @@ export class RecipientRecievedScanner {
         endBlock,
       );
 
-      // Collect all events without parsing (out of scope for this issue)
-      void events; // Events collected but not processed yet
+      // Accumulate events
+      if (events.length > 0) {
+        allEvents.push(...events);
+      }
+
+      // Track the last processed block
+      lastProcessedBlock = endBlock;
 
       // Move to next day
       currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Parse and store all accumulated events at once
+    if (allEvents.length > 0 || lastProcessedBlock > 0) {
+      this.parseAndStoreEvents(
+        address,
+        allEvents,
+        chainId,
+        lastProcessedBlock,
+        existingEventData,
+      );
     }
   }
 
@@ -291,5 +316,62 @@ export class RecipientRecievedScanner {
     const startBlock = previousBlock !== undefined ? previousBlock + 1 : 1;
 
     return { startBlock, endBlock };
+  }
+
+  /**
+   * Parses events and stores them using FileManager.
+   * @private
+   */
+  private parseAndStoreEvents(
+    distributorAddress: string,
+    events: ethers.Log[],
+    chainId: number,
+    lastProcessedBlock: number,
+    existingData: RecipientRecievedEventData | undefined,
+  ): void {
+    // Initialize event data structure
+    const eventData: RecipientRecievedEventData = {
+      metadata: {
+        chain_id: chainId,
+        reward_distributor: distributorAddress,
+        last_scanned_block: lastProcessedBlock,
+      },
+      events: existingData?.events || {},
+    };
+
+    // Parse each event
+    for (const log of events) {
+      const parsedLog = recipientRecievedInterface.parseLog({
+        topics: log.topics as string[],
+        data: log.data,
+      });
+
+      if (parsedLog) {
+        // Create unique key
+        const eventKey = `${log.transactionHash}:${log.index}`;
+
+        // Extract recipient and value from parsed event
+        const recipient = ethers.getAddress(parsedLog.args["recipient"]);
+        const value = parsedLog.args["value"].toString();
+
+        // Store the event
+        eventData.events[eventKey] = {
+          blockNumber: log.blockNumber,
+          transactionHash: log.transactionHash,
+          logIndex: log.index,
+          address: log.address,
+          topics: log.topics as string[],
+          data: log.data,
+          recipient,
+          value,
+        };
+      }
+    }
+
+    // Save the updated event data
+    this.fileManager.writeRecipientRecievedEvents(
+      distributorAddress,
+      eventData,
+    );
   }
 }
