@@ -23,7 +23,9 @@ describe("RecipientRecievedScanner", () => {
     mockFileManager = {
       readDistributors: jest.fn(),
     } as unknown as jest.Mocked<FileManager>;
-    mockProvider = {} as jest.Mocked<ethers.Provider>;
+    mockProvider = {
+      getLogs: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<ethers.Provider>;
   });
 
   describe("constructor", () => {
