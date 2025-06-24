@@ -16,6 +16,7 @@ import {
   isValidDistributorType,
   isValidDateString,
   isValidDecimalString,
+  FeeReport,
 } from "../../src/types";
 
 describe("Core Types", () => {
@@ -95,6 +96,164 @@ describe("Core Types", () => {
       const balance = data.balances["2024-01-15"];
       expect(balance).toBeDefined();
       expect(balance?.balance_wei).toBe("1000000000000000000000");
+    });
+  });
+
+  describe("FeeReport", () => {
+    it("should create valid FeeReport object", () => {
+      const data: FeeReport = {
+        metadata: {
+          chain_id: 42170,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            name: "ArbitrumHub",
+            daily_totals: [
+              {
+                date: "2024-01-15",
+                start_balance_wei: "1500000000000000000000",
+                end_balance_wei: "1480000000000000000000",
+                balance_change_wei: "-20000000000000000000",
+                distributions_wei: "25000000000000000000",
+                distributions_count: 5,
+                total_wei: "5000000000000000000",
+              },
+            ],
+          },
+        },
+      };
+      expect(data.metadata.chain_id).toBe(42170);
+      expect(data.distributors).toBeDefined();
+      const distributor =
+        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"];
+      expect(distributor).toBeDefined();
+      expect(distributor?.name).toBe("ArbitrumHub");
+      expect(distributor?.daily_totals).toHaveLength(1);
+    });
+
+    it("should support multiple distributors with multiple daily totals", () => {
+      const data: FeeReport = {
+        metadata: {
+          chain_id: 42170,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            name: "ArbitrumHub",
+            daily_totals: [
+              {
+                date: "2024-01-15",
+                start_balance_wei: "1500000000000000000000",
+                end_balance_wei: "1480000000000000000000",
+                balance_change_wei: "-20000000000000000000",
+                distributions_wei: "25000000000000000000",
+                distributions_count: 5,
+                total_wei: "5000000000000000000",
+              },
+              {
+                date: "2024-01-16",
+                start_balance_wei: "1480000000000000000000",
+                end_balance_wei: "1490000000000000000000",
+                balance_change_wei: "10000000000000000000",
+                distributions_wei: "15000000000000000000",
+                distributions_count: 3,
+                total_wei: "25000000000000000000",
+              },
+            ],
+          },
+          "0x8f7492DE823025b4CfaAB1D34c58963F2af5DEDA": {
+            name: "ArbLab",
+            daily_totals: [
+              {
+                date: "2024-01-15",
+                start_balance_wei: "2000000000000000000000",
+                end_balance_wei: "2100000000000000000000",
+                balance_change_wei: "100000000000000000000",
+                distributions_wei: "0",
+                distributions_count: 0,
+                total_wei: "100000000000000000000",
+              },
+            ],
+          },
+        },
+      };
+      expect(Object.keys(data.distributors)).toHaveLength(2);
+      expect(
+        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"]
+          ?.daily_totals,
+      ).toHaveLength(2);
+      expect(
+        data.distributors["0x8f7492DE823025b4CfaAB1D34c58963F2af5DEDA"]
+          ?.daily_totals,
+      ).toHaveLength(1);
+    });
+
+    it("should have all required fields in daily_totals entries", () => {
+      const data: FeeReport = {
+        metadata: {
+          chain_id: 42170,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            name: "ArbitrumHub",
+            daily_totals: [
+              {
+                date: "2024-01-15",
+                start_balance_wei: "1500000000000000000000",
+                end_balance_wei: "1480000000000000000000",
+                balance_change_wei: "-20000000000000000000",
+                distributions_wei: "25000000000000000000",
+                distributions_count: 5,
+                total_wei: "5000000000000000000",
+              },
+            ],
+          },
+        },
+      };
+
+      const dailyTotal =
+        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"]
+          ?.daily_totals[0];
+      expect(dailyTotal).toBeDefined();
+      expect(dailyTotal?.date).toBe("2024-01-15");
+      expect(dailyTotal?.start_balance_wei).toBe("1500000000000000000000");
+      expect(dailyTotal?.end_balance_wei).toBe("1480000000000000000000");
+      expect(dailyTotal?.balance_change_wei).toBe("-20000000000000000000");
+      expect(dailyTotal?.distributions_wei).toBe("25000000000000000000");
+      expect(dailyTotal?.distributions_count).toBe(5);
+      expect(dailyTotal?.total_wei).toBe("5000000000000000000");
+    });
+
+    it("should ensure all wei values are string type for precision", () => {
+      const data: FeeReport = {
+        metadata: {
+          chain_id: 42170,
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            name: "ArbitrumHub",
+            daily_totals: [
+              {
+                date: "2024-01-15",
+                start_balance_wei: "1500000000000000000000",
+                end_balance_wei: "1480000000000000000000",
+                balance_change_wei: "-20000000000000000000",
+                distributions_wei: "25000000000000000000",
+                distributions_count: 5,
+                total_wei: "5000000000000000000",
+              },
+            ],
+          },
+        },
+      };
+
+      const dailyTotal =
+        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"]
+          ?.daily_totals[0];
+      expect(typeof dailyTotal?.start_balance_wei).toBe("string");
+      expect(typeof dailyTotal?.end_balance_wei).toBe("string");
+      expect(typeof dailyTotal?.balance_change_wei).toBe("string");
+      expect(typeof dailyTotal?.distributions_wei).toBe("string");
+      expect(typeof dailyTotal?.total_wei).toBe("string");
     });
   });
 
