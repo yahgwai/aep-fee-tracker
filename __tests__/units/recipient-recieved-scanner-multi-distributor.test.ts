@@ -116,9 +116,13 @@ describe("RecipientRecievedScanner - Multi-distributor error isolation", () => {
     it("continues processing remaining distributors when one fails", async () => {
       // Arrange
       mockProvider.getLogs
-        .mockResolvedValueOnce([]) // distributor1 succeeds
-        .mockRejectedValueOnce(new Error("RPC error for distributor2")) // distributor2 fails
-        .mockResolvedValue([]); // distributor3 succeeds
+        .mockResolvedValueOnce([]) // distributor1 day1
+        .mockResolvedValueOnce([]) // distributor1 day2
+        .mockResolvedValueOnce([]) // distributor1 day3
+        .mockRejectedValueOnce(new Error("RPC error for distributor2")) // distributor2 day1 fails
+        .mockResolvedValueOnce([]) // distributor3 day1
+        .mockResolvedValueOnce([]) // distributor3 day2
+        .mockResolvedValue([]); // distributor3 day3
 
       // Act
       await scanner.scan();
@@ -181,9 +185,13 @@ describe("RecipientRecievedScanner - Multi-distributor error isolation", () => {
       // Arrange
       const error = new Error("RPC timeout");
       mockProvider.getLogs
-        .mockResolvedValueOnce([]) // distributor1 succeeds
-        .mockRejectedValueOnce(error) // distributor2 fails
-        .mockResolvedValue([]); // distributor3 succeeds
+        .mockResolvedValueOnce([]) // distributor1 day1
+        .mockResolvedValueOnce([]) // distributor1 day2
+        .mockResolvedValueOnce([]) // distributor1 day3
+        .mockRejectedValueOnce(error) // distributor2 day1 fails
+        .mockResolvedValueOnce([]) // distributor3 day1
+        .mockResolvedValueOnce([]) // distributor3 day2
+        .mockResolvedValue([]); // distributor3 day3
 
       // Act
       await scanner.scan();
@@ -292,7 +300,7 @@ describe("RecipientRecievedScanner - Multi-distributor error isolation", () => {
       await scanner.scan(); // No distributorAddress parameter
 
       // Assert
-      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3); // All 3 distributors
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(9); // 3 distributors * 3 days each
     });
 
     it("does not apply error isolation when specific distributor address is provided", async () => {

@@ -127,18 +127,69 @@ export class RecipientRecievedScanner {
         }
       : distributorsData.distributors;
 
-    for (const [address, distributorInfo] of Object.entries(
-      distributorsToProcess,
-    )) {
-      if (!distributorInfo) continue;
+    // Only apply error isolation when processing multiple distributors
+    if (distributorAddress) {
+      // Single distributor - no error isolation
+      for (const [address, distributorInfo] of Object.entries(
+        distributorsToProcess,
+      )) {
+        if (!distributorInfo) continue;
 
-      // Process this distributor day by day
-      await this.processDistributor(
-        address,
-        distributorInfo,
-        blockNumbersData,
-        yesterdayStr,
-      );
+        await this.processDistributor(
+          address,
+          distributorInfo,
+          blockNumbersData,
+          yesterdayStr,
+        );
+      }
+    } else {
+      // Multiple distributors - apply error isolation
+      let successCount = 0;
+      let failureCount = 0;
+
+      // Sort distributor addresses for consistent processing order
+      const sortedAddresses = Object.keys(distributorsToProcess).sort();
+
+      for (const address of sortedAddresses) {
+        const distributorInfo = distributorsToProcess[address];
+        if (!distributorInfo) continue;
+
+        try {
+          await this.processDistributor(
+            address,
+            distributorInfo,
+            blockNumbersData,
+            yesterdayStr,
+          );
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to scan distributor ${address}:`, error);
+          failureCount++;
+        }
+      }
+
+      // Log summary
+      if (successCount > 0) {
+        console.log(`Scanned ${successCount} distributors successfully`);
+      }
+      if (failureCount > 0) {
+        console.log(`Failed to scan ${failureCount} distributors`);
+      }
+
+      // If all distributors failed and we have a connection error, throw
+      if (
+        failureCount > 0 &&
+        successCount === 0 &&
+        sortedAddresses.length === failureCount
+      ) {
+        // Check if it's a connection issue by trying getNetwork
+        try {
+          await this.provider.getNetwork();
+        } catch (networkError) {
+          // Connection issue detected, throw the error
+          throw networkError;
+        }
+      }
     }
   }
 
