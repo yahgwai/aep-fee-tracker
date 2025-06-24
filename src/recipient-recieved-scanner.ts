@@ -40,62 +40,27 @@ export class RecipientRecievedScanner {
       return;
     }
 
-    // Process distributors based on filter
-    const distributorsToProcess = this.getDistributorsToProcess(
-      distributorsData,
-      distributorAddress,
+    // Validate distributor exists if specified
+    if (distributorAddress) {
+      this.validateDistributorExists(distributorsData, distributorAddress);
+    }
+  }
+
+  /**
+   * Validates that the specified distributor exists in the data.
+   * @private
+   */
+  private validateDistributorExists(
+    distributorsData: DistributorsData,
+    distributorAddress: string,
+  ): void {
+    // Find distributor with case-insensitive comparison
+    const foundAddress = Object.keys(distributorsData.distributors).find(
+      (address) => address.toLowerCase() === distributorAddress.toLowerCase(),
     );
 
-    // Log which distributors will be scanned
-    this.logScanningInfo(distributorsToProcess, distributorAddress);
-  }
-
-  /**
-   * Gets the distributors to process based on the filter parameter.
-   * @private
-   */
-  private getDistributorsToProcess(
-    distributorsData: DistributorsData,
-    distributorAddress?: string,
-  ): DistributorsData["distributors"] {
-    if (distributorAddress) {
-      // Find distributor with case-insensitive comparison
-      const foundAddress = Object.keys(distributorsData.distributors).find(
-        (address) => address.toLowerCase() === distributorAddress.toLowerCase(),
-      );
-
-      if (!foundAddress) {
-        throw new Error(`Distributor ${distributorAddress} not found`);
-      }
-
-      // Return only the requested distributor
-      const distributor = distributorsData.distributors[foundAddress];
-      if (!distributor) {
-        // This should never happen as we just found the address
-        throw new Error(`Distributor ${distributorAddress} not found`);
-      }
-      return {
-        [foundAddress]: distributor,
-      };
-    }
-
-    // Return all distributors
-    return distributorsData.distributors;
-  }
-
-  /**
-   * Logs information about which distributors will be scanned.
-   * @private
-   */
-  private logScanningInfo(
-    distributorsToProcess: DistributorsData["distributors"],
-    distributorAddress?: string,
-  ): void {
-    if (distributorAddress) {
-      console.log(`Scanning distributor: ${distributorAddress}`);
-    } else {
-      const distributorCount = Object.keys(distributorsToProcess).length;
-      console.log(`Scanning all ${distributorCount} distributors`);
+    if (!foundAddress) {
+      throw new Error(`Distributor ${distributorAddress} not found`);
     }
   }
 }
