@@ -7,6 +7,8 @@ import {
   DistributorType,
 } from "../src/types";
 import { getAddress } from "ethers";
+import { DistributorDetector } from "../src/distributor-detector";
+import { JsonRpcProvider } from "ethers";
 
 // Method selectors to distributor types mapping
 const METHOD_TO_TYPE: Record<string, DistributorType> = {
@@ -24,9 +26,12 @@ interface RawEvent {
 }
 
 // Parse raw event to extract distributor info
-function parseRawEvent(event: RawEvent): DistributorInfo {
+async function parseRawEvent(
+  provider: JsonRpcProvider,
+  event: RawEvent,
+): Promise<DistributorInfo> {
   // Extract method selector from topics[1]
-  const methodSelector = event.topics[1].substring(0, 10).toLowerCase();
+  const methodSelector = event.topics[1]!.substring(0, 10).toLowerCase();
 
   // Get distributor type from method selector
   const distributorType = METHOD_TO_TYPE[methodSelector];
@@ -47,18 +52,21 @@ function parseRawEvent(event: RawEvent): DistributorInfo {
   const dateString = date.toISOString().split("T")[0];
 
   // Extract owner from topics[2]
-  const ownerData = "0x" + event.topics[2].substring(26); // Remove padding from address
+  const ownerData = "0x" + event.topics[2]!.substring(26); // Remove padding from address
   const owner = getAddress(ownerData);
 
   return {
     type: distributorType,
     block: event.blockNumber,
-    date: dateString,
+    date: dateString!,
     tx_hash: event.transactionHash,
     method: methodSelector,
     owner: owner,
     event_data: event.data,
-    is_reward_distributor: true, // Assuming all are reward distributors for this conversion
+    is_reward_distributor: await DistributorDetector.isRewardDistributor(
+      provider,
+      distributorAddress,
+    ), // Assuming all are reward distributors for this conversion
     distributor_address: distributorAddress,
   };
 }
@@ -93,9 +101,11 @@ async function main() {
     (a, b) => a.blockNumber - b.blockNumber,
   );
 
+  const provider = new JsonRpcProvider("https://nova.arbitrum.io/rpc");
+
   for (const event of sortedEvents) {
     try {
-      const distributorInfo = parseRawEvent(event);
+      const distributorInfo = await parseRawEvent(provider, event);
 
       // Check if this distributor already exists
       const existingInfo =

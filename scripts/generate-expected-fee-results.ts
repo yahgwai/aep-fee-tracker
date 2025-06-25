@@ -167,6 +167,7 @@ async function main() {
 
   // Process each distributor
   for (const [address, info] of Object.entries(distributors.distributors)) {
+    if (!info.is_reward_distributor) continue;
     console.log(`\nProcessing distributor: ${address} (${info.type})`);
 
     // Read balance data
