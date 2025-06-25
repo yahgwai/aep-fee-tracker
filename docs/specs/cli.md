@@ -23,7 +23,7 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 
 - All components execute successfully in sequence
 - CLI exits with appropriate error codes on failure
-- Components receive required configuration via direct parameters or environment variables
+- Components receive required configuration via environment variables
 
 ## 3. Dependencies
 
@@ -70,7 +70,7 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 
 ### Integration Points
 
-- Configuration: Parameters passed directly to components or via environment variables
+- Environment variables: RPC_URL, STORE_DIR, START_DATE, END_DATE
 - File system: Shared store directory for inter-component data exchange
 - Component execution: Direct function calls within the same process
 
@@ -105,12 +105,13 @@ aep-fee-calculator --rpc-url <url> [--start-date <date>] [--end-date <date>] [--
    - Parse optional date parameters if provided
    - Set store directory path
 
-2. **Configuration Setup**
+2. **Environment Setup**
 
-   - Configuration can be provided via command-line arguments or environment variables
-   - Pass RPC_URL from --rpc-url (or use existing RPC_URL env var)
-   - Pass STORE_DIR if provided via --store-dir (or use existing STORE_DIR env var)
-   - Pass START_DATE and END_DATE if provided (or use existing env vars)
+   - Set environment variables from command-line arguments
+   - Set RPC_URL from --rpc-url
+   - Set STORE_DIR from --store-dir (or use default './store')
+   - Set START_DATE from --start-date if provided
+   - Set END_DATE from --end-date if provided
 
 3. **Component Execution**
 
@@ -142,14 +143,14 @@ interface CLIArguments {
 }
 ```
 
-### Component Configuration
+### Environment Variables
 
 ```typescript
-interface ComponentConfig {
-  RPC_URL: string; // From --rpc-url or environment
-  STORE_DIR?: string; // From --store-dir or environment or default
-  START_DATE?: string; // From --start-date or environment
-  END_DATE?: string; // From --end-date or environment
+interface EnvironmentVariables {
+  RPC_URL: string; // Set by CLI from --rpc-url
+  STORE_DIR: string; // Set by CLI from --store-dir or default
+  START_DATE?: string; // Set by CLI from --start-date if provided
+  END_DATE?: string; // Set by CLI from --end-date if provided
 }
 ```
 
