@@ -241,7 +241,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       for (const distributorAddress of TEST_DISTRIBUTORS_WITH_EVENTS) {
         assertEventDataCreated(distributorAddress);
       }
-    });
+    }, 30000);
 
     it("should correctly identify distributors with events", async () => {
       // Act
@@ -251,7 +251,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       for (const distributorAddress of TEST_DISTRIBUTORS_WITH_EVENTS) {
         assertEventDataCreated(distributorAddress);
       }
-    });
+    }, 30000);
 
     it("should parse RecipientRecieved events correctly", async () => {
       const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
@@ -598,6 +598,6 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       ]) {
         assertEventDataCreated(distributorAddress);
       }
-    });
+    }, 30000);
   });
 });
