@@ -1,7 +1,6 @@
 import { ethers } from "ethers";
-import { FileManager } from "./file-manager";
+import { DailyDistributorDataCollector } from "./daily-distributor-data-collector";
 import {
-  DistributorsData,
   BlockNumberData,
   DistributorInfo,
   RecipientRecievedEventData,
@@ -32,11 +31,49 @@ export const recipientRecievedInterface = new ethers.Interface(
  * @param provider - Ethereum provider for RPC calls
  * @param fileManager - File manager instance for data persistence
  */
-export class RecipientRecievedScanner {
-  constructor(
-    public readonly provider: ethers.Provider,
-    public readonly fileManager: FileManager,
-  ) {}
+export class RecipientRecievedScanner extends DailyDistributorDataCollector<
+  ethers.Log[]
+> {
+  // Implement abstract methods
+  async processDailyData(
+    distributorAddress: string,
+    _date: string,
+    startBlock: number,
+    endBlock: number,
+  ): Promise<ethers.Log[]> {
+    // Query RecipientRecieved events for this block range
+    return this.queryRecipientRecievedEvents(
+      distributorAddress,
+      startBlock,
+      endBlock,
+    );
+  }
+
+  async finalizeDistributorData(
+    distributorAddress: string,
+    results: ethers.Log[][],
+    lastProcessedBlock: number,
+  ): Promise<void> {
+    // Flatten the array of arrays into a single array of logs
+    const allEvents = results.flat();
+
+    // Get existing event data
+    const existingEventData =
+      this.fileManager.readRecipientRecievedEvents(distributorAddress);
+
+    // Get chain ID from distributors data
+    const distributorsData = this.fileManager.readDistributors();
+    const chainId = distributorsData?.metadata.chain_id || 0;
+
+    // Parse and store events
+    this.parseAndStoreEvents(
+      distributorAddress,
+      allEvents,
+      chainId,
+      lastProcessedBlock,
+      existingEventData,
+    );
+  }
 
   /**
    * Queries RecipientRecieved events for a distributor within a block range.
@@ -143,52 +180,6 @@ export class RecipientRecievedScanner {
   }
 
   /**
-   * Validates that the specified distributor exists in the data.
-   * @private
-   */
-  private validateDistributorExists(
-    distributorsData: DistributorsData,
-    distributorAddress: string,
-  ): void {
-    // Find distributor with case-insensitive comparison
-    const foundAddress = Object.keys(distributorsData.distributors).find(
-      (address) => address.toLowerCase() === distributorAddress.toLowerCase(),
-    );
-
-    if (!foundAddress) {
-      throw new Error(`Distributor ${distributorAddress} not found`);
-    }
-  }
-
-  /**
-   * Formats a Date object to YYYY-MM-DD string.
-   * @private
-   */
-  private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-
-  /**
-   * Finds the date for a given block number.
-   * @private
-   */
-  private findDateForBlock(
-    blockNumbersData: BlockNumberData,
-    blockNumber: number,
-  ): string | null {
-    // Find the date where the block number is less than or equal to the end-of-day block
-    for (const [date, block] of Object.entries(blockNumbersData.blocks)) {
-      if (blockNumber <= (block as number)) {
-        return date;
-      }
-    }
-    return null;
-  }
-
-  /**
    * Processes a distributor day by day from last scanned date to yesterday.
    * @private
    */
@@ -292,30 +283,6 @@ export class RecipientRecievedScanner {
         existingEventData,
       );
     }
-  }
-
-  /**
-   * Converts a date to a block range (start and end blocks).
-   * @private
-   */
-  private convertDateToBlockRange(
-    date: string,
-    blockNumbersData: BlockNumberData,
-  ): { startBlock: number; endBlock: number } {
-    const endBlock = blockNumbersData.blocks[date];
-    if (endBlock === undefined) {
-      throw new Error(`Block number not found for date ${date}`);
-    }
-
-    // Calculate start block from previous day's end block
-    const previousDate = new Date(date);
-    previousDate.setDate(previousDate.getDate() - 1);
-    const previousDateStr = this.formatDate(previousDate);
-
-    const previousBlock = blockNumbersData.blocks[previousDateStr];
-    const startBlock = previousBlock !== undefined ? previousBlock + 1 : 1;
-
-    return { startBlock, endBlock };
   }
 
   /**

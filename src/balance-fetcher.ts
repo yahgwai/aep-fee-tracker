@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
+import { DailyDistributorDataCollector } from "./daily-distributor-data-collector";
 import { withRetry, BalanceData } from "./types";
 
 // Retry configuration for RPC calls
@@ -13,11 +14,69 @@ const RPC_RETRY_CONFIG = {
  * @param fileManager - File manager instance for data persistence
  * @param provider - Nova provider for RPC calls
  */
-export class BalanceFetcher {
-  constructor(
-    public readonly fileManager: FileManager,
-    public readonly provider: ethers.Provider,
-  ) {}
+export class BalanceFetcher extends DailyDistributorDataCollector<{
+  address: string;
+  date: string;
+  block: number;
+}> {
+  constructor(fileManager: FileManager, provider: ethers.Provider) {
+    // Call base class constructor with provider and fileManager in the expected order
+    super(provider, fileManager);
+  }
+
+  // Implement abstract methods
+  async processDailyData(
+    distributorAddress: string,
+    date: string,
+    _startBlock: number,
+    endBlock: number,
+  ): Promise<{ address: string; date: string; block: number }> {
+    // For BalanceFetcher, we only need the end-of-day block
+    return { address: distributorAddress, date, block: endBlock };
+  }
+
+  async finalizeDistributorData(
+    distributorAddress: string,
+    results: Array<{ address: string; date: string; block: number }>,
+    _lastProcessedBlock: number,
+  ): Promise<void> {
+    if (results.length === 0) {
+      return;
+    }
+
+    // Fetch balances for all the collected dates
+    const collectedBalances: Record<string, string> = {};
+
+    for (const { date, block } of results) {
+      const balance = await withRetry(
+        () => this.provider.getBalance(distributorAddress, block),
+        {
+          ...RPC_RETRY_CONFIG,
+          operationName: `getBalance(${distributorAddress}, ${block})`,
+        },
+      );
+      collectedBalances[date] = balance.toString();
+    }
+
+    // Get existing balance data
+    const existingData =
+      this.fileManager.readDistributorBalances(distributorAddress);
+
+    // Get chain ID
+    const network = await this.provider.getNetwork();
+    const chainId = Number(network.chainId);
+
+    // Create and save balance data
+    const balanceData = this.createBalanceData(
+      distributorAddress,
+      existingData,
+      collectedBalances,
+      results,
+      chainId,
+    );
+
+    this.fileManager.writeDistributorBalances(distributorAddress, balanceData);
+  }
 
   /**
    * Creates balance data structure for a distributor with metadata and balances.

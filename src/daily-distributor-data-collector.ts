@@ -64,7 +64,7 @@ export abstract class DailyDistributorDataCollector<T = unknown> {
    * @param distributorAddress - The distributor address to validate
    * @throws Error if distributor not found
    */
-  private validateDistributorExists(
+  protected validateDistributorExists(
     distributorsData: DistributorsData,
     distributorAddress: string,
   ): void {
