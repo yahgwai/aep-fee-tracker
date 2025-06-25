@@ -56,9 +56,24 @@ jobs:
         echo "# RPC URLs for testing" > .env
         echo "ARBITRUM_NOVA_RPC_URL=${{ secrets.ARBITRUM_NOVA_RPC_URL }}" >> .env
 
+    - name: Debug .env file
+      run: |
+        echo "Checking .env file was created:"
+        ls -la .env
+        echo "Number of lines in .env:"
+        wc -l .env
+        echo "Checking environment variable is set:"
+        if [ -n "${ARBITRUM_NOVA_RPC_URL}" ]; then
+          echo "ARBITRUM_NOVA_RPC_URL is set (value hidden)"
+        else
+          echo "ARBITRUM_NOVA_RPC_URL is NOT set"
+        fi
+
     - name: Run tests
       run: npm test
       timeout-minutes: 2
+      env:
+        ARBITRUM_NOVA_RPC_URL: ${{ secrets.ARBITRUM_NOVA_RPC_URL }}
 
     - name: Test completed
       run: echo "Tests completed successfully!"
