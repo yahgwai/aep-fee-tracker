@@ -323,5 +323,136 @@ describe("orchestrator", () => {
       );
       expect(FeeCalculator).toHaveBeenCalledWith(mockFileManager);
     });
+
+    describe("error propagation", () => {
+      it("should propagate error when BlockFinder fails", async () => {
+        const blockFinderError = new Error(
+          "BlockFinder failed to fetch blocks",
+        );
+        mockBlockFinder.findBlocksForDateRange.mockRejectedValue(
+          blockFinderError,
+        );
+
+        await expect(orchestrate(configuration)).rejects.toThrow(
+          "BlockFinder failed to fetch blocks",
+        );
+
+        // Verify subsequent components were not called
+        expect(
+          mockDistributorDetector.detectDistributors,
+        ).not.toHaveBeenCalled();
+        expect(mockBalanceFetcher.fetchBalances).not.toHaveBeenCalled();
+        expect(mockRecipientRecievedScanner.scan).not.toHaveBeenCalled();
+        expect(mockFeeCalculator.calculateFees).not.toHaveBeenCalled();
+      });
+
+      it("should propagate error when DistributorDetector fails", async () => {
+        const distributorError = new Error("Failed to detect distributors");
+        mockDistributorDetector.detectDistributors.mockRejectedValue(
+          distributorError,
+        );
+
+        await expect(orchestrate(configuration)).rejects.toThrow(
+          "Failed to detect distributors",
+        );
+
+        // Verify BlockFinder was called but subsequent components were not
+        expect(mockBlockFinder.findBlocksForDateRange).toHaveBeenCalled();
+        expect(mockBalanceFetcher.fetchBalances).not.toHaveBeenCalled();
+        expect(mockRecipientRecievedScanner.scan).not.toHaveBeenCalled();
+        expect(mockFeeCalculator.calculateFees).not.toHaveBeenCalled();
+      });
+
+      it("should propagate error when BalanceFetcher fails", async () => {
+        const balanceError = new Error("Failed to fetch balances");
+        mockBalanceFetcher.fetchBalances.mockRejectedValue(balanceError);
+
+        await expect(orchestrate(configuration)).rejects.toThrow(
+          "Failed to fetch balances",
+        );
+
+        // Verify earlier components were called but subsequent were not
+        expect(mockBlockFinder.findBlocksForDateRange).toHaveBeenCalled();
+        expect(mockDistributorDetector.detectDistributors).toHaveBeenCalled();
+        expect(mockRecipientRecievedScanner.scan).not.toHaveBeenCalled();
+        expect(mockFeeCalculator.calculateFees).not.toHaveBeenCalled();
+      });
+
+      it("should propagate error when RecipientRecievedScanner fails", async () => {
+        const scannerError = new Error("Failed to scan recipient events");
+        mockRecipientRecievedScanner.scan.mockRejectedValue(scannerError);
+
+        await expect(orchestrate(configuration)).rejects.toThrow(
+          "Failed to scan recipient events",
+        );
+
+        // Verify earlier components were called but FeeCalculator was not
+        expect(mockBlockFinder.findBlocksForDateRange).toHaveBeenCalled();
+        expect(mockDistributorDetector.detectDistributors).toHaveBeenCalled();
+        expect(mockBalanceFetcher.fetchBalances).toHaveBeenCalled();
+        expect(mockFeeCalculator.calculateFees).not.toHaveBeenCalled();
+      });
+
+      it("should propagate error when FeeCalculator fails", async () => {
+        const feeError = new Error("Failed to calculate fees");
+        mockFeeCalculator.calculateFees.mockImplementation(() => {
+          throw feeError;
+        });
+
+        await expect(orchestrate(configuration)).rejects.toThrow(
+          "Failed to calculate fees",
+        );
+
+        // Verify all earlier components were called
+        expect(mockBlockFinder.findBlocksForDateRange).toHaveBeenCalled();
+        expect(mockDistributorDetector.detectDistributors).toHaveBeenCalled();
+        expect(mockBalanceFetcher.fetchBalances).toHaveBeenCalled();
+        expect(mockRecipientRecievedScanner.scan).toHaveBeenCalled();
+      });
+
+      it("should propagate error when provider initialization fails", async () => {
+        const providerError = new Error("Failed to connect to RPC");
+        (ethers.JsonRpcProvider as unknown as jest.Mock).mockImplementation(
+          () => {
+            throw providerError;
+          },
+        );
+
+        await expect(orchestrate(configuration)).rejects.toThrow(
+          "Failed to connect to RPC",
+        );
+
+        // Verify no components were called
+        expect(mockBlockFinder.findBlocksForDateRange).not.toHaveBeenCalled();
+        expect(
+          mockDistributorDetector.detectDistributors,
+        ).not.toHaveBeenCalled();
+        expect(mockBalanceFetcher.fetchBalances).not.toHaveBeenCalled();
+        expect(mockRecipientRecievedScanner.scan).not.toHaveBeenCalled();
+        expect(mockFeeCalculator.calculateFees).not.toHaveBeenCalled();
+      });
+
+      it("should propagate error when FileManager initialization fails", async () => {
+        const fileError = new Error("Failed to access store directory");
+        (
+          FileManager as jest.MockedClass<typeof FileManager>
+        ).mockImplementation(() => {
+          throw fileError;
+        });
+
+        await expect(orchestrate(configuration)).rejects.toThrow(
+          "Failed to access store directory",
+        );
+
+        // Verify no components were called
+        expect(mockBlockFinder.findBlocksForDateRange).not.toHaveBeenCalled();
+        expect(
+          mockDistributorDetector.detectDistributors,
+        ).not.toHaveBeenCalled();
+        expect(mockBalanceFetcher.fetchBalances).not.toHaveBeenCalled();
+        expect(mockRecipientRecievedScanner.scan).not.toHaveBeenCalled();
+        expect(mockFeeCalculator.calculateFees).not.toHaveBeenCalled();
+      });
+    });
   });
 });
