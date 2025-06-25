@@ -21,16 +21,23 @@ export class FeeCalculator {
 
     // Get all distributor addresses
     let distributorAddresses = Object.keys(distributorsData.distributors);
-    if (distributorAddresses.length === 0) return;
 
-    // Filter to specific distributor if provided
+    // Check if distributor address is provided
     if (distributorAddress) {
+      if (distributorAddresses.length === 0) {
+        throw new Error(
+          `No distributors found in data while searching for ${distributorAddress}`,
+        );
+      }
       if (!distributorsData.distributors[distributorAddress]) {
         throw new Error(
           `Distributor address ${distributorAddress} not found in distributor data`,
         );
       }
       distributorAddresses = [distributorAddress];
+    } else if (distributorAddresses.length === 0) {
+      // No distributor specified and no distributors exist - just return
+      return;
     }
 
     // Initialize the fee report structure

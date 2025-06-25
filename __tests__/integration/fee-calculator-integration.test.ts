@@ -115,6 +115,27 @@ describe("FeeCalculator - Integration Tests", () => {
       expect(feeReport).toBeUndefined();
     });
 
+    it("should throw error when distributorAddress provided but no distributors exist", () => {
+      const { fileManager } = testContext;
+
+      const distributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+        },
+        distributors: {},
+      };
+
+      fileManager.writeDistributors(distributorsData);
+
+      // Should throw when specific distributor requested but none exist
+      expect(() => {
+        calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
+      }).toThrow(
+        "No distributors found in data while searching for 0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+      );
+    });
+
     it("should handle distributor with no balance data", () => {
       const { fileManager } = testContext;
 
