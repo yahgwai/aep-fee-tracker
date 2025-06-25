@@ -77,7 +77,7 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 ### Command Line Interface
 
 ```
-aep-fee-calculator --rpc-url <url> [--start-date <date>] [--end-date <date>] [--store-dir <path>]
+aep --rpc-url <url> [--start-date <date>] [--end-date <date>] [--store-dir <path>]
 ```
 
 ### Parameters
@@ -164,21 +164,21 @@ interface CLIArguments {
 
 ```bash
 # Run full pipeline with required RPC URL
-aep-fee-calculator --rpc-url https://your-archive-node.com/rpc
+aep --rpc-url https://your-archive-node.com/rpc
 ```
 
 ### With Date Range
 
 ```bash
 # Process specific date range
-aep-fee-calculator --rpc-url https://your-archive-node.com/rpc --start-date 2024-01-01 --end-date 2024-01-31
+aep --rpc-url https://your-archive-node.com/rpc --start-date 2024-01-01 --end-date 2024-01-31
 ```
 
 ### Custom Store Directory
 
 ```bash
 # Use custom store location
-aep-fee-calculator --rpc-url https://your-archive-node.com/rpc --store-dir /data/aep-fees
+aep --rpc-url https://your-archive-node.com/rpc --store-dir /data/aep-fees
 ```
 
 ### Expected Output
