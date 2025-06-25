@@ -1,5 +1,16 @@
 import { FileManager, FeeReport, CHAIN_IDS } from "./types";
 
+// Type for individual fee report entries
+type FeeReportEntry = {
+  date: string;
+  start_balance_wei: string;
+  end_balance_wei: string;
+  balance_change_wei: string;
+  distributions_wei: string;
+  distributions_count: number;
+  total_wei: string;
+};
+
 // Constants for fee calculation
 const FIRST_DAY_BALANCE_CHANGE = "0";
 const NO_DISTRIBUTIONS = "0";
@@ -26,34 +37,84 @@ export class FeeCalculator {
     );
     if (!balanceData) return;
 
-    // Get first date from balance data
-    const balanceDates = Object.keys(balanceData.balances).sort();
-    if (balanceDates.length === 0) return;
+    // Get all dates from balance data and sort chronologically
+    const sortedDates = Object.keys(balanceData.balances).sort();
+    if (sortedDates.length === 0) return;
 
-    const firstDate = balanceDates[0]!;
-    const firstBalance = balanceData.balances[firstDate]!;
+    // Process all dates to create daily entries
+    const dailyEntries = this.createDailyEntries(
+      sortedDates,
+      balanceData.balances,
+    );
 
-    // Create fee report
+    // Create and write fee report
     const feeReport: FeeReport = {
       metadata: {
         chain_id: CHAIN_IDS.ARBITRUM_NOVA,
       },
       distributors: {
-        [firstDistributorAddress]: [
-          {
-            date: firstDate,
-            start_balance_wei: firstBalance.balance_wei,
-            end_balance_wei: firstBalance.balance_wei,
-            balance_change_wei: FIRST_DAY_BALANCE_CHANGE,
-            distributions_wei: NO_DISTRIBUTIONS,
-            distributions_count: NO_DISTRIBUTIONS_COUNT,
-            total_wei: FIRST_DAY_BALANCE_CHANGE, // balance_change + distributions = 0 + 0
-          },
-        ],
+        [firstDistributorAddress]: dailyEntries,
       },
     };
 
-    // Write the report
     this.fileManager.writeFeeReport(feeReport);
+  }
+
+  private createDailyEntries(
+    sortedDates: string[],
+    balances: { [date: string]: { block_number: number; balance_wei: string } },
+  ): FeeReportEntry[] {
+    const dailyEntries: FeeReportEntry[] = [];
+    let previousBalanceWei: string | null = null;
+
+    for (const date of sortedDates) {
+      const currentBalance = balances[date]!;
+      const balanceChangeWei = this.calculateBalanceChange(
+        currentBalance.balance_wei,
+        previousBalanceWei,
+      );
+
+      dailyEntries.push(
+        this.createDailyEntry(
+          date,
+          currentBalance.balance_wei,
+          balanceChangeWei,
+        ),
+      );
+      previousBalanceWei = currentBalance.balance_wei;
+    }
+
+    return dailyEntries;
+  }
+
+  private calculateBalanceChange(
+    currentBalanceWei: string,
+    previousBalanceWei: string | null,
+  ): string {
+    if (previousBalanceWei === null) {
+      return FIRST_DAY_BALANCE_CHANGE;
+    }
+
+    const currentBigInt = BigInt(currentBalanceWei);
+    const previousBigInt = BigInt(previousBalanceWei);
+    const changeWei = currentBigInt - previousBigInt;
+
+    return changeWei.toString();
+  }
+
+  private createDailyEntry(
+    date: string,
+    balanceWei: string,
+    balanceChangeWei: string,
+  ): FeeReportEntry {
+    return {
+      date,
+      start_balance_wei: balanceWei,
+      end_balance_wei: balanceWei,
+      balance_change_wei: balanceChangeWei,
+      distributions_wei: NO_DISTRIBUTIONS,
+      distributions_count: NO_DISTRIBUTIONS_COUNT,
+      total_wei: balanceChangeWei, // Since distributions are always 0 for now
+    };
   }
 }
