@@ -96,7 +96,7 @@ describe("FeeCalculator - Integration Tests", () => {
 
       const entry = distributorReport![0];
       expect(entry!.date).toBe("2022-07-12");
-      expect(entry!.start_balance_wei).toBe("1000000000000000000");
+      expect(entry!.start_balance_wei).toBe("0"); // First day starts with 0
       expect(entry!.end_balance_wei).toBe("1000000000000000000");
       expect(entry!.balance_change_wei).toBe("1000000000000000000");
       expect(entry!.distributions_wei).toBe("0");
@@ -579,7 +579,7 @@ describe("FeeCalculator - Integration Tests", () => {
       // First day - balance change should be the balance itself (1 ETH)
       const day1 = distributorReport![0];
       expect(day1!.date).toBe("2022-07-12");
-      expect(day1!.start_balance_wei).toBe("1000000000000000000");
+      expect(day1!.start_balance_wei).toBe("0"); // First day starts with 0
       expect(day1!.end_balance_wei).toBe("1000000000000000000");
       expect(day1!.balance_change_wei).toBe("1000000000000000000");
       expect(day1!.distributions_wei).toBe("0");
@@ -589,7 +589,7 @@ describe("FeeCalculator - Integration Tests", () => {
       // Second day - balance change should be 500000000000000000 (1.5 - 1.0 ETH)
       const day2 = distributorReport![1];
       expect(day2!.date).toBe("2022-07-13");
-      expect(day2!.start_balance_wei).toBe("1500000000000000000");
+      expect(day2!.start_balance_wei).toBe("1000000000000000000"); // Previous day's end balance
       expect(day2!.end_balance_wei).toBe("1500000000000000000");
       expect(day2!.balance_change_wei).toBe("500000000000000000");
       expect(day2!.distributions_wei).toBe("0");
@@ -599,7 +599,7 @@ describe("FeeCalculator - Integration Tests", () => {
       // Third day - balance change should be 1000000000000000000 (2.5 - 1.5 ETH)
       const day3 = distributorReport![2];
       expect(day3!.date).toBe("2022-07-14");
-      expect(day3!.start_balance_wei).toBe("2500000000000000000");
+      expect(day3!.start_balance_wei).toBe("1500000000000000000"); // Previous day's end balance
       expect(day3!.end_balance_wei).toBe("2500000000000000000");
       expect(day3!.balance_change_wei).toBe("1000000000000000000");
       expect(day3!.distributions_wei).toBe("0");

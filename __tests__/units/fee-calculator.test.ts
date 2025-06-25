@@ -48,7 +48,8 @@ describe("FeeCalculator Unit Tests", () => {
       const calculatorWithPrivates = calculator as unknown as {
         createDailyEntry: (
           date: string,
-          balanceWei: string,
+          previousBalanceWei: string,
+          currentBalanceWei: string,
           balanceChangeWei: bigint,
           distributionsWei: bigint,
           distributionsCount: number,
@@ -65,21 +66,19 @@ describe("FeeCalculator Unit Tests", () => {
       const createDailyEntry =
         calculatorWithPrivates.createDailyEntry.bind(calculator);
 
-      // Note: Current implementation only accepts currentBalanceWei
-      // After fix, it should accept both previousBalanceWei and currentBalanceWei
+      // Now the implementation accepts both previousBalanceWei and currentBalanceWei
       const result = createDailyEntry(
         date,
+        previousBalanceWei,
         currentBalanceWei,
         balanceChangeWei,
         distributionsWei,
         distributionsCount,
       );
 
-      // This test will FAIL with current implementation because:
-      // - start_balance_wei is set to currentBalanceWei instead of previousBalanceWei
-      // - Both start and end are set to the same value
+      // Verify the result
       expect(result.date).toBe(date);
-      expect(result.start_balance_wei).toBe(previousBalanceWei); // FAILS: Gets currentBalanceWei
+      expect(result.start_balance_wei).toBe(previousBalanceWei);
       expect(result.end_balance_wei).toBe(currentBalanceWei);
       expect(result.balance_change_wei).toBe("-20000000000000000000");
       expect(result.distributions_wei).toBe("25000000000000000000");
