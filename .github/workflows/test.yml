@@ -68,6 +68,14 @@ jobs:
         else
           echo "ARBITRUM_NOVA_RPC_URL is NOT set"
         fi
+        echo "Checking RPC URL format:"
+        if grep -q "^ARBITRUM_NOVA_RPC_URL=https://arbnova-mainnet" .env; then
+          echo "✓ RPC URL starts with expected prefix"
+        else
+          echo "✗ RPC URL does not start with expected prefix"
+          echo "First 30 chars of the line:"
+          grep "^ARBITRUM_NOVA_RPC_URL=" .env | cut -c1-30
+        fi
 
     - name: Run tests
       run: npm test
