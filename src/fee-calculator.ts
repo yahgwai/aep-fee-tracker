@@ -34,34 +34,40 @@ export class FeeCalculator {
 
     // Process each distributor
     for (const distributorAddress of distributorAddresses) {
-      // Read balance data for the distributor
-      const balanceData =
-        this.fileManager.readDistributorBalances(distributorAddress);
-      if (!balanceData) continue;
-
-      // Get all dates from balance data and sort chronologically
-      const sortedDates = Object.keys(balanceData.balances).sort();
-      if (sortedDates.length === 0) continue;
-
-      // Read distribution events for the distributor
-      const eventsData =
-        this.fileManager.readRecipientRecievedEvents(distributorAddress);
-
-      // Process all dates to create daily entries
-      const dailyEntries = this.createDailyEntries(
-        sortedDates,
-        balanceData.balances,
-        eventsData,
-      );
-
-      // Add this distributor's entries to the report
-      feeReport.distributors[distributorAddress] = dailyEntries;
+      const dailyEntries = this.processDistributor(distributorAddress);
+      if (dailyEntries) {
+        feeReport.distributors[distributorAddress] = dailyEntries;
+      }
     }
 
     // Only write the report if we have data for at least one distributor
     if (Object.keys(feeReport.distributors).length > 0) {
       this.fileManager.writeFeeReport(feeReport);
     }
+  }
+
+  private processDistributor(
+    distributorAddress: string,
+  ): FeeReportEntry[] | null {
+    // Read balance data for the distributor
+    const balanceData =
+      this.fileManager.readDistributorBalances(distributorAddress);
+    if (!balanceData) return null;
+
+    // Get all dates from balance data and sort chronologically
+    const sortedDates = Object.keys(balanceData.balances).sort();
+    if (sortedDates.length === 0) return null;
+
+    // Read distribution events for the distributor
+    const eventsData =
+      this.fileManager.readRecipientRecievedEvents(distributorAddress);
+
+    // Process all dates to create daily entries
+    return this.createDailyEntries(
+      sortedDates,
+      balanceData.balances,
+      eventsData,
+    );
   }
 
   private createDailyEntries(
