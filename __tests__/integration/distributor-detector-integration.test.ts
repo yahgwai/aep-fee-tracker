@@ -286,12 +286,12 @@ describe("DistributorDetector - Integration Tests", () => {
         testBlockNumbers as BlockNumberData,
       );
 
-      // Use date not in block numbers (test data ends at 2025-06-23)
-      const endDate = new Date("2026-01-01");
+      // Use date not in block numbers
+      const endDate = new Date("2025-01-01");
 
       await expect(
         distributorDetector.detectDistributors(endDate),
-      ).rejects.toThrow("Block number not found for date 2026-01-01");
+      ).rejects.toThrow("Block number not found for date 2025-01-01");
     });
   });
 
