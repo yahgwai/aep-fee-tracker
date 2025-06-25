@@ -22,7 +22,9 @@ export abstract class DailyDistributorDataCollector<T = unknown> {
    * @param distributorAddress - Optional specific distributor to process
    * @returns Promise that resolves when processing is complete
    */
-  async processDistributors(distributorAddress?: string): Promise<void> {
+  protected async processDistributors(
+    distributorAddress?: string,
+  ): Promise<void> {
     // Validate address if provided
     if (
       distributorAddress !== undefined &&
