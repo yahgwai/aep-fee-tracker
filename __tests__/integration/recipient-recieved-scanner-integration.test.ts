@@ -243,16 +243,6 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       }
     }, 30000);
 
-    it("should correctly identify distributors with events", async () => {
-      // Act
-      await scanner.scan();
-
-      // Assert - All distributors should have event data files
-      for (const distributorAddress of TEST_DISTRIBUTORS_WITH_EVENTS) {
-        assertEventDataCreated(distributorAddress);
-      }
-    }, 30000);
-
     it("should parse RecipientRecieved events correctly", async () => {
       const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
 
@@ -278,34 +268,23 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
   });
 
   describe("Event Collection and Parsing", () => {
-    it("should match correct event signature", async () => {
+    it("should scan for RecipientRecieved events and create proper data structure", async () => {
       const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
 
       // Act
       await scanner.scan(testDistributor);
 
-      // Assert - Just verify the scanner completed and created the file
-      assertEventDataCreated(testDistributor);
-    });
+      // Assert - Verify scanner creates proper data structure
+      const eventData =
+        fileManager.readRecipientRecievedEvents(testDistributor);
 
-    it("should extract recipient address and checksum correctly", async () => {
-      const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
-
-      // Act
-      await scanner.scan(testDistributor);
-
-      // Assert - Just verify the scanner completed
-      assertEventDataCreated(testDistributor);
-    });
-
-    it("should parse value from event data correctly", async () => {
-      const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
-
-      // Act
-      await scanner.scan(testDistributor);
-
-      // Assert - Just verify the scanner completed
-      assertEventDataCreated(testDistributor);
+      expect(eventData).toBeDefined();
+      expect(eventData?.metadata).toBeDefined();
+      expect(eventData?.metadata.chain_id).toBe(ARBITRUM_NOVA_CHAIN_ID);
+      expect(eventData?.metadata.reward_distributor).toBe(testDistributor);
+      expect(eventData?.metadata.last_scanned_block).toBeGreaterThan(0);
+      expect(eventData?.events).toBeDefined();
+      expect(typeof eventData?.events).toBe("object");
     });
 
     it("should handle block range chunking for large ranges", async () => {
@@ -333,16 +312,6 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       await scanner.scan(testDistributor);
 
       // Assert - File should exist
-      assertEventDataCreated(testDistributor);
-    });
-
-    it("should update metadata correctly", async () => {
-      const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
-
-      // Act
-      await scanner.scan(testDistributor);
-
-      // Assert
       assertEventDataCreated(testDistributor);
     });
 
