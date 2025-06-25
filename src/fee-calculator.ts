@@ -14,15 +14,21 @@ type FeeReportEntry = {
 export class FeeCalculator {
   constructor(public readonly fileManager: FileManager) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  calculateFees(_distributorAddress?: string): void {
+  calculateFees(distributorAddress?: string): void {
     // Read distributor list
     const distributorsData = this.fileManager.readDistributors();
     if (!distributorsData) return;
 
     // Get all distributor addresses
-    const distributorAddresses = Object.keys(distributorsData.distributors);
+    let distributorAddresses = Object.keys(distributorsData.distributors);
     if (distributorAddresses.length === 0) return;
+
+    // Filter to specific distributor if provided
+    if (distributorAddress) {
+      distributorAddresses = distributorAddresses.filter(
+        (address) => address === distributorAddress,
+      );
+    }
 
     // Initialize the fee report structure
     const feeReport: FeeReport = {
@@ -40,8 +46,11 @@ export class FeeCalculator {
       }
     }
 
-    // Only write the report if we have data for at least one distributor
-    if (Object.keys(feeReport.distributors).length > 0) {
+    // Write the report if we have data OR if a specific distributor was requested
+    if (
+      Object.keys(feeReport.distributors).length > 0 ||
+      distributorAddress !== undefined
+    ) {
       this.fileManager.writeFeeReport(feeReport);
     }
   }
