@@ -2,7 +2,11 @@
 
 import { parseArguments } from "./parse-arguments";
 import { createConfiguration } from "./configuration";
-import { orchestrate } from "./orchestrator";
+import { orchestrate as realOrchestrate } from "./orchestrator";
+import { orchestrate as mockOrchestrate } from "./orchestrator-test-mock";
+
+const orchestrate =
+  process.env["NODE_ENV"] === "test" ? mockOrchestrate : realOrchestrate;
 
 async function main(): Promise<void> {
   try {
