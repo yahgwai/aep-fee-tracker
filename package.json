@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "postbuild": "chmod +x dist/src/cli.js",
     "typecheck": "tsc --noEmit",
     "test": "jest --maxWorkers=100%",
     "test:coverage": "jest --coverage --maxWorkers=100%",
