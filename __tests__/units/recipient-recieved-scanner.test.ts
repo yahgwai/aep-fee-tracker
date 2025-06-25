@@ -2017,4 +2017,202 @@ describe("RecipientRecievedScanner", () => {
       expect(finalCall![1].metadata.last_scanned_block).toBe(400);
     });
   });
+
+  describe("scan - reward distributor filtering", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockDistributorsData: DistributorsData;
+    let mockBlockNumbersData: BlockNumberData;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      mockProvider = {
+        getLogs: jest.fn().mockResolvedValue([]),
+      } as unknown as jest.Mocked<ethers.Provider>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+
+      // Set up a mock date for "today" to make tests deterministic
+      jest.useFakeTimers().setSystemTime(new Date("2022-07-15"));
+
+      mockBlockNumbersData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+          "2022-07-14": 400,
+        },
+      };
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("skips distributors where is_reward_distributor is false", async () => {
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0xNonRewardDistributor": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: false,
+            distributor_address: "0xNonRewardDistributor",
+          },
+          "0xRewardDistributor": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0xRewardDistributor",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      await scanner.scan();
+
+      // Should only query logs for the reward distributor
+      const logCalls = mockProvider.getLogs.mock.calls;
+
+      // Verify getLogs was never called for non-reward distributor
+      expect(
+        logCalls.some((call) => call[0].address === "0xNonRewardDistributor"),
+      ).toBe(false);
+
+      // Verify getLogs was called for reward distributor
+      expect(
+        logCalls.some((call) => call[0].address === "0xRewardDistributor"),
+      ).toBe(true);
+
+      // Should have 3 calls total (3 days for 1 distributor)
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(3);
+    });
+
+    it("processes distributors where is_reward_distributor is true", async () => {
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0xRewardDistributor1": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x1111111111111111111111111111111111111111111111111111111111111111",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0xRewardDistributor1",
+          },
+          "0xRewardDistributor2": {
+            type: DistributorType.L2_BASE_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x2222222222222222222222222222222222222222222222222222222222222222",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0xRewardDistributor2",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      await scanner.scan();
+
+      // Should query logs for both reward distributors
+      const logCalls = mockProvider.getLogs.mock.calls;
+      const addressesCalled = [
+        ...new Set(logCalls.map((call) => call[0].address)),
+      ];
+
+      expect(addressesCalled).toContain("0xRewardDistributor1");
+      expect(addressesCalled).toContain("0xRewardDistributor2");
+
+      // Should have 6 calls total (3 days × 2 distributors)
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(6);
+    });
+
+    it("skips all distributors when none are reward distributors", async () => {
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0xNonReward1": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x1111111111111111111111111111111111111111111111111111111111111111",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: false,
+            distributor_address: "0xNonReward1",
+          },
+          "0xNonReward2": {
+            type: DistributorType.L2_BASE_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x2222222222222222222222222222222222222222222222222222222222222222",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: false,
+            distributor_address: "0xNonReward2",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      await scanner.scan();
+
+      // Should not query any logs
+      expect(mockProvider.getLogs).not.toHaveBeenCalled();
+
+      // Should not write any events
+      expect(
+        mockFileManager.writeRecipientRecievedEvents,
+      ).not.toHaveBeenCalled();
+    });
+  });
 });
