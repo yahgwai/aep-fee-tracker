@@ -14,15 +14,31 @@ type FeeReportEntry = {
 export class FeeCalculator {
   constructor(public readonly fileManager: FileManager) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  calculateFees(_distributorAddress?: string): void {
+  calculateFees(distributorAddress?: string): void {
     // Read distributor list
     const distributorsData = this.fileManager.readDistributors();
     if (!distributorsData) return;
 
     // Get all distributor addresses
-    const distributorAddresses = Object.keys(distributorsData.distributors);
-    if (distributorAddresses.length === 0) return;
+    let distributorAddresses = Object.keys(distributorsData.distributors);
+
+    // Check if distributor address is provided
+    if (distributorAddress) {
+      if (distributorAddresses.length === 0) {
+        throw new Error(
+          `No distributors found in data while searching for ${distributorAddress}`,
+        );
+      }
+      if (!distributorsData.distributors[distributorAddress]) {
+        throw new Error(
+          `Distributor address ${distributorAddress} not found in distributor data`,
+        );
+      }
+      distributorAddresses = [distributorAddress];
+    } else if (distributorAddresses.length === 0) {
+      // No distributor specified and no distributors exist - just return
+      return;
+    }
 
     // Initialize the fee report structure
     const feeReport: FeeReport = {
