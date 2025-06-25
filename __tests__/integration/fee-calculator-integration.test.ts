@@ -1719,5 +1719,74 @@ describe("FeeCalculator - Integration Tests", () => {
       const feeReport = fileManager.readFeeReport();
       expect(feeReport).toBeUndefined();
     });
+
+    it("should gracefully handle missing distribution events without throwing", () => {
+      const { fileManager } = testContext;
+
+      const distributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x0000000000000000000000000000000000000070",
+            event_data: "event data",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      const balanceData: BalanceData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 152,
+            balance_wei: "1000000000000000000",
+          },
+          "2022-07-13": {
+            block_number: 200,
+            balance_wei: "2000000000000000000",
+          },
+        },
+      };
+
+      fileManager.writeDistributors(distributorsData);
+      fileManager.writeDistributorBalances(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        balanceData,
+      );
+
+      // Mock FileManager to return undefined for events
+      jest
+        .spyOn(fileManager, "readRecipientRecievedEvents")
+        .mockReturnValue(undefined);
+
+      // Should not throw and treat missing events as 0 distributions
+      calculator.calculateFees();
+
+      const feeReport = fileManager.readFeeReport();
+      expect(feeReport).toBeDefined();
+
+      const distributorReport =
+        feeReport!.distributors["0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"];
+      expect(distributorReport).toHaveLength(2);
+
+      // Verify distributions are 0 when events are missing
+      expect(distributorReport![0]!.distributions_wei).toBe("0");
+      expect(distributorReport![0]!.distributions_count).toBe(0);
+      expect(distributorReport![1]!.distributions_wei).toBe("0");
+      expect(distributorReport![1]!.distributions_count).toBe(0);
+    });
   });
 });

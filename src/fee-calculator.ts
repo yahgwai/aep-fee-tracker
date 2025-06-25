@@ -1,4 +1,9 @@
-import { FileManager, FeeReport, RecipientRecievedEventData } from "./types";
+import {
+  FileManager,
+  FeeReport,
+  RecipientRecievedEventData,
+  FeeCalculatorError,
+} from "./types";
 
 // Type for individual fee report entries
 type FeeReportEntry = {
@@ -18,8 +23,10 @@ export class FeeCalculator {
     // Read distributor list
     const distributorsData = this.fileManager.readDistributors();
     if (!distributorsData) {
-      throw new Error(
+      throw new FeeCalculatorError(
         "Failed to load distributor data\n  FileManager returned no distributor list\n  Check: Ensure distributor data has been populated by the distributor detector component",
+        "calculateFees",
+        { missingData: "distributors" },
       );
     }
 
@@ -29,13 +36,23 @@ export class FeeCalculator {
     // Check if distributor address is provided
     if (distributorAddress) {
       if (distributorAddresses.length === 0) {
-        throw new Error(
+        throw new FeeCalculatorError(
           `No distributors found in data while searching for ${distributorAddress}`,
+          "calculateFees",
+          {
+            distributor: distributorAddress,
+            missingData: "empty distributors list",
+          },
         );
       }
       if (!distributorsData.distributors[distributorAddress]) {
-        throw new Error(
+        throw new FeeCalculatorError(
           `Distributor address ${distributorAddress} not found in distributor data`,
+          "calculateFees",
+          {
+            distributor: distributorAddress,
+            missingData: "distributor not in list",
+          },
         );
       }
       distributorAddresses = [distributorAddress];
@@ -78,8 +95,10 @@ export class FeeCalculator {
       this.fileManager.readDistributorBalances(distributorAddress);
     if (!balanceData) {
       if (isSpecificDistributor) {
-        throw new Error(
+        throw new FeeCalculatorError(
           `Failed to load balance data for distributor\n  Distributor: ${distributorAddress}\n  FileManager returned no balance data\n  Check: Ensure balance fetcher has processed this distributor`,
+          "processDistributor",
+          { distributor: distributorAddress, missingData: "balance data" },
         );
       }
       return null;

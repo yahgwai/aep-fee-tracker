@@ -217,6 +217,21 @@ export class RPCError extends Error {
   }
 }
 
+export class FeeCalculatorError extends Error {
+  constructor(
+    message: string,
+    public readonly operation: string,
+    public readonly context: {
+      distributor?: string;
+      missingData?: string;
+      cause?: Error;
+    },
+  ) {
+    super(message);
+    this.name = "FeeCalculatorError";
+  }
+}
+
 // Type Guards
 export function isValidDistributorType(type: string): type is DistributorType {
   return Object.values(DistributorType).includes(type as DistributorType);
