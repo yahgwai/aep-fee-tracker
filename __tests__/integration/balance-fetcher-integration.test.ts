@@ -169,15 +169,38 @@ function createTestDistributorsData(): DistributorsData {
   return distributors;
 }
 
-// Helper function to create minimal block numbers for faster tests
-function createMinimalBlockNumbers(): BlockNumberData {
+// Helper function to filter test block numbers to a subset for faster tests
+function getMinimalBlockNumbers(): BlockNumberData {
+  // Select strategic dates to cover all distributor creation periods
+  const allBlocks = (testBlockNumbers as BlockNumberData).blocks;
+
+  // Key dates based on distributor creation times:
+  // - 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB: 2022-07-12
+  // - 0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce: 2023-03-16
+  // - Others are created around similar times
+  const strategicDates = [
+    "2022-07-12", // First distributor creation
+    "2022-07-13", // Day after
+    "2022-07-14", // Another day for first distributor
+    "2023-03-16", // Second distributor creation
+    "2023-03-17", // Day after
+    "2023-03-18", // Another day for distributors
+    "2023-04-01", // Some time after all distributors created
+    "2023-04-02", // Another day
+    "2023-04-03", // Another day
+    "2023-04-04", // Final day
+  ];
+
+  const minimalBlocks: { [date: string]: number } = {};
+  strategicDates.forEach((date) => {
+    if (allBlocks[date]) {
+      minimalBlocks[date] = allBlocks[date];
+    }
+  });
+
   return {
-    metadata: { chain_id: ARBITRUM_NOVA_CHAIN_ID },
-    blocks: {
-      "2023-03-15": 3120000,
-      "2023-03-16": 3163115,
-      "2023-03-17": 3206230,
-    },
+    metadata: (testBlockNumbers as BlockNumberData).metadata,
+    blocks: minimalBlocks,
   };
 }
 
@@ -208,7 +231,7 @@ describe("BalanceFetcher - Integration Tests", () => {
   describe("Basic Balance Fetching", () => {
     it("should fetch balances for all distributors and create balance files", async () => {
       // Use minimal test data to prevent timeout
-      fileManager.writeBlockNumbers(createMinimalBlockNumbers());
+      fileManager.writeBlockNumbers(getMinimalBlockNumbers());
 
       // Act
       const result = await balanceFetcher.fetchBalances();
@@ -235,7 +258,7 @@ describe("BalanceFetcher - Integration Tests", () => {
     it("should fetch correct balance values that match test data", async () => {
       // This test needs specific block numbers to verify exact balance values
       // For integration testing with minimal data, we'll just verify the structure
-      fileManager.writeBlockNumbers(createMinimalBlockNumbers());
+      fileManager.writeBlockNumbers(getMinimalBlockNumbers());
 
       // Act
       await balanceFetcher.fetchBalances();
@@ -252,7 +275,7 @@ describe("BalanceFetcher - Integration Tests", () => {
         );
 
         // Verify we have balance entries for the minimal test dates
-        const minimalDates = Object.keys(createMinimalBlockNumbers().blocks);
+        const minimalDates = Object.keys(getMinimalBlockNumbers().blocks);
         for (const date of minimalDates) {
           const distributorInfo = TEST_DISTRIBUTORS[distributorAddress];
           if (distributorInfo && date >= distributorInfo.createdAt) {
@@ -400,15 +423,8 @@ describe("BalanceFetcher - Integration Tests", () => {
       // The actual implementation uses withRetry which should handle transient failures
       // We'll just verify the balances are eventually fetched despite potential RPC issues
 
-      // Setup minimal test data - just 2 dates instead of 366
-      const minimalBlockNumbers: BlockNumberData = {
-        metadata: { chain_id: ARBITRUM_NOVA_CHAIN_ID },
-        blocks: {
-          "2023-03-15": 3120000,
-          "2023-03-16": 3163115,
-        },
-      };
-      fileManager.writeBlockNumbers(minimalBlockNumbers);
+      // Use minimal test data to prevent timeout
+      fileManager.writeBlockNumbers(getMinimalBlockNumbers());
 
       // Act
       const result = await balanceFetcher.fetchBalances();
