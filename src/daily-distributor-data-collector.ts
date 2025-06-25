@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
-import { DistributorsData } from "./types";
+import { DistributorsData, BlockNumberData } from "./types";
 
 /**
  * Abstract base class for collectors that process distributor data on a daily basis.
@@ -76,6 +76,58 @@ export abstract class DailyDistributorDataCollector<T = unknown> {
     if (!foundAddress) {
       throw new Error(`Distributor ${distributorAddress} not found`);
     }
+  }
+
+  /**
+   * Formats a Date object to YYYY-MM-DD string.
+   * @protected - Available to subclasses
+   */
+  protected formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Finds the date for a given block number.
+   * @protected - Available to subclasses
+   */
+  protected findDateForBlock(
+    blockNumbersData: BlockNumberData,
+    blockNumber: number,
+  ): string | null {
+    // Find the date where the block number is less than or equal to the end-of-day block
+    for (const [date, block] of Object.entries(blockNumbersData.blocks)) {
+      if (blockNumber <= (block as number)) {
+        return date;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Converts a date to a block range (start and end blocks).
+   * @protected - Available to subclasses
+   */
+  protected convertDateToBlockRange(
+    date: string,
+    blockNumbersData: BlockNumberData,
+  ): { startBlock: number; endBlock: number } {
+    const endBlock = blockNumbersData.blocks[date];
+    if (endBlock === undefined) {
+      throw new Error(`Block number not found for date ${date}`);
+    }
+
+    // Calculate start block from previous day's end block
+    const previousDate = new Date(date);
+    previousDate.setDate(previousDate.getDate() - 1);
+    const previousDateStr = this.formatDate(previousDate);
+
+    const previousBlock = blockNumbersData.blocks[previousDateStr];
+    const startBlock = previousBlock !== undefined ? previousBlock + 1 : 1;
+
+    return { startBlock, endBlock };
   }
 
   /**

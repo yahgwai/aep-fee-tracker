@@ -1,7 +1,11 @@
 import { ethers } from "ethers";
 import { FileManager } from "../../src/file-manager";
 import { DailyDistributorDataCollector } from "../../src/daily-distributor-data-collector";
-import { DistributorType, DistributorsData } from "../../src/types";
+import {
+  DistributorType,
+  DistributorsData,
+  BlockNumberData,
+} from "../../src/types";
 
 jest.mock("../../src/file-manager");
 
@@ -18,6 +22,25 @@ class TestDailyDistributorDataCollector extends DailyDistributorDataCollector<Te
 
   async finalizeDistributorData(): Promise<void> {
     // Mock implementation for testing
+  }
+
+  // Expose protected methods for testing
+  public override formatDate(date: Date): string {
+    return super.formatDate(date);
+  }
+
+  public override findDateForBlock(
+    blockNumbersData: BlockNumberData,
+    blockNumber: number,
+  ): string | null {
+    return super.findDateForBlock(blockNumbersData, blockNumber);
+  }
+
+  public override convertDateToBlockRange(
+    date: string,
+    blockNumbersData: BlockNumberData,
+  ): { startBlock: number; endBlock: number } {
+    return super.convertDateToBlockRange(date, blockNumbersData);
   }
 }
 
@@ -299,6 +322,157 @@ describe("DailyDistributorDataCollector", () => {
       await expect(
         collector.processDistributors(lowercaseAddress),
       ).resolves.not.toThrow();
+    });
+  });
+
+  describe("helper methods", () => {
+    let collector: TestDailyDistributorDataCollector;
+
+    beforeEach(() => {
+      collector = new TestDailyDistributorDataCollector(
+        mockProvider,
+        mockFileManager,
+      );
+    });
+
+    describe("formatDate", () => {
+      it("formats Date object to YYYY-MM-DD string", () => {
+        const date = new Date("2022-07-15T12:34:56Z");
+        expect(collector.formatDate(date)).toBe("2022-07-15");
+      });
+
+      it("handles dates at different times of day consistently", () => {
+        const morningDate = new Date("2022-07-15T00:00:00Z");
+        const eveningDate = new Date("2022-07-15T23:59:59Z");
+        expect(collector.formatDate(morningDate)).toBe("2022-07-15");
+        expect(collector.formatDate(eveningDate)).toBe("2022-07-15");
+      });
+
+      it("handles month boundaries correctly", () => {
+        const endOfMonth = new Date("2022-07-31T12:00:00Z");
+        const startOfMonth = new Date("2022-08-01T12:00:00Z");
+        expect(collector.formatDate(endOfMonth)).toBe("2022-07-31");
+        expect(collector.formatDate(startOfMonth)).toBe("2022-08-01");
+      });
+
+      it("handles year boundaries correctly", () => {
+        const endOfYear = new Date("2022-12-31T12:00:00Z");
+        const startOfYear = new Date("2023-01-01T12:00:00Z");
+        expect(collector.formatDate(endOfYear)).toBe("2022-12-31");
+        expect(collector.formatDate(startOfYear)).toBe("2023-01-01");
+      });
+    });
+
+    describe("findDateForBlock", () => {
+      it("finds the correct date for a given block number", () => {
+        const blockNumbersData = {
+          metadata: { chain_id: 42170 },
+          blocks: {
+            "2022-07-11": 100,
+            "2022-07-12": 200,
+            "2022-07-13": 300,
+          },
+        };
+
+        expect(collector.findDateForBlock(blockNumbersData, 50)).toBe(
+          "2022-07-11",
+        );
+        expect(collector.findDateForBlock(blockNumbersData, 100)).toBe(
+          "2022-07-11",
+        );
+        expect(collector.findDateForBlock(blockNumbersData, 150)).toBe(
+          "2022-07-12",
+        );
+        expect(collector.findDateForBlock(blockNumbersData, 200)).toBe(
+          "2022-07-12",
+        );
+        expect(collector.findDateForBlock(blockNumbersData, 250)).toBe(
+          "2022-07-13",
+        );
+        expect(collector.findDateForBlock(blockNumbersData, 300)).toBe(
+          "2022-07-13",
+        );
+      });
+
+      it("returns null for blocks after the last known block", () => {
+        const blockNumbersData = {
+          metadata: { chain_id: 42170 },
+          blocks: {
+            "2022-07-11": 100,
+            "2022-07-12": 200,
+          },
+        };
+
+        expect(collector.findDateForBlock(blockNumbersData, 201)).toBeNull();
+        expect(collector.findDateForBlock(blockNumbersData, 999)).toBeNull();
+      });
+
+      it("handles empty block data", () => {
+        const blockNumbersData = {
+          metadata: { chain_id: 42170 },
+          blocks: {},
+        };
+
+        expect(collector.findDateForBlock(blockNumbersData, 100)).toBeNull();
+      });
+    });
+
+    describe("convertDateToBlockRange", () => {
+      it("converts a date to correct block range", () => {
+        const blockNumbersData = {
+          metadata: { chain_id: 42170 },
+          blocks: {
+            "2022-07-11": 100,
+            "2022-07-12": 200,
+            "2022-07-13": 300,
+          },
+        };
+
+        expect(
+          collector.convertDateToBlockRange("2022-07-12", blockNumbersData),
+        ).toEqual({
+          startBlock: 101, // Previous day's end block + 1
+          endBlock: 200,
+        });
+
+        expect(
+          collector.convertDateToBlockRange("2022-07-13", blockNumbersData),
+        ).toEqual({
+          startBlock: 201,
+          endBlock: 300,
+        });
+      });
+
+      it("handles first date in block data", () => {
+        const blockNumbersData = {
+          metadata: { chain_id: 42170 },
+          blocks: {
+            "2022-07-11": 100,
+            "2022-07-12": 200,
+          },
+        };
+
+        expect(
+          collector.convertDateToBlockRange("2022-07-11", blockNumbersData),
+        ).toEqual({
+          startBlock: 1, // No previous day, so start from block 1
+          endBlock: 100,
+        });
+      });
+
+      it("throws error when date not found in block data", () => {
+        const blockNumbersData = {
+          metadata: { chain_id: 42170 },
+          blocks: {
+            "2022-07-11": 100,
+            "2022-07-12": 200,
+          },
+        };
+
+        expect(() =>
+          collector.convertDateToBlockRange("2022-07-14", blockNumbersData),
+        ).toThrow("Block number not found for date 2022-07-14");
+      });
     });
   });
 });
