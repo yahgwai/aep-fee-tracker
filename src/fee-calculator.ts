@@ -11,9 +11,6 @@ type FeeReportEntry = {
   total_wei: string;
 };
 
-// Constants for fee calculation
-const NO_DISTRIBUTIONS_COUNT = 0;
-
 export class FeeCalculator {
   constructor(public readonly fileManager: FileManager) {}
 
@@ -143,7 +140,7 @@ export class FeeCalculator {
     if (!eventsData || !eventsData.events) {
       return {
         distributionsWei: BigInt(0),
-        distributionsCount: NO_DISTRIBUTIONS_COUNT,
+        distributionsCount: 0,
       };
     }
 
