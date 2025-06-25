@@ -50,6 +50,8 @@ export class FeeCalculator {
 
     // Process each distributor
     for (const distributorAddress of distributorAddresses) {
+      const distributorInfo = distributorsData.distributors[distributorAddress];
+      if (!distributorInfo?.is_reward_distributor) continue;
       const dailyEntries = this.processDistributor(distributorAddress);
       if (dailyEntries) {
         feeReport.distributors[distributorAddress] = dailyEntries;
