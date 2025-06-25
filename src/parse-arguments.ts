@@ -13,7 +13,10 @@ export function parseArguments(args: string[]): ParsedArguments {
   const parsed = minimist(args) as ParsedArguments;
 
   if (!parsed["rpc-url"]) {
-    throw new Error("--rpc-url is required");
+    throw new Error(
+      "--rpc-url is required\n\n" +
+        "Usage: aep --rpc-url <url> [--start-date <date>] [--end-date <date>] [--store-dir <path>]",
+    );
   }
 
   return parsed;

@@ -14,5 +14,11 @@ describe("CLI Argument Parser", () => {
 
       expect(() => parseArguments(args)).toThrow("--rpc-url is required");
     });
+
+    it("should include usage help in error when --rpc-url is missing", () => {
+      const args: string[] = [];
+
+      expect(() => parseArguments(args)).toThrow(/Usage: aep --rpc-url <url>/);
+    });
   });
 });
