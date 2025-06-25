@@ -132,6 +132,7 @@ export class RecipientRecievedScanner {
       distributorsToProcess,
     )) {
       if (!distributorInfo) continue;
+      if (!distributorInfo.is_reward_distributor) continue;
 
       await this.processDistributor(
         address,

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, jest } from "@jest/globals";
 import { FeeCalculator } from "../../src/fee-calculator";
-import { FileManager } from "../../src/types";
+import { FileManager, DistributorType } from "../../src/types";
 
 describe("FeeCalculator Unit Tests", () => {
   let mockFileManager: jest.Mocked<FileManager>;
@@ -84,6 +84,236 @@ describe("FeeCalculator Unit Tests", () => {
       expect(result.distributions_wei).toBe("25000000000000000000");
       expect(result.distributions_count).toBe(5);
       expect(result.total_wei).toBe("5000000000000000000"); // -20 + 25 = 5
+    });
+  });
+
+  describe("calculateFees - reward distributor filtering", () => {
+    beforeEach(() => {
+      // Reset all mocks
+      jest.clearAllMocks();
+    });
+
+    it("skips distributors where is_reward_distributor is false", () => {
+      const mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0xNonRewardDistributor": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: false,
+            distributor_address: "0xNonRewardDistributor",
+          },
+          "0xRewardDistributor": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0xRewardDistributor",
+          },
+        },
+      };
+
+      const mockBalanceData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0xRewardDistributor",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 155,
+            balance_wei: "1000000000000000000",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readDistributorBalances.mockImplementation((address) => {
+        if (address === "0xRewardDistributor") {
+          return mockBalanceData;
+        }
+        return undefined;
+      });
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      calculator.calculateFees();
+
+      // Should only read balances for the reward distributor
+      expect(mockFileManager.readDistributorBalances).toHaveBeenCalledWith(
+        "0xRewardDistributor",
+      );
+      expect(mockFileManager.readDistributorBalances).not.toHaveBeenCalledWith(
+        "0xNonRewardDistributor",
+      );
+
+      // Should write fee report with only the reward distributor
+      expect(mockFileManager.writeFeeReport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          distributors: expect.objectContaining({
+            "0xRewardDistributor": expect.any(Array),
+          }),
+        }),
+      );
+      const writtenReport = mockFileManager.writeFeeReport.mock.calls[0]?.[0];
+      expect(writtenReport).toBeDefined();
+      expect(writtenReport!.distributors).not.toHaveProperty(
+        "0xNonRewardDistributor",
+      );
+    });
+
+    it("processes distributors where is_reward_distributor is true", () => {
+      const mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0xRewardDistributor1": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x1111111111111111111111111111111111111111111111111111111111111111",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0xRewardDistributor1",
+          },
+          "0xRewardDistributor2": {
+            type: DistributorType.L2_BASE_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x2222222222222222222222222222222222222222222222222222222222222222",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0xRewardDistributor2",
+          },
+        },
+      };
+
+      const mockBalanceData1 = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0xRewardDistributor1",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 155,
+            balance_wei: "1000000000000000000",
+          },
+        },
+      };
+
+      const mockBalanceData2 = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0xRewardDistributor2",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 155,
+            balance_wei: "2000000000000000000",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readDistributorBalances.mockImplementation((address) => {
+        if (address === "0xRewardDistributor1") {
+          return mockBalanceData1;
+        }
+        if (address === "0xRewardDistributor2") {
+          return mockBalanceData2;
+        }
+        return undefined;
+      });
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      calculator.calculateFees();
+
+      // Should read balances for both reward distributors
+      expect(mockFileManager.readDistributorBalances).toHaveBeenCalledWith(
+        "0xRewardDistributor1",
+      );
+      expect(mockFileManager.readDistributorBalances).toHaveBeenCalledWith(
+        "0xRewardDistributor2",
+      );
+
+      // Should write fee report with both reward distributors
+      expect(mockFileManager.writeFeeReport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          distributors: expect.objectContaining({
+            "0xRewardDistributor1": expect.any(Array),
+            "0xRewardDistributor2": expect.any(Array),
+          }),
+        }),
+      );
+    });
+
+    it("skips all distributors when none are reward distributors", () => {
+      const mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0xNonReward1": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x1111111111111111111111111111111111111111111111111111111111111111",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: false,
+            distributor_address: "0xNonReward1",
+          },
+          "0xNonReward2": {
+            type: DistributorType.L2_BASE_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x2222222222222222222222222222222222222222222222222222222222222222",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: false,
+            distributor_address: "0xNonReward2",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readDistributorBalances.mockReturnValue(undefined);
+
+      calculator.calculateFees();
+
+      // Should not read balances for any distributors
+      expect(mockFileManager.readDistributorBalances).not.toHaveBeenCalled();
+
+      // Should not write any fee report
+      expect(mockFileManager.writeFeeReport).not.toHaveBeenCalled();
     });
   });
 });

@@ -120,6 +120,7 @@ export class BalanceFetcher {
       distributorsToProcess,
     )) {
       if (!distributorInfo) continue;
+      if (!distributorInfo.is_reward_distributor) continue;
 
       const creationDate = distributorInfo.date;
       const creationBlock = distributorInfo.block;
