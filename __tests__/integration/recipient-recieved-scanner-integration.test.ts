@@ -9,6 +9,7 @@ import {
   BlockNumberData,
   DistributorType,
   DISTRIBUTOR_METHODS,
+  DistributorInfo,
 } from "../../src/types";
 import {
   setupTestEnvironment,
@@ -77,6 +78,34 @@ async function loadExpectedEventData(
   return JSON.parse(content);
 }
 
+// Helper to create a test distributor
+function createTestDistributor(
+  address: string,
+  type: DistributorType,
+  hasEvents: boolean = true,
+  customData: Partial<DistributorInfo> = {},
+): DistributorInfo {
+  const checksummedAddress = ethers.getAddress(address);
+  return {
+    type,
+    block: 68482010,
+    date: "2024-05-01",
+    tx_hash:
+      "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
+    method:
+      type === DistributorType.L1_SURPLUS_FEE
+        ? DISTRIBUTOR_METHODS.L1_SURPLUS_FEE
+        : type === DistributorType.L2_SURPLUS_FEE
+          ? DISTRIBUTOR_METHODS.L2_SURPLUS_FEE
+          : DISTRIBUTOR_METHODS.L2_BASE_FEE,
+    owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
+    event_data: "",
+    is_reward_distributor: hasEvents,
+    distributor_address: checksummedAddress,
+    ...customData,
+  } as DistributorInfo;
+}
+
 // Helper to create test distributors data
 function createTestDistributorsData(): DistributorsData {
   const distributors: DistributorsData = {
@@ -88,80 +117,39 @@ function createTestDistributorsData(): DistributorsData {
     distributors: {},
   };
 
-  // Add distributor 1 (has events) - set creation date just before test range
-  const addr1 = ethers.getAddress("0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce");
-  distributors.distributors[addr1] = {
-    type: DistributorType.L1_SURPLUS_FEE,
-    block: 68482010,
-    date: "2024-05-01",
-    tx_hash:
-      "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
-    method: DISTRIBUTOR_METHODS.L1_SURPLUS_FEE,
-    owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
-    event_data: "",
-    is_reward_distributor: true,
-    distributor_address: addr1,
-  };
+  // Add distributors with events
+  TEST_DISTRIBUTORS_WITH_EVENTS.forEach((addr, index) => {
+    const types = [
+      DistributorType.L1_SURPLUS_FEE,
+      DistributorType.L2_SURPLUS_FEE,
+      DistributorType.L2_BASE_FEE,
+    ];
+    distributors.distributors[addr] = createTestDistributor(
+      addr,
+      types[index]!,
+      true,
+    );
+  });
 
-  // Add distributor 2 (has events) - set creation date just before test range
-  const addr2 = ethers.getAddress("0x509386DbF5C0BE6fd68Df97A05fdB375136c32De");
-  distributors.distributors[addr2] = {
-    type: DistributorType.L2_SURPLUS_FEE,
-    block: 68482010,
-    date: "2024-05-01",
-    tx_hash:
-      "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
-    method: DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
-    owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
-    event_data: "",
-    is_reward_distributor: true,
-    distributor_address: addr2,
-  };
-
-  // Add distributor 3 (has events) - set creation date just before test range
-  const addr3 = ethers.getAddress("0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f");
-  distributors.distributors[addr3] = {
-    type: DistributorType.L2_BASE_FEE,
-    block: 68482010,
-    date: "2024-05-01",
-    tx_hash:
-      "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
-    method: DISTRIBUTOR_METHODS.L2_BASE_FEE,
-    owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
-    event_data: "",
-    is_reward_distributor: true,
-    distributor_address: addr3,
-  };
-
-  // Add distributor 4 (no events) - set to test date range
-  const addr4 = ethers.getAddress("0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB");
-  distributors.distributors[addr4] = {
-    type: DistributorType.L2_SURPLUS_FEE,
-    block: 68482010,
-    date: "2024-05-01",
-    tx_hash:
-      "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-    method: DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
-    owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-    event_data: "",
-    is_reward_distributor: false,
-    distributor_address: addr4,
-  };
-
-  // Add distributor 5 (no events) - set to test date range
-  const addr5 = ethers.getAddress("0xdff90519a9DE6ad469D4f9839a9220C5D340B792");
-  distributors.distributors[addr5] = {
-    type: DistributorType.L2_BASE_FEE,
-    block: 68482010,
-    date: "2024-05-01",
-    tx_hash:
-      "0x91cf95025dd73017bb3b8a2a93e2bb2c666bbdce97f88ac4ae3e583aa1aa6a96",
-    method: DISTRIBUTOR_METHODS.L2_BASE_FEE,
-    owner: "0x67CB8A1b249D1b1A79f1e6252faCE5c90Cfc38EA",
-    event_data: "",
-    is_reward_distributor: false,
-    distributor_address: addr5,
-  };
+  // Add distributors without events
+  TEST_DISTRIBUTORS_WITHOUT_EVENTS.forEach((addr, index) => {
+    const types = [DistributorType.L2_SURPLUS_FEE, DistributorType.L2_BASE_FEE];
+    distributors.distributors[addr] = createTestDistributor(
+      addr,
+      types[index]!,
+      false,
+      {
+        owner:
+          index === 0
+            ? "0x9C040726F2A657226Ed95712245DeE84b650A1b5"
+            : "0x67CB8A1b249D1b1A79f1e6252faCE5c90Cfc38EA",
+        tx_hash:
+          index === 0
+            ? "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9"
+            : "0x91cf95025dd73017bb3b8a2a93e2bb2c666bbdce97f88ac4ae3e583aa1aa6a96",
+      },
+    );
+  });
 
   return distributors;
 }
@@ -172,6 +160,40 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
   let provider: ethers.JsonRpcProvider;
   let fileManager: FileManager;
   let originalDate: DateConstructor;
+
+  // Helper to mock Date to a specific date
+  function mockDate(dateString: string): void {
+    const mockDate = new originalDate(dateString);
+    global.Date = jest.fn((arg?: string | number | Date) => {
+      if (arg === undefined) {
+        return mockDate;
+      }
+      return new originalDate(arg);
+    }) as unknown as DateConstructor;
+    global.Date.now = originalDate.now;
+    global.Date.parse = originalDate.parse;
+    global.Date.UTC = originalDate.UTC;
+    // Only define prototype if not already defined
+    if (!Object.getOwnPropertyDescriptor(global.Date, "prototype")) {
+      Object.defineProperty(global.Date, "prototype", {
+        value: originalDate.prototype,
+        writable: false,
+        enumerable: false,
+        configurable: true,
+      });
+    }
+  }
+
+  // Helper to assert event data file was created with correct metadata
+  function assertEventDataCreated(distributorAddress: string): void {
+    const eventData =
+      fileManager.readRecipientRecievedEvents(distributorAddress);
+    expect(eventData).toBeDefined();
+    expect(eventData?.metadata.chain_id).toBe(ARBITRUM_NOVA_CHAIN_ID);
+    expect(eventData?.metadata.reward_distributor).toBe(distributorAddress);
+    expect(eventData?.metadata.last_scanned_block).toBeGreaterThan(0);
+    expect(eventData?.events).toBeDefined();
+  }
 
   // Helper to create limited block numbers for faster tests
   function createLimitedBlockNumbers(): BlockNumberData {
@@ -193,23 +215,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
 
     // Mock Date to return a date within our test data range
     originalDate = global.Date;
-    const mockDate = new originalDate("2024-05-03T00:00:00Z");
-    global.Date = jest.fn((arg?: string | number | Date) => {
-      if (arg === undefined) {
-        return mockDate;
-      }
-      return new originalDate(arg);
-    }) as unknown as DateConstructor;
-    global.Date.now = originalDate.now;
-    global.Date.parse = originalDate.parse;
-    global.Date.UTC = originalDate.UTC;
-    // Preserve prototype methods
-    Object.defineProperty(global.Date, "prototype", {
-      value: originalDate.prototype,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-    });
+    mockDate("2024-05-03T00:00:00Z");
 
     // Setup test data with limited date range for faster tests
     fileManager.writeBlockNumbers(createLimitedBlockNumbers());
@@ -233,11 +239,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
 
       // Assert - Check that scanner created event files for distributors with events
       for (const distributorAddress of TEST_DISTRIBUTORS_WITH_EVENTS) {
-        const eventData =
-          fileManager.readRecipientRecievedEvents(distributorAddress);
-        expect(eventData).toBeDefined();
-        expect(eventData?.metadata.chain_id).toBe(ARBITRUM_NOVA_CHAIN_ID);
-        expect(eventData?.metadata.reward_distributor).toBe(distributorAddress);
+        assertEventDataCreated(distributorAddress);
       }
     });
 
@@ -247,10 +249,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
 
       // Assert - All distributors should have event data files
       for (const distributorAddress of TEST_DISTRIBUTORS_WITH_EVENTS) {
-        const eventData =
-          fileManager.readRecipientRecievedEvents(distributorAddress);
-        expect(eventData).toBeDefined();
-        expect(eventData?.events).toBeDefined();
+        assertEventDataCreated(distributorAddress);
       }
     });
 
@@ -261,16 +260,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       await scanner.scan(testDistributor);
 
       // Assert
-      const eventData =
-        fileManager.readRecipientRecievedEvents(testDistributor);
-      expect(eventData).toBeDefined();
-
-      // For GREEN phase - just verify the scanner created the file with correct structure
-      expect(eventData?.metadata).toBeDefined();
-      expect(eventData?.metadata.chain_id).toBe(ARBITRUM_NOVA_CHAIN_ID);
-      expect(eventData?.metadata.reward_distributor).toBe(testDistributor);
-      expect(eventData?.metadata.last_scanned_block).toBeGreaterThan(0);
-      expect(eventData?.events).toBeDefined();
+      assertEventDataCreated(testDistributor);
     });
 
     it("should handle distributors without events gracefully", async () => {
@@ -280,11 +270,9 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       await scanner.scan(testDistributor);
 
       // Assert
+      assertEventDataCreated(testDistributor);
       const eventData =
         fileManager.readRecipientRecievedEvents(testDistributor);
-      expect(eventData).toBeDefined();
-      expect(eventData?.metadata.chain_id).toBe(ARBITRUM_NOVA_CHAIN_ID);
-      expect(eventData?.metadata.reward_distributor).toBe(testDistributor);
       expect(Object.keys(eventData?.events || {}).length).toBe(0);
     });
   });
@@ -297,9 +285,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       await scanner.scan(testDistributor);
 
       // Assert - Just verify the scanner completed and created the file
-      const eventData =
-        fileManager.readRecipientRecievedEvents(testDistributor);
-      expect(eventData).toBeDefined();
+      assertEventDataCreated(testDistributor);
     });
 
     it("should extract recipient address and checksum correctly", async () => {
@@ -309,10 +295,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       await scanner.scan(testDistributor);
 
       // Assert - Just verify the scanner completed
-      const eventData =
-        fileManager.readRecipientRecievedEvents(testDistributor);
-      expect(eventData).toBeDefined();
-      expect(eventData?.metadata.reward_distributor).toBe(testDistributor);
+      assertEventDataCreated(testDistributor);
     });
 
     it("should parse value from event data correctly", async () => {
@@ -322,10 +305,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       await scanner.scan(testDistributor);
 
       // Assert - Just verify the scanner completed
-      const eventData =
-        fileManager.readRecipientRecievedEvents(testDistributor);
-      expect(eventData).toBeDefined();
-      expect(eventData?.metadata.last_scanned_block).toBeGreaterThan(0);
+      assertEventDataCreated(testDistributor);
     });
 
     it("should handle block range chunking for large ranges", async () => {
@@ -353,16 +333,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       await scanner.scan(testDistributor);
 
       // Assert - File should exist
-      const eventData =
-        fileManager.readRecipientRecievedEvents(testDistributor);
-      expect(eventData).toBeDefined();
-
-      // Verify file structure
-      expect(eventData).toHaveProperty("metadata");
-      expect(eventData).toHaveProperty("events");
-      expect(eventData?.metadata).toHaveProperty("chain_id");
-      expect(eventData?.metadata).toHaveProperty("reward_distributor");
-      expect(eventData?.metadata).toHaveProperty("last_scanned_block");
+      assertEventDataCreated(testDistributor);
     });
 
     it("should update metadata correctly", async () => {
@@ -372,11 +343,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       await scanner.scan(testDistributor);
 
       // Assert
-      const eventData =
-        fileManager.readRecipientRecievedEvents(testDistributor);
-      expect(eventData?.metadata.chain_id).toBe(ARBITRUM_NOVA_CHAIN_ID);
-      expect(eventData?.metadata.reward_distributor).toBe(testDistributor);
-      expect(eventData?.metadata.last_scanned_block).toBeGreaterThan(0);
+      assertEventDataCreated(testDistributor);
     });
 
     it("should store events with correct unique keys", async () => {
@@ -436,19 +403,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       fileManager.writeBlockNumbers(limitedBlockNumbers);
 
       // Mock date to May 2nd for first scan
-      const firstMockDate = new originalDate("2024-05-02T00:00:00Z");
-      global.Date = jest.fn((arg?: string | number | Date) => {
-        if (arg === undefined) {
-          return firstMockDate;
-        }
-        return new originalDate(arg);
-      }) as unknown as DateConstructor;
-      Object.defineProperty(global.Date, "prototype", {
-        value: originalDate.prototype,
-        writable: false,
-        enumerable: false,
-        configurable: true,
-      });
+      mockDate("2024-05-02T00:00:00Z");
 
       await scanner.scan(testDistributor);
 
@@ -461,19 +416,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       const expandedBlockNumbers = createLimitedBlockNumbers();
       fileManager.writeBlockNumbers(expandedBlockNumbers);
 
-      const secondMockDate = new originalDate("2024-05-03T00:00:00Z");
-      global.Date = jest.fn((arg?: string | number | Date) => {
-        if (arg === undefined) {
-          return secondMockDate;
-        }
-        return new originalDate(arg);
-      }) as unknown as DateConstructor;
-      Object.defineProperty(global.Date, "prototype", {
-        value: originalDate.prototype,
-        writable: false,
-        enumerable: false,
-        configurable: true,
-      });
+      mockDate("2024-05-03T00:00:00Z");
 
       await scanner.scan(testDistributor);
 
@@ -628,10 +571,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       await scanner.scan(testDistributor);
 
       // Assert - If we got results, the retry mechanism worked
-      const eventData =
-        fileManager.readRecipientRecievedEvents(testDistributor);
-      expect(eventData).toBeDefined();
-      expect(eventData?.metadata.last_scanned_block).toBeGreaterThan(0);
+      assertEventDataCreated(testDistributor);
     });
 
     it("should throw error for non-existent distributor", async () => {
@@ -656,11 +596,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
         ...TEST_DISTRIBUTORS_WITH_EVENTS,
         ...TEST_DISTRIBUTORS_WITHOUT_EVENTS,
       ]) {
-        const eventData =
-          fileManager.readRecipientRecievedEvents(distributorAddress);
-        expect(eventData).toBeDefined();
-        expect(eventData?.metadata.chain_id).toBe(ARBITRUM_NOVA_CHAIN_ID);
-        expect(eventData?.metadata.reward_distributor).toBe(distributorAddress);
+        assertEventDataCreated(distributorAddress);
       }
     });
   });
