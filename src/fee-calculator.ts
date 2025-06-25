@@ -12,7 +12,6 @@ type FeeReportEntry = {
 };
 
 // Constants for fee calculation
-const NO_DISTRIBUTIONS = "0";
 const NO_DISTRIBUTIONS_COUNT = 0;
 
 export class FeeCalculator {
@@ -84,7 +83,6 @@ export class FeeCalculator {
       // Calculate distributions for this date
       const { distributionsWei, distributionsCount } =
         this.calculateDistributionsForDate(
-          date,
           previousEndBlock + 1, // Start from block after previous day
           balances[date]!.block_number, // End at this day's block
           eventsData,
@@ -109,47 +107,42 @@ export class FeeCalculator {
   private calculateBalanceChange(
     currentBalanceWei: string,
     previousBalanceWei: string,
-  ): string {
+  ): bigint {
     const currentBigInt = BigInt(currentBalanceWei);
     const previousBigInt = BigInt(previousBalanceWei);
-    const changeWei = currentBigInt - previousBigInt;
-
-    return changeWei.toString();
+    return currentBigInt - previousBigInt;
   }
 
   private createDailyEntry(
     date: string,
     balanceWei: string,
-    balanceChangeWei: string,
-    distributionsWei: string,
+    balanceChangeWei: bigint,
+    distributionsWei: bigint,
     distributionsCount: number,
   ): FeeReportEntry {
     // Calculate total_wei as sum of balance change and distributions
-    const balanceChangeBigInt = BigInt(balanceChangeWei);
-    const distributionsBigInt = BigInt(distributionsWei);
-    const totalWei = (balanceChangeBigInt + distributionsBigInt).toString();
+    const totalWei = balanceChangeWei + distributionsWei;
 
     return {
       date,
       start_balance_wei: balanceWei,
       end_balance_wei: balanceWei,
-      balance_change_wei: balanceChangeWei,
-      distributions_wei: distributionsWei,
+      balance_change_wei: balanceChangeWei.toString(),
+      distributions_wei: distributionsWei.toString(),
       distributions_count: distributionsCount,
-      total_wei: totalWei,
+      total_wei: totalWei.toString(),
     };
   }
 
   private calculateDistributionsForDate(
-    _date: string,
     startBlockNumber: number,
     endBlockNumber: number,
     eventsData: RecipientRecievedEventData | undefined,
-  ): { distributionsWei: string; distributionsCount: number } {
+  ): { distributionsWei: bigint; distributionsCount: number } {
     // If no events data, return zeros
     if (!eventsData || !eventsData.events) {
       return {
-        distributionsWei: NO_DISTRIBUTIONS,
+        distributionsWei: BigInt(0),
         distributionsCount: NO_DISTRIBUTIONS_COUNT,
       };
     }
@@ -170,7 +163,7 @@ export class FeeCalculator {
     }
 
     return {
-      distributionsWei: totalDistributions.toString(),
+      distributionsWei: totalDistributions,
       distributionsCount: count,
     };
   }
