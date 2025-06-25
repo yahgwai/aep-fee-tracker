@@ -1,11 +1,10 @@
 import { ethers } from "ethers";
-import { FileManager } from "./file-manager";
+import { DailyDistributorDataCollector } from "./daily-distributor-data-collector";
 import {
-  DistributorsData,
-  BlockNumberData,
   DistributorInfo,
   RecipientRecievedEventData,
   withRetry,
+  BlockNumberData,
 } from "./types";
 import { chunkBlockRange } from "./utils/block-range-chunking";
 
@@ -32,11 +31,123 @@ export const recipientRecievedInterface = new ethers.Interface(
  * @param provider - Ethereum provider for RPC calls
  * @param fileManager - File manager instance for data persistence
  */
-export class RecipientRecievedScanner {
-  constructor(
-    public readonly provider: ethers.Provider,
-    public readonly fileManager: FileManager,
-  ) {}
+export class RecipientRecievedScanner extends DailyDistributorDataCollector<
+  ethers.Log[]
+> {
+  // Override to implement incremental processing based on last scanned block
+  protected override determineStartDate(
+    distributorInfo: DistributorInfo,
+    distributorAddress: string,
+  ): string | null {
+    // Load existing event data
+    const existingEventData =
+      this.fileManager.readRecipientRecievedEvents(distributorAddress);
+
+    if (existingEventData && existingEventData.metadata.last_scanned_block) {
+      // Find the date of the last scanned block
+      const lastScannedBlock = existingEventData.metadata.last_scanned_block;
+      const blockNumbersData = this.fileManager.readBlockNumbers();
+
+      if (!blockNumbersData) {
+        return null;
+      }
+
+      const lastScannedDate = this.findDateForBlock(
+        blockNumbersData,
+        lastScannedBlock,
+      );
+
+      if (!lastScannedDate) {
+        throw new Error(
+          `Cannot find date for block ${lastScannedBlock} for distributor ${distributorAddress}`,
+        );
+      }
+
+      // Start from day after last scanned date
+      const nextDay = new Date(lastScannedDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      return this.formatDate(nextDay);
+    }
+
+    // No existing data, start from creation date
+    return distributorInfo.date;
+  }
+
+  // Override to throw error for missing blocks (required behavior for scanner)
+  protected override getDatesToProcess(
+    distributorInfo: DistributorInfo,
+    distributorAddress: string,
+    blockNumbersData: BlockNumberData,
+    startDate: string,
+    endDate: string,
+  ): string[] {
+    // Get dates from parent implementation
+    const dates = super.getDatesToProcess(
+      distributorInfo,
+      distributorAddress,
+      blockNumbersData,
+      startDate,
+      endDate,
+    );
+
+    // Additionally check that all dates in range have block numbers
+    // This maintains the original behavior of throwing for missing blocks
+    const currentDate = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    while (currentDate <= endDateObj) {
+      const dateStr = this.formatDate(currentDate);
+      if (!(dateStr in blockNumbersData.blocks)) {
+        throw new Error(
+          `Missing block number for date ${dateStr} for distributor ${distributorAddress}`,
+        );
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
+  }
+
+  // Implement abstract methods
+  async processDailyData(
+    distributorAddress: string,
+    _date: string,
+    startBlock: number,
+    endBlock: number,
+  ): Promise<ethers.Log[]> {
+    // Query RecipientRecieved events for this block range
+    return this.queryRecipientRecievedEvents(
+      distributorAddress,
+      startBlock,
+      endBlock,
+    );
+  }
+
+  async finalizeDistributorData(
+    distributorAddress: string,
+    results: ethers.Log[][],
+    lastProcessedBlock: number,
+  ): Promise<void> {
+    // Flatten the array of arrays into a single array of logs
+    const allEvents = results.flat();
+
+    // Get existing event data
+    const existingEventData =
+      this.fileManager.readRecipientRecievedEvents(distributorAddress);
+
+    // Get chain ID from distributors data
+    const distributorsData = this.fileManager.readDistributors();
+    const chainId = distributorsData?.metadata.chain_id || 0;
+
+    // Parse and store events
+    this.parseAndStoreEvents(
+      distributorAddress,
+      allEvents,
+      chainId,
+      lastProcessedBlock,
+      existingEventData,
+    );
+  }
 
   /**
    * Queries RecipientRecieved events for a distributor within a block range.
@@ -85,237 +196,8 @@ export class RecipientRecievedScanner {
    * @throws Error if invalid Ethereum address provided
    */
   async scan(distributorAddress?: string): Promise<void> {
-    if (
-      distributorAddress !== undefined &&
-      !ethers.isAddress(distributorAddress)
-    ) {
-      throw new Error(`Invalid Ethereum address: ${distributorAddress}`);
-    }
-
-    const distributorsData = this.fileManager.readDistributors();
-
-    // Early return if no distributors data
-    if (
-      !distributorsData ||
-      Object.keys(distributorsData.distributors).length === 0
-    ) {
-      return;
-    }
-
-    // Validate distributor exists if specified
-    if (distributorAddress) {
-      this.validateDistributorExists(distributorsData, distributorAddress);
-    }
-
-    // Load block numbers data to determine date ranges
-    const blockNumbersData = this.fileManager.readBlockNumbers();
-    if (!blockNumbersData) {
-      return;
-    }
-
-    // Calculate yesterday's date
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = this.formatDate(yesterday);
-
-    // Process distributors
-    const distributorsToProcess = distributorAddress
-      ? {
-          [distributorAddress]:
-            distributorsData.distributors[distributorAddress],
-        }
-      : distributorsData.distributors;
-
-    // Process distributors
-    for (const [address, distributorInfo] of Object.entries(
-      distributorsToProcess,
-    )) {
-      if (!distributorInfo) continue;
-
-      await this.processDistributor(
-        address,
-        distributorInfo,
-        blockNumbersData,
-        yesterdayStr,
-      );
-    }
-  }
-
-  /**
-   * Validates that the specified distributor exists in the data.
-   * @private
-   */
-  private validateDistributorExists(
-    distributorsData: DistributorsData,
-    distributorAddress: string,
-  ): void {
-    // Find distributor with case-insensitive comparison
-    const foundAddress = Object.keys(distributorsData.distributors).find(
-      (address) => address.toLowerCase() === distributorAddress.toLowerCase(),
-    );
-
-    if (!foundAddress) {
-      throw new Error(`Distributor ${distributorAddress} not found`);
-    }
-  }
-
-  /**
-   * Formats a Date object to YYYY-MM-DD string.
-   * @private
-   */
-  private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-
-  /**
-   * Finds the date for a given block number.
-   * @private
-   */
-  private findDateForBlock(
-    blockNumbersData: BlockNumberData,
-    blockNumber: number,
-  ): string | null {
-    // Find the date where the block number is less than or equal to the end-of-day block
-    for (const [date, block] of Object.entries(blockNumbersData.blocks)) {
-      if (blockNumber <= (block as number)) {
-        return date;
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Processes a distributor day by day from last scanned date to yesterday.
-   * @private
-   */
-  private async processDistributor(
-    address: string,
-    distributorInfo: DistributorInfo,
-    blockNumbersData: BlockNumberData,
-    yesterdayStr: string,
-  ): Promise<void> {
-    // Check if distributor is created in the future
-    if (distributorInfo.date > yesterdayStr) {
-      return;
-    }
-
-    // Load existing event data
-    const existingEventData =
-      this.fileManager.readRecipientRecievedEvents(address);
-
-    // Determine start date
-    let startDate: string;
-    if (existingEventData && existingEventData.metadata.last_scanned_block) {
-      // Find the date of the last scanned block
-      const lastScannedBlock = existingEventData.metadata.last_scanned_block;
-      const lastScannedDate = this.findDateForBlock(
-        blockNumbersData,
-        lastScannedBlock,
-      );
-      if (!lastScannedDate) {
-        throw new Error(
-          `Cannot find date for block ${lastScannedBlock} for distributor ${address}`,
-        );
-      }
-      // Start from day after last scanned date
-      const nextDay = new Date(lastScannedDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      startDate = this.formatDate(nextDay);
-    } else {
-      // No existing data, start from creation date
-      startDate = distributorInfo.date;
-    }
-
-    // Skip if start date is after yesterday (all dates processed)
-    if (startDate > yesterdayStr) {
-      return;
-    }
-
-    // Get chain ID from distributors data
-    const distributorsData = this.fileManager.readDistributors();
-    const chainId = distributorsData?.metadata.chain_id || 0;
-
-    // Accumulate all events
-    const allEvents: ethers.Log[] = [];
-
-    // Process one day at a time
-    const currentDate = new Date(startDate);
-    const endDate = new Date(yesterdayStr);
-    let lastProcessedBlock = 0;
-
-    while (currentDate <= endDate) {
-      const dateStr = this.formatDate(currentDate);
-
-      // Check if block number exists for this date
-      if (!(dateStr in blockNumbersData.blocks)) {
-        throw new Error(
-          `Missing block number for date ${dateStr} for distributor ${address}`,
-        );
-      }
-
-      // Calculate block range for this day
-      const { startBlock, endBlock } = this.convertDateToBlockRange(
-        dateStr,
-        blockNumbersData,
-      );
-
-      // Query RecipientRecieved events for this block range
-      const events = await this.queryRecipientRecievedEvents(
-        address,
-        startBlock,
-        endBlock,
-      );
-
-      // Accumulate events
-      if (events.length > 0) {
-        allEvents.push(...events);
-      }
-
-      // Track the last processed block
-      lastProcessedBlock = endBlock;
-
-      // Move to next day
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    // Parse and store all accumulated events at once
-    if (allEvents.length > 0 || lastProcessedBlock > 0) {
-      this.parseAndStoreEvents(
-        address,
-        allEvents,
-        chainId,
-        lastProcessedBlock,
-        existingEventData,
-      );
-    }
-  }
-
-  /**
-   * Converts a date to a block range (start and end blocks).
-   * @private
-   */
-  private convertDateToBlockRange(
-    date: string,
-    blockNumbersData: BlockNumberData,
-  ): { startBlock: number; endBlock: number } {
-    const endBlock = blockNumbersData.blocks[date];
-    if (endBlock === undefined) {
-      throw new Error(`Block number not found for date ${date}`);
-    }
-
-    // Calculate start block from previous day's end block
-    const previousDate = new Date(date);
-    previousDate.setDate(previousDate.getDate() - 1);
-    const previousDateStr = this.formatDate(previousDate);
-
-    const previousBlock = blockNumbersData.blocks[previousDateStr];
-    const startBlock = previousBlock !== undefined ? previousBlock + 1 : 1;
-
-    return { startBlock, endBlock };
+    // Delegate to the base class processDistributors method
+    return this.processDistributors(distributorAddress);
   }
 
   /**
