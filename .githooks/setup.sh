@@ -66,6 +66,7 @@ if [ -f "./scripts/gh-safe.sh" ]; then
   echo "  - Prevent AI/Claude references in content"
   echo "  - Enforce issue references in PRs (or explicit 'no-issue' statement)"
   echo "  - Use a specific method for fetching github comments on PRs"
+  echo "  - Show tips for optimal CI log checking (e.g., suggests --log-failed flag)"
   
   if [ "$ALIAS_ADDED" = true ]; then
     echo ""

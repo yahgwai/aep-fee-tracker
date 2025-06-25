@@ -2,12 +2,14 @@
 # ABOUTME: Safe wrapper for GitHub CLI that prevents merges and Claude/AI references
 # ABOUTME: Checks all text content before executing gh commands
 # ABOUTME: Redirects PR comment fetching to use collect-pr-comments.sh + TodoWrite process
+# ABOUTME: Shows tips for optimal CI log checking when using gh run/pr commands
 
 set -e
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Function to check for prohibited content
@@ -238,6 +240,50 @@ if [[ -n "$GH_TITLE" ]]; then
         exit 1
     fi
 fi
+
+# Function to show CI check tips
+show_ci_tips() {
+    local cmd="$1"
+    local subcmd="$2"
+    shift 2
+    local args="$@"
+    
+    # Check for gh run view without log flags
+    if [[ "$cmd" == "run" && "$subcmd" == "view" ]]; then
+        if ! echo "$args" | grep -E "\-\-log|\-\-log-failed" > /dev/null 2>&1; then
+            echo -e "${YELLOW}=== TIP: Better way to check CI logs ===${NC}"
+            echo "For error logs only: gh run view $args --log-failed"
+            echo "For full logs:       gh run view $args --log"
+            echo ""
+        fi
+    fi
+    
+    # Check for gh pr checks (when someone might be looking for failures)
+    if [[ "$cmd" == "pr" && "$subcmd" == "checks" ]]; then
+        local pr_num=""
+        for arg in $args; do
+            if [[ "$arg" =~ ^[0-9]+$ ]]; then
+                pr_num=$arg
+                break
+            fi
+        done
+        
+        if [[ -n "$pr_num" ]]; then
+            echo -e "${YELLOW}=== TIP: To see CI failure details ===${NC}"
+            echo "Quick failure summary:"
+            echo "  gh pr checks $pr_num --json name,conclusion | jq -r '.[] | select(.conclusion==\"FAILURE\") | .name'"
+            echo ""
+            echo "Get failure logs:"
+            echo "  # First get the failing job URL:"
+            echo "  gh pr checks $pr_num --json name,detailsUrl,conclusion | jq -r '.[] | select(.conclusion==\"FAILURE\") | .detailsUrl'"
+            echo "  # Then use: gh run view <run-id> --job <job-id> --log-failed"
+            echo ""
+        fi
+    fi
+}
+
+# Show tips for CI-related commands
+show_ci_tips "$@"
 
 # Execute the actual gh command
 exec gh "$@"
