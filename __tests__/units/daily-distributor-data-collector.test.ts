@@ -475,4 +475,224 @@ describe("DailyDistributorDataCollector", () => {
       });
     });
   });
+
+  describe("processDistributors - temporal processing", () => {
+    let collector: TestDailyDistributorDataCollector;
+    let mockDistributorsData: DistributorsData;
+    let mockBlockNumbersData: BlockNumberData;
+
+    beforeEach(() => {
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      collector = new TestDailyDistributorDataCollector(
+        mockProvider,
+        mockFileManager,
+      );
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      mockBlockNumbersData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+          "2022-07-14": 400,
+          "2022-07-15": 500,
+        },
+      };
+    });
+
+    it("loads block numbers data when distributors exist", async () => {
+      // Mock yesterday as 2022-07-14 so we don't try to process beyond available blocks
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2022-07-15T12:00:00Z"));
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+
+      await collector.processDistributors();
+
+      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
+
+      jest.useRealTimers();
+    });
+
+    it("returns early when no block numbers data is found", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(undefined);
+
+      await collector.processDistributors();
+
+      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
+      // Should not proceed with processing
+    });
+
+    it("processes specified distributor from creation date to yesterday", async () => {
+      const address = "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB";
+
+      // Mock yesterday as 2022-07-14
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2022-07-15T12:00:00Z"));
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+
+      // Track calls to processDailyData
+      const processDailyDataSpy = jest.spyOn(collector, "processDailyData");
+      const finalizeDistributorDataSpy = jest.spyOn(
+        collector,
+        "finalizeDistributorData",
+      );
+
+      await collector.processDistributors(address);
+
+      // Should process 3 days: 2022-07-12, 2022-07-13, 2022-07-14
+      expect(processDailyDataSpy).toHaveBeenCalledTimes(3);
+
+      // Verify each day was processed with correct block ranges
+      expect(processDailyDataSpy).toHaveBeenCalledWith(
+        address,
+        "2022-07-12",
+        101, // previous day (07-11) block + 1
+        200, // end of 07-12
+      );
+      expect(processDailyDataSpy).toHaveBeenCalledWith(
+        address,
+        "2022-07-13",
+        201, // previous day (07-12) block + 1
+        300, // end of 07-13
+      );
+      expect(processDailyDataSpy).toHaveBeenCalledWith(
+        address,
+        "2022-07-14",
+        301, // previous day (07-13) block + 1
+        400, // end of 07-14
+      );
+
+      // Should finalize once with all results
+      expect(finalizeDistributorDataSpy).toHaveBeenCalledTimes(1);
+      expect(finalizeDistributorDataSpy).toHaveBeenCalledWith(
+        address,
+        [{ processed: true }, { processed: true }, { processed: true }],
+        400, // last processed block
+      );
+
+      jest.useRealTimers();
+    });
+
+    it("skips distributors created in the future", async () => {
+      // Set distributor creation date to future
+      const distributorInfo =
+        mockDistributorsData.distributors[
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
+        ];
+      if (distributorInfo) {
+        distributorInfo.date = "2099-01-01";
+      }
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+
+      const processDailyDataSpy = jest.spyOn(collector, "processDailyData");
+
+      await collector.processDistributors();
+
+      // Should not process any days for future distributor
+      expect(processDailyDataSpy).not.toHaveBeenCalled();
+    });
+
+    it("processes all distributors when no specific address provided", async () => {
+      // Add another distributor
+      mockDistributorsData.distributors[
+        "0x1234567890123456789012345678901234567890"
+      ] = {
+        type: DistributorType.L2_SURPLUS_FEE,
+        block: 250,
+        date: "2022-07-13",
+        tx_hash: "0xabc...",
+        method: "0xfcdde2b4",
+        owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+        event_data: "0x...",
+        is_reward_distributor: true,
+        distributor_address: "0x1234567890123456789012345678901234567890",
+      };
+
+      // Mock yesterday as 2022-07-14
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2022-07-15T12:00:00Z"));
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+
+      const finalizeDistributorDataSpy = jest.spyOn(
+        collector,
+        "finalizeDistributorData",
+      );
+
+      await collector.processDistributors();
+
+      // Should finalize data for both distributors
+      expect(finalizeDistributorDataSpy).toHaveBeenCalledTimes(2);
+
+      jest.useRealTimers();
+    });
+
+    it("skips dates without block numbers gracefully", async () => {
+      // Remove a block number that would be in the middle of the range
+      delete mockBlockNumbersData.blocks["2022-07-13"];
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+
+      // Mock yesterday as 2022-07-14
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2022-07-15T12:00:00Z"));
+
+      const processDailyDataSpy = jest.spyOn(collector, "processDailyData");
+
+      await collector.processDistributors(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
+
+      // Should process only 2 days (skipping 2022-07-13): 2022-07-12 and 2022-07-14
+      expect(processDailyDataSpy).toHaveBeenCalledTimes(2);
+      expect(processDailyDataSpy).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        "2022-07-12",
+        101,
+        200,
+      );
+      expect(processDailyDataSpy).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        "2022-07-14",
+        1, // Start from 1 because previous day (07-13) has no block data
+        400,
+      );
+
+      jest.useRealTimers();
+    });
+  });
 });

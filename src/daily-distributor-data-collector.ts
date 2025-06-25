@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
-import { DistributorsData, BlockNumberData } from "./types";
+import { DistributorsData, BlockNumberData, DistributorInfo } from "./types";
 
 /**
  * Abstract base class for collectors that process distributor data on a daily basis.
@@ -53,7 +53,33 @@ export abstract class DailyDistributorDataCollector<T = unknown> {
       return;
     }
 
-    // Process will be implemented in subsequent steps
+    // Calculate yesterday's date
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = this.formatDate(yesterday);
+
+    // Determine which distributors to process
+    const distributorsToProcess = distributorAddress
+      ? {
+          [distributorAddress]:
+            distributorsData.distributors[distributorAddress],
+        }
+      : distributorsData.distributors;
+
+    // Process each distributor
+    for (const [address, distributorInfo] of Object.entries(
+      distributorsToProcess,
+    )) {
+      if (!distributorInfo) continue;
+
+      await this.processDistributor(
+        address,
+        distributorInfo,
+        blockNumbersData,
+        yesterdayStr,
+      );
+    }
   }
 
   /**
@@ -74,7 +100,7 @@ export abstract class DailyDistributorDataCollector<T = unknown> {
     );
 
     if (!foundAddress) {
-      throw new Error(`Distributor ${distributorAddress} not found`);
+      throw new Error(`Distributor not found: ${distributorAddress}`);
     }
   }
 
@@ -128,6 +154,130 @@ export abstract class DailyDistributorDataCollector<T = unknown> {
     const startBlock = previousBlock !== undefined ? previousBlock + 1 : 1;
 
     return { startBlock, endBlock };
+  }
+
+  /**
+   * Determines the start date for processing a distributor.
+   * Can be overridden by subclasses to implement incremental processing.
+   *
+   * @param distributorInfo - The distributor information
+   * @param distributorAddress - The distributor address
+   * @returns The start date for processing (YYYY-MM-DD format) or null to skip
+   */
+  protected determineStartDate(
+    distributorInfo: DistributorInfo,
+    _distributorAddress: string,
+  ): string | null {
+    // Default implementation: start from creation date
+    return distributorInfo.date;
+  }
+
+  /**
+   * Determines which dates should be processed for a distributor.
+   * Can be overridden by subclasses to implement custom filtering.
+   *
+   * @param distributorInfo - The distributor information
+   * @param distributorAddress - The distributor address
+   * @param blockNumbersData - Block numbers data for date validation
+   * @param startDate - The start date determined by determineStartDate
+   * @param endDate - The end date (usually yesterday)
+   * @returns Array of dates to process (YYYY-MM-DD format)
+   */
+  protected getDatesToProcess(
+    _distributorInfo: DistributorInfo,
+    _distributorAddress: string,
+    blockNumbersData: BlockNumberData,
+    startDate: string,
+    endDate: string,
+  ): string[] {
+    // Default implementation: process all dates from start to end that have block numbers
+    const dates: string[] = [];
+    const currentDate = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    while (currentDate <= endDateObj) {
+      const dateStr = this.formatDate(currentDate);
+      if (dateStr in blockNumbersData.blocks) {
+        dates.push(dateStr);
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
+  }
+
+  /**
+   * Processes a distributor day by day from start date to yesterday.
+   * @private
+   */
+  private async processDistributor(
+    address: string,
+    distributorInfo: DistributorInfo,
+    blockNumbersData: BlockNumberData,
+    yesterdayStr: string,
+  ): Promise<void> {
+    // Check if distributor is created in the future
+    if (distributorInfo.date > yesterdayStr) {
+      return;
+    }
+
+    // Determine start date using the overridable method
+    const startDate = this.determineStartDate(distributorInfo, address);
+    if (!startDate) {
+      // Subclass indicated to skip this distributor
+      return;
+    }
+
+    // Skip if start date is after yesterday (all dates processed)
+    if (startDate > yesterdayStr) {
+      return;
+    }
+
+    // Get the dates to process
+    const datesToProcess = this.getDatesToProcess(
+      distributorInfo,
+      address,
+      blockNumbersData,
+      startDate,
+      yesterdayStr,
+    );
+
+    // Early return if no dates to process
+    if (datesToProcess.length === 0) {
+      return;
+    }
+
+    // Accumulate results from processDailyData
+    const results: T[] = [];
+    let lastProcessedBlock = 0;
+
+    // Process each date
+    for (const dateStr of datesToProcess) {
+      // Calculate block range for this day
+      const { startBlock, endBlock } = this.convertDateToBlockRange(
+        dateStr,
+        blockNumbersData,
+      );
+
+      // Process this day's data
+      const dailyResult = await this.processDailyData(
+        address,
+        dateStr,
+        startBlock,
+        endBlock,
+      );
+
+      // Accumulate result
+      results.push(dailyResult);
+
+      // Track the last processed block
+      lastProcessedBlock = endBlock;
+    }
+
+    // Finalize and store all accumulated data
+    if (results.length > 0 || lastProcessedBlock > 0) {
+      await this.finalizeDistributorData(address, results, lastProcessedBlock);
+    }
   }
 
   /**

@@ -1,7 +1,12 @@
 import { ethers } from "ethers";
 import { FileManager } from "./file-manager";
 import { DailyDistributorDataCollector } from "./daily-distributor-data-collector";
-import { withRetry, BalanceData } from "./types";
+import {
+  withRetry,
+  BalanceData,
+  DistributorInfo,
+  BlockNumberData,
+} from "./types";
 
 // Retry configuration for RPC calls
 const RPC_RETRY_CONFIG = {
@@ -19,9 +24,67 @@ export class BalanceFetcher extends DailyDistributorDataCollector<{
   date: string;
   block: number;
 }> {
+  // Track collected balances for the return value
+  private collectedBalances: Record<string, Record<string, string>> = {};
+
   constructor(fileManager: FileManager, provider: ethers.Provider) {
     // Call base class constructor with provider and fileManager in the expected order
     super(provider, fileManager);
+  }
+
+  // Override to only process dates that don't have existing balances
+  protected override getDatesToProcess(
+    distributorInfo: DistributorInfo,
+    distributorAddress: string,
+    blockNumbersData: BlockNumberData,
+    startDate: string,
+    endDate: string,
+  ): string[] {
+    // Load existing balance data
+    const existingData =
+      this.fileManager.readDistributorBalances(distributorAddress);
+
+    // Get all available dates from block numbers
+    const availableDates = Object.entries(blockNumbersData.blocks)
+      .filter(([date]) => date >= startDate && date <= endDate)
+      .map(([date]) => date);
+
+    // Special handling for creation date
+    const creationDate = distributorInfo.date;
+    const creationDateHasEndOfDayBlock = availableDates.includes(creationDate);
+
+    // Filter out dates that already have balances
+    const datesToProcess = availableDates.filter(
+      (date) => !existingData?.balances[date],
+    );
+
+    // Add creation date if it doesn't have an end-of-day block and doesn't have balance
+    if (
+      !creationDateHasEndOfDayBlock &&
+      creationDate >= startDate &&
+      creationDate <= endDate &&
+      !existingData?.balances[creationDate]
+    ) {
+      datesToProcess.push(creationDate);
+    }
+
+    // Sort chronologically
+    return datesToProcess.sort();
+  }
+
+  // Override to handle creation blocks specially
+  protected override convertDateToBlockRange(
+    date: string,
+    blockNumbersData: BlockNumberData,
+  ): { startBlock: number; endBlock: number } {
+    // Check if this date has an end-of-day block
+    if (date in blockNumbersData.blocks) {
+      return super.convertDateToBlockRange(date, blockNumbersData);
+    }
+
+    // For dates without end-of-day blocks (like creation dates),
+    // return a special marker that processDailyData will handle
+    return { startBlock: 0, endBlock: 0 };
   }
 
   // Implement abstract methods
@@ -32,6 +95,22 @@ export class BalanceFetcher extends DailyDistributorDataCollector<{
     endBlock: number,
   ): Promise<{ address: string; date: string; block: number }> {
     // For BalanceFetcher, we only need the end-of-day block
+    // Special case: if block is 0, this is a creation date without end-of-day block
+    if (endBlock === 0) {
+      const distributorsData = this.fileManager.readDistributors();
+      const distributorInfo =
+        distributorsData?.distributors[distributorAddress];
+
+      if (distributorInfo && date === distributorInfo.date) {
+        // Use creation block for creation date
+        return {
+          address: distributorAddress,
+          date,
+          block: distributorInfo.block,
+        };
+      }
+    }
+
     return { address: distributorAddress, date, block: endBlock };
   }
 
@@ -40,14 +119,17 @@ export class BalanceFetcher extends DailyDistributorDataCollector<{
     results: Array<{ address: string; date: string; block: number }>,
     _lastProcessedBlock: number,
   ): Promise<void> {
-    if (results.length === 0) {
+    // Filter out skipped dates (where block is -1)
+    const validResults = results.filter((r) => r.block !== -1);
+
+    if (validResults.length === 0) {
       return;
     }
 
     // Fetch balances for all the collected dates
-    const collectedBalances: Record<string, string> = {};
+    const newBalances: Record<string, string> = {};
 
-    for (const { date, block } of results) {
+    for (const { date, block } of validResults) {
       const balance = await withRetry(
         () => this.provider.getBalance(distributorAddress, block),
         {
@@ -55,8 +137,14 @@ export class BalanceFetcher extends DailyDistributorDataCollector<{
           operationName: `getBalance(${distributorAddress}, ${block})`,
         },
       );
-      collectedBalances[date] = balance.toString();
+      newBalances[date] = balance.toString();
     }
+
+    // Track collected balances for return value
+    if (!this.collectedBalances[distributorAddress]) {
+      this.collectedBalances[distributorAddress] = {};
+    }
+    Object.assign(this.collectedBalances[distributorAddress], newBalances);
 
     // Get existing balance data
     const existingData =
@@ -70,8 +158,8 @@ export class BalanceFetcher extends DailyDistributorDataCollector<{
     const balanceData = this.createBalanceData(
       distributorAddress,
       existingData,
-      collectedBalances,
-      results,
+      newBalances,
+      validResults,
       chainId,
     );
 
@@ -126,141 +214,13 @@ export class BalanceFetcher extends DailyDistributorDataCollector<{
   async fetchBalances(
     distributorAddress?: string,
   ): Promise<Record<string, Record<string, string>>> {
-    // Validate distributorAddress parameter if provided
-    if (
-      distributorAddress !== undefined &&
-      !ethers.isAddress(distributorAddress)
-    ) {
-      throw new Error(`Invalid Ethereum address: ${distributorAddress}`);
-    }
-    const distributorsData = this.fileManager.readDistributors();
+    // Reset collected balances for this run
+    this.collectedBalances = {};
 
-    // Early return if no distributors data
-    if (
-      !distributorsData ||
-      Object.keys(distributorsData.distributors).length === 0
-    ) {
-      return {};
-    }
+    // Use the base class processDistributors method
+    await this.processDistributors(distributorAddress);
 
-    // If specific distributor requested, validate it exists
-    if (distributorAddress) {
-      // Check if the distributor exists in the data
-      if (!distributorsData.distributors[distributorAddress]) {
-        throw new Error(`Distributor not found: ${distributorAddress}`);
-      }
-    }
-
-    // Load block numbers
-    const blockNumbersData = this.fileManager.readBlockNumbers();
-    if (!blockNumbersData) {
-      return {};
-    }
-
-    // Process distributors
-    const distributorsToProcess = distributorAddress
-      ? {
-          [distributorAddress]:
-            distributorsData.distributors[distributorAddress],
-        }
-      : distributorsData.distributors;
-
-    // Map to track existing balances per distributor for merging
-    const existingBalancesByDistributor: Record<
-      string,
-      BalanceData | undefined
-    > = {};
-
-    // Collect all address/date/block combinations
-    const allFetches: Array<{ address: string; date: string; block: number }> =
-      [];
-
-    for (const [address, distributorInfo] of Object.entries(
-      distributorsToProcess,
-    )) {
-      if (!distributorInfo) continue;
-
-      const creationDate = distributorInfo.date;
-      const creationBlock = distributorInfo.block;
-
-      // Load existing balance data for this distributor
-      const existingBalances =
-        this.fileManager.readDistributorBalances(address);
-      existingBalancesByDistributor[address] = existingBalances;
-
-      // Get all block numbers from creation date onward
-      const endOfDayBlocks = Object.entries(blockNumbersData.blocks).filter(
-        ([date]) => date >= creationDate,
-      );
-
-      // Skip future distributors (no applicable blocks to fetch)
-      if (endOfDayBlocks.length === 0) {
-        continue;
-      }
-
-      // Include creation block if its date doesn't have an end-of-day block
-      const creationDateHasEndOfDayBlock = endOfDayBlocks.some(
-        ([date]) => date === creationDate,
-      );
-
-      if (!creationDateHasEndOfDayBlock) {
-        endOfDayBlocks.push([creationDate, creationBlock]);
-      }
-
-      // Collect all blocks for this distributor (incremental processing)
-      for (const [date, block] of endOfDayBlocks) {
-        // Only fetch if balance doesn't already exist
-        if (!existingBalances?.balances[date]) {
-          allFetches.push({ address, date, block });
-        }
-      }
-    }
-
-    // Sort all fetches chronologically by date
-    allFetches.sort((a, b) => a.date.localeCompare(b.date));
-
-    // Return empty record if no fetches needed
-    if (allFetches.length === 0) {
-      return {};
-    }
-
-    // Collect balances by distributor and date
-    const collectedBalances: Record<string, Record<string, string>> = {};
-
-    // Fetch balances in chronological order
-    for (const { address, date, block } of allFetches) {
-      const balance = await withRetry(
-        () => this.provider.getBalance(address, block),
-        {
-          ...RPC_RETRY_CONFIG,
-          operationName: `getBalance(${address}, ${block})`,
-        },
-      );
-
-      // Store balance as decimal string
-      if (!collectedBalances[address]) {
-        collectedBalances[address] = {};
-      }
-      collectedBalances[address][date] = balance.toString();
-    }
-
-    // Get chain ID from provider for new balance data
-    const network = await this.provider.getNetwork();
-    const chainId = Number(network.chainId);
-
-    // Save balance data for each distributor
-    for (const [address, newBalances] of Object.entries(collectedBalances)) {
-      const existingData = existingBalancesByDistributor[address];
-      const balanceData = this.createBalanceData(
-        address,
-        existingData,
-        newBalances,
-        allFetches,
-        chainId,
-      );
-      this.fileManager.writeDistributorBalances(address, balanceData);
-    }
-
-    return collectedBalances;
+    // Return the collected balances
+    return this.collectedBalances;
   }
 }
