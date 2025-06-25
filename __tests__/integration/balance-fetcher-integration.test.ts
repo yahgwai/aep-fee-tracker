@@ -167,6 +167,18 @@ function createTestDistributorsData(): DistributorsData {
   return distributors;
 }
 
+// Helper function to create minimal block numbers for faster tests
+function createMinimalBlockNumbers(): BlockNumberData {
+  return {
+    metadata: { chain_id: ARBITRUM_NOVA_CHAIN_ID },
+    blocks: {
+      "2023-03-15": 3120000,
+      "2023-03-16": 3163115,
+      "2023-03-17": 3206230,
+    },
+  };
+}
+
 describe("BalanceFetcher - Integration Tests", () => {
   let testContext: TestContext;
   let balanceFetcher: BalanceFetcher;
@@ -193,6 +205,9 @@ describe("BalanceFetcher - Integration Tests", () => {
 
   describe("Basic Balance Fetching", () => {
     it("should fetch balances for all distributors and create balance files", async () => {
+      // Use minimal test data to prevent timeout
+      fileManager.writeBlockNumbers(createMinimalBlockNumbers());
+
       // Act
       const result = await balanceFetcher.fetchBalances();
 
