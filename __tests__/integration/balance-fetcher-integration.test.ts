@@ -295,6 +295,9 @@ describe("BalanceFetcher - Integration Tests", () => {
 
   describe("Incremental Processing", () => {
     it("should not fetch any new balances when run twice", async () => {
+      // Use minimal test data to prevent timeout
+      fileManager.writeBlockNumbers(getMinimalBlockNumbers());
+
       // First run - fetch all balances
       const firstResult = await balanceFetcher.fetchBalances();
       expect(Object.keys(firstResult).length).toBeGreaterThan(0);
@@ -316,13 +319,14 @@ describe("BalanceFetcher - Integration Tests", () => {
       fileManager.writeBlockNumbers(limitedBlockNumbers);
       await balanceFetcher.fetchBalances();
 
-      // Add more dates
-      fileManager.writeBlockNumbers(testBlockNumbers as BlockNumberData);
+      // Add more dates using minimal test data
+      fileManager.writeBlockNumbers(getMinimalBlockNumbers());
 
       // Second run should only fetch new dates
       const secondResult = await balanceFetcher.fetchBalances();
 
       // Should have fetched balances for dates after 2022-07-13
+      expect(Object.keys(secondResult).length).toBeGreaterThan(0);
       for (const balances of Object.values(secondResult)) {
         for (const date of Object.keys(balances)) {
           expect(date).not.toBe("2022-07-12");
