@@ -759,5 +759,122 @@ describe("FeeCalculator - Integration Tests", () => {
       expect(day2.distributions_count).toBe(0);
       expect(day2.total_wei).toBe("500000000000000000"); // 0.5 ETH total
     });
+
+    it("should sum multiple distribution events on the same date", () => {
+      const { fileManager } = testContext;
+
+      // Setup distributors data
+      const distributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x0000000000000000000000000000000000000070",
+            event_data: "event data",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      // Setup balance data
+      const balanceData: BalanceData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 152,
+            balance_wei: "1000000000000000000", // 1 ETH
+          },
+        },
+      };
+
+      // Setup multiple distribution events on the same date
+      const eventsData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          last_scanned_block: 200,
+        },
+        events: {
+          "0x1111111111111111111111111111111111111111111111111111111111111111:0":
+            {
+              blockNumber: 100,
+              transactionHash:
+                "0x1111111111111111111111111111111111111111111111111111111111111111",
+              logIndex: 0,
+              address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+              topics: ["0xRecipientRecievedTopic"],
+              data: "0x",
+              recipient: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+              value: "100000000000000000", // 0.1 ETH
+            },
+          "0x2222222222222222222222222222222222222222222222222222222222222222:0":
+            {
+              blockNumber: 120,
+              transactionHash:
+                "0x2222222222222222222222222222222222222222222222222222222222222222",
+              logIndex: 0,
+              address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+              topics: ["0xRecipientRecievedTopic"],
+              data: "0x",
+              recipient: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+              value: "200000000000000000", // 0.2 ETH
+            },
+          "0x3333333333333333333333333333333333333333333333333333333333333333:0":
+            {
+              blockNumber: 150,
+              transactionHash:
+                "0x3333333333333333333333333333333333333333333333333333333333333333",
+              logIndex: 0,
+              address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+              topics: ["0xRecipientRecievedTopic"],
+              data: "0x",
+              recipient: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+              value: "300000000000000000", // 0.3 ETH
+            },
+        },
+      };
+
+      // Write test data
+      fileManager.writeDistributors(distributorsData);
+      fileManager.writeDistributorBalances(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        balanceData,
+      );
+      fileManager.writeRecipientRecievedEvents(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        eventsData,
+      );
+
+      // Calculate fees
+      calculator.calculateFees();
+
+      // Read and verify the fee report
+      const feeReport = fileManager.readFeeReport();
+      expect(feeReport).toBeDefined();
+
+      const distributorReport =
+        feeReport!.distributors["0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"];
+      expect(distributorReport).toHaveLength(1);
+
+      // Should sum all three events: 0.1 + 0.2 + 0.3 = 0.6 ETH
+      const day1 = distributorReport![0]!;
+      expect(day1.date).toBe("2022-07-12");
+      expect(day1.balance_change_wei).toBe("1000000000000000000"); // 1 ETH balance change
+      expect(day1.distributions_wei).toBe("600000000000000000"); // 0.6 ETH total distributions
+      expect(day1.distributions_count).toBe(3); // 3 events
+      expect(day1.total_wei).toBe("1600000000000000000"); // 1.6 ETH total (1 + 0.6)
+    });
   });
 });
