@@ -36,5 +36,16 @@ describe("Configuration Module", () => {
 
       expect(config.storeDirectory).toBe("/data/aep-fees");
     });
+
+    it("should include RPC URL in configuration", () => {
+      const parsedArgs: ParsedArguments = {
+        "rpc-url": "https://archive-node.com/rpc",
+        _: [],
+      };
+
+      const config = createConfiguration(parsedArgs);
+
+      expect(config.rpcUrl).toBe("https://archive-node.com/rpc");
+    });
   });
 });
