@@ -13,5 +13,16 @@ describe("Configuration Module", () => {
 
       expect(config).toBeDefined();
     });
+
+    it("should apply default store directory when not provided", () => {
+      const parsedArgs: ParsedArguments = {
+        "rpc-url": "https://archive-node.com/rpc",
+        _: [],
+      };
+
+      const config = createConfiguration(parsedArgs);
+
+      expect(config.storeDirectory).toBe("./store");
+    });
   });
 });
