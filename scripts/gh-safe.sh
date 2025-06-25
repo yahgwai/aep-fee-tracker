@@ -274,12 +274,12 @@ show_ci_tips() {
             echo ""
             echo "To get detailed logs from a failing check:"
             echo "  1. Copy the run URL from the failing check"
-            echo "  2. Extract the run ID and job ID from the URL"
-            echo "  3. Use: gh run view <run-id> --job <job-id> --log-failed"
+            echo "  2. Extract the job ID from the URL (the number after /job/)"
+            echo "  3. Use: gh run view --job <job-id> --log-failed"
             echo ""
             echo "Example:"
             echo "  URL: https://github.com/owner/repo/actions/runs/12345/job/67890"
-            echo "  Command: gh run view 12345 --job 67890 --log-failed"
+            echo "  Command: gh run view --job 67890 --log-failed"
             echo ""
         fi
     fi
