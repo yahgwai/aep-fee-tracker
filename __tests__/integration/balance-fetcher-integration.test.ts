@@ -66,12 +66,12 @@ const TEST_DISTRIBUTORS: Record<
 async function loadExpectedBalanceData(
   distributorAddress: string,
 ): Promise<BalanceData> {
-  // Convert to lowercase for directory path (test data directories use lowercase)
-  const lowerCaseAddress = distributorAddress.toLowerCase();
+  // Use the checksummed address for directory path (test data directories use checksummed addresses)
+  const checksummedAddress = distributorAddress;
   const balanceFilePath = path.join(
     __dirname,
     "../test-data/distributor-detector/balance_data",
-    lowerCaseAddress,
+    checksummedAddress,
     "balances.json",
   );
   const content = await fs.readFile(balanceFilePath, "utf-8");

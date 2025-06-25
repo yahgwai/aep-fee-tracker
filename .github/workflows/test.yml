@@ -47,7 +47,7 @@ jobs:
       run: npm ci
 
     - name: Run tests
-      run: npx jest --config jest.config.minimal.js
+      run: npm test
       timeout-minutes: 2
       env:
         ARBITRUM_NOVA_RPC_URL: ${{ secrets.ARBITRUM_NOVA_RPC_URL }}
