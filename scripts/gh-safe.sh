@@ -270,13 +270,16 @@ show_ci_tips() {
         
         if [[ -n "$pr_num" ]]; then
             echo -e "${YELLOW}=== TIP: To see CI failure details ===${NC}"
-            echo "Quick failure summary:"
-            echo "  gh pr checks $pr_num --json name,conclusion | jq -r '.[] | select(.conclusion==\"FAILURE\") | .name'"
+            echo "To find failing checks, look for lines with 'fail' in the output above"
             echo ""
-            echo "Get failure logs:"
-            echo "  # First get the failing job URL:"
-            echo "  gh pr checks $pr_num --json name,detailsUrl,conclusion | jq -r '.[] | select(.conclusion==\"FAILURE\") | .detailsUrl'"
-            echo "  # Then use: gh run view <run-id> --job <job-id> --log-failed"
+            echo "To get detailed logs from a failing check:"
+            echo "  1. Copy the run URL from the failing check"
+            echo "  2. Extract the run ID and job ID from the URL"
+            echo "  3. Use: gh run view <run-id> --job <job-id> --log-failed"
+            echo ""
+            echo "Example:"
+            echo "  URL: https://github.com/owner/repo/actions/runs/12345/job/67890"
+            echo "  Command: gh run view 12345 --job 67890 --log-failed"
             echo ""
         fi
     fi
