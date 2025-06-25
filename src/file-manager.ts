@@ -279,6 +279,49 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
+  private validateSignedWeiValue(
+    value: string,
+    field: string,
+    date?: string,
+  ): void {
+    const formatError = (message: string, expected: string) => {
+      return new Error(
+        `${message}\n` +
+          `  Field: ${field}\n` +
+          (date ? `  Date: ${date}\n` : "") +
+          `  Value: ${value}\n` +
+          `  Expected: ${expected}\n`,
+      );
+    };
+
+    if (typeof value !== "string") {
+      throw formatError("Invalid wei value", "String value");
+    }
+
+    if (value.includes("e") || value.includes("E")) {
+      throw formatError(
+        "Invalid numeric format",
+        `Decimal string (e.g., "${EXAMPLE_WEI_VALUE}")`,
+      );
+    }
+
+    if (value.includes(".")) {
+      throw formatError(
+        "Invalid wei value",
+        "Integer string (no decimal points)",
+      );
+    }
+
+    // Allow optional minus sign at the beginning
+    const signedWeiRegex = /^-?\d+$/;
+    if (!signedWeiRegex.test(value)) {
+      throw formatError(
+        "Invalid wei value",
+        "Signed decimal string (optional minus sign followed by digits)",
+      );
+    }
+  }
+
   private validateDistributorsData(data: DistributorsData): void {
     for (const [address, distributorInfo] of Object.entries(
       data.distributors,
@@ -449,7 +492,7 @@ export class FileManager implements FileManagerInterface {
           "end_balance_wei",
           entry.date,
         );
-        this.validateWeiValue(
+        this.validateSignedWeiValue(
           entry.balance_change_wei,
           "balance_change_wei",
           entry.date,
@@ -459,7 +502,7 @@ export class FileManager implements FileManagerInterface {
           "distributions_wei",
           entry.date,
         );
-        this.validateWeiValue(entry.total_wei, "total_wei", entry.date);
+        this.validateSignedWeiValue(entry.total_wei, "total_wei", entry.date);
 
         // Validate distributions count
         if (
