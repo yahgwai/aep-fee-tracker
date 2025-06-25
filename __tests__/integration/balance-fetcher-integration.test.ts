@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
-// import * as fs from "fs/promises";
-// import * as path from "path";
+import * as fs from "fs/promises";
+import * as path from "path";
 import { ethers } from "ethers";
 import { BalanceFetcher } from "../../src/balance-fetcher";
 import { FileManager } from "../../src/file-manager";
 import {
   DistributorsData,
   BlockNumberData,
-  // BalanceData,
+  BalanceData,
   DistributorType,
   DISTRIBUTOR_METHODS,
 } from "../../src/types";
@@ -63,22 +63,20 @@ const TEST_DISTRIBUTORS: Record<
 };
 
 // Helper to load expected balance data
-// Note: This function loads expected balance data for exact value verification
-// Currently not used as we're using minimal test data for performance
-// async function loadExpectedBalanceData(
-//   distributorAddress: string,
-// ): Promise<BalanceData> {
-//   // Convert to lowercase for directory path (test data directories use lowercase)
-//   const lowerCaseAddress = distributorAddress.toLowerCase();
-//   const balanceFilePath = path.join(
-//     __dirname,
-//     "../test-data/distributor-detector/balance_data",
-//     lowerCaseAddress,
-//     "balances.json",
-//   );
-//   const content = await fs.readFile(balanceFilePath, "utf-8");
-//   return JSON.parse(content);
-// }
+async function loadExpectedBalanceData(
+  distributorAddress: string,
+): Promise<BalanceData> {
+  // Convert to lowercase for directory path (test data directories use lowercase)
+  const lowerCaseAddress = distributorAddress.toLowerCase();
+  const balanceFilePath = path.join(
+    __dirname,
+    "../test-data/distributor-detector/balance_data",
+    lowerCaseAddress,
+    "balances.json",
+  );
+  const content = await fs.readFile(balanceFilePath, "utf-8");
+  return JSON.parse(content);
+}
 
 // Helper to create test distributors data
 function createTestDistributorsData(): DistributorsData {
@@ -256,40 +254,38 @@ describe("BalanceFetcher - Integration Tests", () => {
 
   describe("Balance Value Verification", () => {
     it("should fetch correct balance values that match test data", async () => {
-      // This test needs specific block numbers to verify exact balance values
-      // For integration testing with minimal data, we'll just verify the structure
+      // Use minimal block numbers to prevent timeout
       fileManager.writeBlockNumbers(getMinimalBlockNumbers());
 
       // Act
       await balanceFetcher.fetchBalances();
 
-      // Assert - Verify structure and metadata
+      // Assert - Compare fetched balances with expected test data
+      const minimalDates = Object.keys(getMinimalBlockNumbers().blocks);
+
       for (const distributorAddress of Object.keys(TEST_DISTRIBUTORS)) {
         const fetchedData =
           fileManager.readDistributorBalances(distributorAddress);
+        const expectedData = await loadExpectedBalanceData(distributorAddress);
 
         expect(fetchedData).toBeDefined();
-        expect(fetchedData?.metadata.chain_id).toBe(ARBITRUM_NOVA_CHAIN_ID);
-        expect(fetchedData?.metadata.reward_distributor).toBe(
-          distributorAddress,
-        );
+        expect(fetchedData?.metadata).toEqual(expectedData.metadata);
 
-        // Verify we have balance entries for the minimal test dates
-        const minimalDates = Object.keys(getMinimalBlockNumbers().blocks);
+        // Verify balance values for dates that are in both minimal data and expected data
         for (const date of minimalDates) {
           const distributorInfo = TEST_DISTRIBUTORS[distributorAddress];
-          if (distributorInfo && date >= distributorInfo.createdAt) {
-            expect(fetchedData?.balances[date]).toBeDefined();
-            expect(fetchedData?.balances[date]?.balance_wei).toMatch(/^\d+$/);
-            expect(fetchedData?.balances[date]?.block_number).toBeGreaterThan(
-              0,
+          // Only check dates from distributor creation onward
+          if (
+            distributorInfo &&
+            date >= distributorInfo.createdAt &&
+            expectedData.balances[date]
+          ) {
+            expect(fetchedData?.balances[date]).toEqual(
+              expectedData.balances[date],
             );
           }
         }
       }
-
-      // Note: Exact balance value verification would require using the full test data
-      // with specific block numbers that match the expected test data
     });
   });
 
@@ -379,14 +375,18 @@ describe("BalanceFetcher - Integration Tests", () => {
       await balanceFetcher.fetchBalances();
 
       // Assert - Check distributor created on 2022-08-09 with creation block 684
-      const balanceData = fileManager.readDistributorBalances(
-        ethers.getAddress("0xdff90519a9DE6ad469D4f9839a9220C5D340B792"),
+      const distributorAddress = ethers.getAddress(
+        "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
       );
+      const fetchedData =
+        fileManager.readDistributorBalances(distributorAddress);
+      const expectedData = await loadExpectedBalanceData(distributorAddress);
 
-      // The test block numbers have 2022-08-09 at block 3584
-      // But the creation block 684 should also be included
-      expect(balanceData?.balances["2022-08-09"]).toBeDefined();
-      expect(balanceData?.balances["2022-08-09"]?.block_number).toBe(3584);
+      // Verify the balance for the creation date matches expected data
+      expect(fetchedData?.balances["2022-08-09"]).toBeDefined();
+      expect(fetchedData?.balances["2022-08-09"]).toEqual(
+        expectedData.balances["2022-08-09"],
+      );
     });
   });
 
