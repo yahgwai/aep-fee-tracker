@@ -19,7 +19,11 @@ async function main(): Promise<void> {
     process.exit(0);
   } catch (error) {
     // Exit with error status
-    console.error(error);
+    if (error instanceof Error) {
+      console.error(`Error: ${error.message}`);
+    } else {
+      console.error("Error:", error);
+    }
     process.exit(1);
   }
 }

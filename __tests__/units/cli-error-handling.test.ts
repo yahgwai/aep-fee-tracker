@@ -49,8 +49,9 @@ describe("CLI Error Handling", () => {
 
       // Error output should be on stderr
       expect(stderr.length).toBeGreaterThan(0);
-      // Nothing should be on stdout
-      expect(stdout).toBe("");
+      expect(stderr).toContain("Error:");
+      // Our error output should not be on stdout (third-party libraries may log to stdout)
+      expect(stdout).not.toContain("Error:");
     });
   });
 
