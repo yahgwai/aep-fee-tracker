@@ -24,11 +24,19 @@ function parseDateRange(config: Configuration): {
   startDate: Date;
   endDate: Date;
 } {
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  // Arbitrum Nova chain start date (based on earliest distributor deployment)
+  const CHAIN_START_DATE = new Date("2022-07-12");
+  CHAIN_START_DATE.setUTCHours(0, 0, 0, 0);
 
-  const startDate = config.startDate ? new Date(config.startDate) : today;
-  const endDate = config.endDate ? new Date(config.endDate) : today;
+  // Default to yesterday for end date (since we can only process complete days)
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  yesterday.setUTCHours(0, 0, 0, 0);
+
+  const startDate = config.startDate
+    ? new Date(config.startDate)
+    : CHAIN_START_DATE;
+  const endDate = config.endDate ? new Date(config.endDate) : yesterday;
 
   return { startDate, endDate };
 }

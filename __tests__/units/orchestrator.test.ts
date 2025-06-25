@@ -188,14 +188,18 @@ describe("orchestrator", () => {
       );
     });
 
-    it("should use today's date when no dates provided", async () => {
+    it("should use chain start date and yesterday when no dates provided", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
       };
 
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
+      const chainStartDate = new Date("2022-07-12");
+      chainStartDate.setUTCHours(0, 0, 0, 0);
+
+      const yesterday = new Date();
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      yesterday.setUTCHours(0, 0, 0, 0);
 
       await orchestrate(configWithoutDates);
 
@@ -203,8 +207,28 @@ describe("orchestrator", () => {
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
 
-      expect(startDate.toISOString()).toBe(today.toISOString());
-      expect(endDate.toISOString()).toBe(today.toISOString());
+      expect(startDate.toISOString()).toBe(chainStartDate.toISOString());
+      expect(endDate.toISOString()).toBe(yesterday.toISOString());
+    });
+
+    it("should use provided dates when specified", async () => {
+      const customConfig: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+        startDate: "2023-06-01",
+        endDate: "2023-06-30",
+      };
+
+      await orchestrate(customConfig);
+
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      expect(startDate.toISOString()).toBe(
+        new Date("2023-06-01").toISOString(),
+      );
+      expect(endDate.toISOString()).toBe(new Date("2023-06-30").toISOString());
     });
 
     it("should pass endDate to distributorDetector", async () => {
