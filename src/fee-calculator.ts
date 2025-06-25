@@ -17,7 +17,11 @@ export class FeeCalculator {
   calculateFees(distributorAddress?: string): void {
     // Read distributor list
     const distributorsData = this.fileManager.readDistributors();
-    if (!distributorsData) return;
+    if (!distributorsData) {
+      throw new Error(
+        "Failed to load distributor data\n  FileManager returned no distributor list\n  Check: Ensure distributor data has been populated by the distributor detector component",
+      );
+    }
 
     // Get all distributor addresses
     let distributorAddresses = Object.keys(distributorsData.distributors);

@@ -104,10 +104,43 @@ describe("FeeCalculator - Integration Tests", () => {
       expect(entry!.total_wei).toBe("1000000000000000000");
     });
 
-    it("should handle empty distributor data", () => {
+    it("should throw error when no distributor data exists", () => {
+      // Calculate fees without any data
+      expect(() => {
+        calculator.calculateFees();
+      }).toThrow(
+        "Failed to load distributor data\n  FileManager returned no distributor list\n  Check: Ensure distributor data has been populated by the distributor detector component",
+      );
+    });
+
+    it("should throw error when distributor list cannot be loaded", () => {
       const { fileManager } = testContext;
 
-      // Calculate fees without any data
+      // Mock FileManager to return undefined for readDistributors
+      jest.spyOn(fileManager, "readDistributors").mockReturnValue(undefined);
+
+      // Should throw descriptive error
+      expect(() => {
+        calculator.calculateFees();
+      }).toThrow(
+        "Failed to load distributor data\n  FileManager returned no distributor list\n  Check: Ensure distributor data has been populated by the distributor detector component",
+      );
+    });
+
+    it("should handle empty distributors list without error", () => {
+      const { fileManager } = testContext;
+
+      const distributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+        },
+        distributors: {},
+      };
+
+      fileManager.writeDistributors(distributorsData);
+
+      // Should not throw when distributors list is empty
       calculator.calculateFees();
 
       // Should not write any fee report
