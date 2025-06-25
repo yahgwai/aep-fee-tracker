@@ -259,7 +259,7 @@ describe("FeeCalculator - Integration Tests", () => {
       expect(distributorReport![2]!.date).toBe("2022-07-14");
     });
 
-    it("should ignore distributorAddress parameter and process first distributor", () => {
+    it("should filter to specified distributor when distributorAddress is provided", () => {
       const { fileManager } = testContext;
 
       const distributorsData: DistributorsData = {
@@ -295,6 +295,89 @@ describe("FeeCalculator - Integration Tests", () => {
         },
       };
 
+      const balanceData1: BalanceData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 152,
+            balance_wei: "1000000000000000000",
+          },
+        },
+      };
+
+      const balanceData2: BalanceData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+        },
+        balances: {
+          "2022-07-13": {
+            block_number: 200,
+            balance_wei: "2000000000000000000",
+          },
+        },
+      };
+
+      fileManager.writeDistributors(distributorsData);
+      fileManager.writeDistributorBalances(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        balanceData1,
+      );
+      fileManager.writeDistributorBalances(
+        "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+        balanceData2,
+      );
+
+      // Pass a specific distributor address
+      calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
+
+      // Should only process the specified distributor
+      const feeReport = fileManager.readFeeReport();
+      expect(feeReport).toBeDefined();
+      expect(feeReport!.distributors).not.toHaveProperty(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
+      expect(feeReport!.distributors).toHaveProperty(
+        "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+      );
+
+      // Verify the data for the specified distributor
+      const distributorReport =
+        feeReport!.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"];
+      expect(distributorReport).toHaveLength(1);
+      expect(distributorReport![0]!.date).toBe("2022-07-13");
+      expect(distributorReport![0]!.balance_change_wei).toBe(
+        "2000000000000000000",
+      );
+    });
+
+    it("should write empty report when distributorAddress does not match any distributor", () => {
+      const { fileManager } = testContext;
+
+      const distributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x0000000000000000000000000000000000000070",
+            event_data: "event data",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
       const balanceData: BalanceData = {
         metadata: {
           chain_id: 42170,
@@ -314,15 +397,98 @@ describe("FeeCalculator - Integration Tests", () => {
         balanceData,
       );
 
-      // Pass a different distributor address
-      calculator.calculateFees("0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9");
+      // Pass a non-existent distributor address
+      calculator.calculateFees("0xNonExistentDistributor1234567890abcdef1234");
 
-      // Should still process the first distributor
+      // Should write an empty report with metadata but no distributors
       const feeReport = fileManager.readFeeReport();
+      expect(feeReport).toBeDefined();
+      expect(feeReport!.metadata.chain_id).toBe(42170);
+      expect(Object.keys(feeReport!.distributors)).toHaveLength(0);
+    });
+
+    it("should process all distributors when distributorAddress is not provided", () => {
+      const { fileManager } = testContext;
+
+      const distributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x0000000000000000000000000000000000000070",
+            event_data: "event data",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            type: DistributorType.L1_SURPLUS_FEE,
+            block: 200,
+            date: "2022-07-13",
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            method: "0x934be07d",
+            owner: "0x0000000000000000000000000000000000000070",
+            event_data: "event data 2",
+            is_reward_distributor: true,
+            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+          },
+        },
+      };
+
+      const balanceData1: BalanceData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 152,
+            balance_wei: "1000000000000000000",
+          },
+        },
+      };
+
+      const balanceData2: BalanceData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+        },
+        balances: {
+          "2022-07-13": {
+            block_number: 200,
+            balance_wei: "2000000000000000000",
+          },
+        },
+      };
+
+      fileManager.writeDistributors(distributorsData);
+      fileManager.writeDistributorBalances(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        balanceData1,
+      );
+      fileManager.writeDistributorBalances(
+        "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+        balanceData2,
+      );
+
+      // Call without distributorAddress parameter
+      calculator.calculateFees();
+
+      // Should process both distributors
+      const feeReport = fileManager.readFeeReport();
+      expect(feeReport).toBeDefined();
       expect(feeReport!.distributors).toHaveProperty(
         "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
       );
-      expect(feeReport!.distributors).not.toHaveProperty(
+      expect(feeReport!.distributors).toHaveProperty(
         "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
       );
     });
