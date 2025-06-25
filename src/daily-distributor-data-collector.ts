@@ -1,0 +1,112 @@
+import { ethers } from "ethers";
+import { FileManager } from "./file-manager";
+import { DistributorsData } from "./types";
+
+/**
+ * Abstract base class for collectors that process distributor data on a daily basis.
+ * Provides common functionality for loading distributors, validating addresses,
+ * and iterating through date ranges.
+ *
+ * @template T The type of data returned by processDailyData
+ */
+export abstract class DailyDistributorDataCollector<T = unknown> {
+  constructor(
+    public readonly provider: ethers.Provider,
+    public readonly fileManager: FileManager,
+  ) {}
+
+  /**
+   * Main entry point for processing distributors.
+   * Validates input, loads data, and orchestrates the daily processing.
+   *
+   * @param distributorAddress - Optional specific distributor to process
+   * @returns Promise that resolves when processing is complete
+   */
+  async processDistributors(distributorAddress?: string): Promise<void> {
+    // Validate address if provided
+    if (
+      distributorAddress !== undefined &&
+      !ethers.isAddress(distributorAddress)
+    ) {
+      throw new Error(`Invalid Ethereum address: ${distributorAddress}`);
+    }
+
+    // Load distributors data
+    const distributorsData = this.fileManager.readDistributors();
+
+    // Early return if no distributors data
+    if (
+      !distributorsData ||
+      Object.keys(distributorsData.distributors).length === 0
+    ) {
+      return;
+    }
+
+    // Validate distributor exists if specified
+    if (distributorAddress) {
+      this.validateDistributorExists(distributorsData, distributorAddress);
+    }
+
+    // Load block numbers data
+    const blockNumbersData = this.fileManager.readBlockNumbers();
+    if (!blockNumbersData) {
+      return;
+    }
+
+    // Process will be implemented in subsequent steps
+  }
+
+  /**
+   * Validates that the specified distributor exists in the data.
+   * Uses case-insensitive comparison to handle checksum mismatches.
+   *
+   * @param distributorsData - The distributors data to search in
+   * @param distributorAddress - The distributor address to validate
+   * @throws Error if distributor not found
+   */
+  private validateDistributorExists(
+    distributorsData: DistributorsData,
+    distributorAddress: string,
+  ): void {
+    // Find distributor with case-insensitive comparison
+    const foundAddress = Object.keys(distributorsData.distributors).find(
+      (address) => address.toLowerCase() === distributorAddress.toLowerCase(),
+    );
+
+    if (!foundAddress) {
+      throw new Error(`Distributor ${distributorAddress} not found`);
+    }
+  }
+
+  /**
+   * Process data for a specific distributor on a specific date.
+   * To be implemented by subclasses for their specific data collection needs.
+   *
+   * @param distributorAddress - The distributor being processed
+   * @param date - The date being processed (YYYY-MM-DD format)
+   * @param startBlock - The starting block number for this date
+   * @param endBlock - The ending block number for this date
+   * @returns Promise resolving to collected data for this date
+   */
+  abstract processDailyData(
+    distributorAddress: string,
+    date: string,
+    startBlock: number,
+    endBlock: number,
+  ): Promise<T>;
+
+  /**
+   * Finalize and store the collected data for a distributor.
+   * To be implemented by subclasses to handle their specific storage needs.
+   *
+   * @param distributorAddress - The distributor that was processed
+   * @param results - Array of daily results from processDailyData
+   * @param lastProcessedBlock - The last block that was processed
+   * @returns Promise that resolves when data is stored
+   */
+  abstract finalizeDistributorData(
+    distributorAddress: string,
+    results: T[],
+    lastProcessedBlock: number,
+  ): Promise<void>;
+}
