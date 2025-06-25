@@ -23,7 +23,7 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 
 - All components execute successfully in sequence
 - CLI exits with appropriate error codes on failure
-- Components receive required configuration via environment variables
+- Components receive required configuration
 
 ## 3. Dependencies
 
@@ -52,8 +52,7 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 
 1. CLI parses command-line arguments
 2. Validates required --rpc-url parameter
-3. Sets up environment variables for components
-4. Executes components in sequence:
+3. Executes components in sequence:
    ```
    Block Finder
        ↓
@@ -65,12 +64,11 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
        ↓
    Fee Calculator
    ```
-5. Each component reads/writes to shared store directory
-6. CLI exits with appropriate status code
+4. Each component reads/writes to shared store directory
+5. CLI exits with appropriate status code
 
 ### Integration Points
 
-- Environment variables: RPC_URL, STORE_DIR, START_DATE, END_DATE
 - File system: Shared store directory for inter-component data exchange
 - Component execution: Direct function calls within the same process
 
