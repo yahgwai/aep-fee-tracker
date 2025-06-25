@@ -51,7 +51,9 @@ describe("orchestrator", () => {
       ensureStoreDirectory: jest.fn(),
     } as unknown as jest.Mocked<FileManager>;
 
-    mockProvider = {} as unknown as jest.Mocked<ethers.Provider>;
+    mockProvider = {
+      getBlock: jest.fn(),
+    } as unknown as jest.Mocked<ethers.Provider>;
 
     // Mock constructors
     (FileManager as jest.MockedClass<typeof FileManager>).mockImplementation(
@@ -188,13 +190,21 @@ describe("orchestrator", () => {
       );
     });
 
-    it("should use chain start date and yesterday when no dates provided", async () => {
+    it("should use block 1 timestamp and yesterday when no dates provided", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
       };
 
-      const chainStartDate = new Date("2022-07-12");
+      // Mock block 1 with a timestamp (July 12, 2022 UTC)
+      const block1Timestamp = Math.floor(
+        new Date("2022-07-12T00:00:00Z").getTime() / 1000,
+      );
+      mockProvider.getBlock.mockResolvedValue({
+        timestamp: block1Timestamp,
+      } as unknown as ethers.Block);
+
+      const chainStartDate = new Date(block1Timestamp * 1000);
       chainStartDate.setUTCHours(0, 0, 0, 0);
 
       const yesterday = new Date();
@@ -203,12 +213,29 @@ describe("orchestrator", () => {
 
       await orchestrate(configWithoutDates);
 
+      // Verify that block 1 was fetched
+      expect(mockProvider.getBlock).toHaveBeenCalledWith(1);
+
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
 
       expect(startDate.toISOString()).toBe(chainStartDate.toISOString());
       expect(endDate.toISOString()).toBe(yesterday.toISOString());
+    });
+
+    it("should throw error when block 1 cannot be fetched", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock getBlock to return null
+      mockProvider.getBlock.mockResolvedValue(null);
+
+      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
+        "Failed to fetch block 1 from provider",
+      );
     });
 
     it("should use provided dates when specified", async () => {
@@ -220,6 +247,9 @@ describe("orchestrator", () => {
       };
 
       await orchestrate(customConfig);
+
+      // Should not call getBlock when dates are provided
+      expect(mockProvider.getBlock).not.toHaveBeenCalled();
 
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();

@@ -14,28 +14,38 @@ export async function orchestrate(config: Configuration): Promise<void> {
   fileManager.ensureStoreDirectory();
 
   // Parse date range
-  const { startDate, endDate } = parseDateRange(config);
+  const { startDate, endDate } = await parseDateRange(config, provider);
 
   // Execute pipeline components sequentially
   await executePipeline(fileManager, provider, startDate, endDate);
 }
 
-function parseDateRange(config: Configuration): {
+async function parseDateRange(
+  config: Configuration,
+  provider: ethers.Provider,
+): Promise<{
   startDate: Date;
   endDate: Date;
-} {
-  // Arbitrum Nova chain start date (based on earliest distributor deployment)
-  const CHAIN_START_DATE = new Date("2022-07-12");
-  CHAIN_START_DATE.setUTCHours(0, 0, 0, 0);
-
+}> {
   // Default to yesterday for end date (since we can only process complete days)
   const yesterday = new Date();
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   yesterday.setUTCHours(0, 0, 0, 0);
 
-  const startDate = config.startDate
-    ? new Date(config.startDate)
-    : CHAIN_START_DATE;
+  // Determine start date
+  let startDate: Date;
+  if (config.startDate) {
+    startDate = new Date(config.startDate);
+  } else {
+    // Fetch block 1 to get chain start timestamp
+    const block1 = await provider.getBlock(1);
+    if (!block1) {
+      throw new Error("Failed to fetch block 1 from provider");
+    }
+    startDate = new Date(block1.timestamp * 1000);
+    startDate.setUTCHours(0, 0, 0, 0);
+  }
+
   const endDate = config.endDate ? new Date(config.endDate) : yesterday;
 
   return { startDate, endDate };
