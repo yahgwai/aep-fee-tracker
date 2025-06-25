@@ -8,47 +8,57 @@ import { RecipientRecievedScanner } from "./recipient-recieved-scanner";
 import { FeeCalculator } from "./fee-calculator";
 
 export async function orchestrate(config: Configuration): Promise<void> {
-  // Create dependencies
+  // Initialize infrastructure
   const fileManager = new FileManager(config.storeDirectory);
   const provider = new ethers.JsonRpcProvider(config.rpcUrl);
-
-  // Ensure store directory exists
   fileManager.ensureStoreDirectory();
 
-  // Determine date range
-  const startDate = config.startDate ? new Date(config.startDate) : new Date();
-  const endDate = config.endDate ? new Date(config.endDate) : new Date();
+  // Parse date range
+  const { startDate, endDate } = parseDateRange(config);
 
-  // Set time to 00:00:00 UTC for today's date if no dates provided
-  if (!config.startDate) {
-    startDate.setUTCHours(0, 0, 0, 0);
-  }
-  if (!config.endDate) {
-    endDate.setUTCHours(0, 0, 0, 0);
-  }
+  // Execute pipeline components sequentially
+  await executePipeline(fileManager, provider, startDate, endDate);
+}
 
-  // Execute components in sequence
+function parseDateRange(config: Configuration): {
+  startDate: Date;
+  endDate: Date;
+} {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
 
-  // 1. Block Finder
+  const startDate = config.startDate ? new Date(config.startDate) : today;
+  const endDate = config.endDate ? new Date(config.endDate) : today;
+
+  return { startDate, endDate };
+}
+
+async function executePipeline(
+  fileManager: FileManager,
+  provider: ethers.Provider,
+  startDate: Date,
+  endDate: Date,
+): Promise<void> {
+  // 1. Find blocks for date range
   const blockFinder = new BlockFinder(fileManager, provider);
   await blockFinder.findBlocksForDateRange(startDate, endDate);
 
-  // 2. Distributor Detector
+  // 2. Detect distributors up to end date
   const distributorDetector = new DistributorDetector(fileManager, provider);
   await distributorDetector.detectDistributors(endDate);
 
-  // 3. Balance Fetcher
+  // 3. Fetch distributor balances
   const balanceFetcher = new BalanceFetcher(fileManager, provider);
   await balanceFetcher.fetchBalances();
 
-  // 4. Recipient Recieved Scanner
+  // 4. Scan for recipient received events
   const recipientRecievedScanner = new RecipientRecievedScanner(
     provider,
     fileManager,
   );
   await recipientRecievedScanner.scan();
 
-  // 5. Fee Calculator
+  // 5. Calculate fees
   const feeCalculator = new FeeCalculator(fileManager);
   feeCalculator.calculateFees();
 }
