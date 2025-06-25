@@ -25,9 +25,12 @@ export class FeeCalculator {
 
     // Filter to specific distributor if provided
     if (distributorAddress) {
-      distributorAddresses = distributorAddresses.filter(
-        (address) => address === distributorAddress,
-      );
+      if (!distributorsData.distributors[distributorAddress]) {
+        throw new Error(
+          `Distributor address ${distributorAddress} not found in distributor data`,
+        );
+      }
+      distributorAddresses = [distributorAddress];
     }
 
     // Initialize the fee report structure
@@ -46,11 +49,8 @@ export class FeeCalculator {
       }
     }
 
-    // Write the report if we have data OR if a specific distributor was requested
-    if (
-      Object.keys(feeReport.distributors).length > 0 ||
-      distributorAddress !== undefined
-    ) {
+    // Only write the report if we have data for at least one distributor
+    if (Object.keys(feeReport.distributors).length > 0) {
       this.fileManager.writeFeeReport(feeReport);
     }
   }

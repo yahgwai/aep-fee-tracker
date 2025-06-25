@@ -354,7 +354,7 @@ describe("FeeCalculator - Integration Tests", () => {
       );
     });
 
-    it("should write empty report when distributorAddress does not match any distributor", () => {
+    it("should throw error when distributorAddress does not match any distributor", () => {
       const { fileManager } = testContext;
 
       const distributorsData: DistributorsData = {
@@ -398,13 +398,13 @@ describe("FeeCalculator - Integration Tests", () => {
       );
 
       // Pass a non-existent distributor address
-      calculator.calculateFees("0xNonExistentDistributor1234567890abcdef1234");
-
-      // Should write an empty report with metadata but no distributors
-      const feeReport = fileManager.readFeeReport();
-      expect(feeReport).toBeDefined();
-      expect(feeReport!.metadata.chain_id).toBe(42170);
-      expect(Object.keys(feeReport!.distributors)).toHaveLength(0);
+      expect(() => {
+        calculator.calculateFees(
+          "0xNonExistentDistributor1234567890abcdef1234",
+        );
+      }).toThrow(
+        "Distributor address 0xNonExistentDistributor1234567890abcdef1234 not found in distributor data",
+      );
     });
 
     it("should process all distributors when distributorAddress is not provided", () => {
