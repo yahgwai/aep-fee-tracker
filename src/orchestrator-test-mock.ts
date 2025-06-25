@@ -1,3 +1,11 @@
+/**
+ * Test mock for the orchestrator module
+ * This file is used only during testing to simulate orchestrator behavior
+ * without making actual network calls or file system operations.
+ *
+ * WARNING: This file should NEVER be imported in production code
+ * It is only imported by cli.ts when NODE_ENV=test
+ */
 import { Configuration } from "./types";
 
 export async function orchestrate(config: Configuration): Promise<void> {
