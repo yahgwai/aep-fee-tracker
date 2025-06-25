@@ -143,17 +143,6 @@ interface CLIArguments {
 }
 ```
 
-### Environment Variables
-
-```typescript
-interface EnvironmentVariables {
-  RPC_URL: string; // Set by CLI from --rpc-url
-  STORE_DIR: string; // Set by CLI from --store-dir or default
-  START_DATE?: string; // Set by CLI from --start-date if provided
-  END_DATE?: string; // Set by CLI from --end-date if provided
-}
-```
-
 ## 8. Implementation Requirements
 
 ### Validation Rules
