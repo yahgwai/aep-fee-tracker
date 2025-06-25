@@ -182,13 +182,13 @@ function getMinimalBlockNumbers(): BlockNumberData {
     "2022-07-12", // First distributor creation
     "2022-07-13", // Day after
     "2022-07-14", // Another day for first distributor
+    "2022-08-09", // Fifth distributor creation (edge case test)
     "2023-03-16", // Second distributor creation
     "2023-03-17", // Day after
     "2023-03-18", // Another day for distributors
     "2023-04-01", // Some time after all distributors created
     "2023-04-02", // Another day
     "2023-04-03", // Another day
-    "2023-04-04", // Final day
   ];
 
   const minimalBlocks: { [date: string]: number } = {};
@@ -338,6 +338,9 @@ describe("BalanceFetcher - Integration Tests", () => {
 
   describe("Distributor Creation Date Filtering", () => {
     it("should only fetch balances from distributor creation date onward", async () => {
+      // Use minimal test data to prevent timeout
+      fileManager.writeBlockNumbers(getMinimalBlockNumbers());
+
       // Act
       await balanceFetcher.fetchBalances();
 
@@ -369,6 +372,9 @@ describe("BalanceFetcher - Integration Tests", () => {
     });
 
     it("should include creation block if no end-of-day block exists for creation date", async () => {
+      // Use minimal test data to prevent timeout
+      fileManager.writeBlockNumbers(getMinimalBlockNumbers());
+
       // Act
       await balanceFetcher.fetchBalances();
 
@@ -386,6 +392,9 @@ describe("BalanceFetcher - Integration Tests", () => {
 
   describe("Single Distributor Filtering", () => {
     it("should only fetch balances for specified distributor", async () => {
+      // Use minimal test data to prevent timeout
+      fileManager.writeBlockNumbers(getMinimalBlockNumbers());
+
       const targetDistributor = ethers.getAddress(
         "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
       );
@@ -440,6 +449,9 @@ describe("BalanceFetcher - Integration Tests", () => {
 
   describe("Return Value Verification", () => {
     it("should return collected balances as decimal strings", async () => {
+      // Use minimal test data to prevent timeout
+      fileManager.writeBlockNumbers(getMinimalBlockNumbers());
+
       // Act
       const result = await balanceFetcher.fetchBalances();
 
