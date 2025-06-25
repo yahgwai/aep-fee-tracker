@@ -178,22 +178,7 @@ interface ComponentConfig {
 - No sensitive data handling beyond RPC URL
 - File system access limited to store directory
 
-## 9. Test Data Requirements
-
-### Integration Testing
-
-- Mock RPC endpoint for testing component integration
-- Sample store directory with pre-populated test data
-- Test cases for various date ranges and error conditions
-
-### Test Scenarios
-
-- Successful execution with all components
-- Component failure propagation
-- Invalid argument handling
-- Date range validation
-
-## 10. Examples
+## 9. Examples
 
 ### Basic Usage
 
@@ -220,7 +205,7 @@ aep-fee-calculator --rpc-url https://your-archive-node.com/rpc --store-dir /data
 
 The CLI produces no output of its own. All output comes from the individual components. On success, exits with code 0. On failure, exits with code 1 and the failing component's error output is displayed.
 
-## 11. Out of Scope
+## 10. Out of Scope
 
 The following features are explicitly NOT included:
 
