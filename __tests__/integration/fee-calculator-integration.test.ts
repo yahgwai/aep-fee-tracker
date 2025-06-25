@@ -98,10 +98,10 @@ describe("FeeCalculator - Integration Tests", () => {
       expect(entry!.date).toBe("2022-07-12");
       expect(entry!.start_balance_wei).toBe("1000000000000000000");
       expect(entry!.end_balance_wei).toBe("1000000000000000000");
-      expect(entry!.balance_change_wei).toBe("0");
+      expect(entry!.balance_change_wei).toBe("1000000000000000000");
       expect(entry!.distributions_wei).toBe("0");
       expect(entry!.distributions_count).toBe(0);
-      expect(entry!.total_wei).toBe("0");
+      expect(entry!.total_wei).toBe("1000000000000000000");
     });
 
     it("should handle empty distributor data", () => {
@@ -389,15 +389,15 @@ describe("FeeCalculator - Integration Tests", () => {
         feeReport!.distributors["0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"];
       expect(distributorReport).toHaveLength(3);
 
-      // First day - balance change should be 0
+      // First day - balance change should be the balance itself (1 ETH)
       const day1 = distributorReport![0];
       expect(day1!.date).toBe("2022-07-12");
       expect(day1!.start_balance_wei).toBe("1000000000000000000");
       expect(day1!.end_balance_wei).toBe("1000000000000000000");
-      expect(day1!.balance_change_wei).toBe("0");
+      expect(day1!.balance_change_wei).toBe("1000000000000000000");
       expect(day1!.distributions_wei).toBe("0");
       expect(day1!.distributions_count).toBe(0);
-      expect(day1!.total_wei).toBe("0");
+      expect(day1!.total_wei).toBe("1000000000000000000");
 
       // Second day - balance change should be 500000000000000000 (1.5 - 1.0 ETH)
       const day2 = distributorReport![1];
@@ -484,7 +484,9 @@ describe("FeeCalculator - Integration Tests", () => {
       expect(distributorReport![2]!.date).toBe("2022-07-14");
 
       // Verify balance changes are calculated based on sorted order
-      expect(distributorReport![0]!.balance_change_wei).toBe("0");
+      expect(distributorReport![0]!.balance_change_wei).toBe(
+        "1000000000000000000",
+      ); // First day = balance itself
       expect(distributorReport![1]!.balance_change_wei).toBe(
         "1000000000000000000",
       );
@@ -550,8 +552,11 @@ describe("FeeCalculator - Integration Tests", () => {
       const distributorReport =
         feeReport!.distributors["0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"];
 
-      // First day - balance change should be 0
-      expect(distributorReport![0]!.balance_change_wei).toBe("0");
+      // First day - balance change should be the balance itself (3 ETH)
+      expect(distributorReport![0]!.balance_change_wei).toBe(
+        "3000000000000000000",
+      );
+      expect(distributorReport![0]!.total_wei).toBe("3000000000000000000");
 
       // Second day - balance decreased by 1 ETH
       expect(distributorReport![1]!.balance_change_wei).toBe(
@@ -629,8 +634,10 @@ describe("FeeCalculator - Integration Tests", () => {
 
       expect(distributorReport).toHaveLength(4);
 
-      // Day 1: First day, balance change = 0
-      expect(distributorReport![0]!.balance_change_wei).toBe("0");
+      // Day 1: First day, balance change = balance itself (1 ETH)
+      expect(distributorReport![0]!.balance_change_wei).toBe(
+        "1000000000000000000",
+      );
 
       // Day 2: Balance increased by 1.5 ETH
       expect(distributorReport![1]!.balance_change_wei).toBe(

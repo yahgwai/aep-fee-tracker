@@ -1,4 +1,4 @@
-import { FileManager, FeeReport, CHAIN_IDS } from "./types";
+import { FileManager, FeeReport } from "./types";
 
 // Type for individual fee report entries
 type FeeReportEntry = {
@@ -12,7 +12,6 @@ type FeeReportEntry = {
 };
 
 // Constants for fee calculation
-const FIRST_DAY_BALANCE_CHANGE = "0";
 const NO_DISTRIBUTIONS = "0";
 const NO_DISTRIBUTIONS_COUNT = 0;
 
@@ -50,7 +49,7 @@ export class FeeCalculator {
     // Create and write fee report
     const feeReport: FeeReport = {
       metadata: {
-        chain_id: CHAIN_IDS.ARBITRUM_NOVA,
+        chain_id: distributorsData.metadata.chain_id,
       },
       distributors: {
         [firstDistributorAddress]: dailyEntries,
@@ -65,7 +64,7 @@ export class FeeCalculator {
     balances: { [date: string]: { block_number: number; balance_wei: string } },
   ): FeeReportEntry[] {
     const dailyEntries: FeeReportEntry[] = [];
-    let previousBalanceWei: string | null = null;
+    let previousBalanceWei: string = "0"; // Start with 0 as previous balance
 
     for (const date of sortedDates) {
       const currentBalance = balances[date]!;
@@ -89,12 +88,8 @@ export class FeeCalculator {
 
   private calculateBalanceChange(
     currentBalanceWei: string,
-    previousBalanceWei: string | null,
+    previousBalanceWei: string,
   ): string {
-    if (previousBalanceWei === null) {
-      return FIRST_DAY_BALANCE_CHANGE;
-    }
-
     const currentBigInt = BigInt(currentBalanceWei);
     const previousBigInt = BigInt(previousBalanceWei);
     const changeWei = currentBigInt - previousBigInt;
