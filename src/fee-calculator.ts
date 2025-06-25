@@ -20,45 +20,54 @@ export class FeeCalculator {
     const distributorsData = this.fileManager.readDistributors();
     if (!distributorsData) return;
 
-    // Get first distributor
+    // Get all distributor addresses
     const distributorAddresses = Object.keys(distributorsData.distributors);
     if (distributorAddresses.length === 0) return;
 
-    const firstDistributorAddress = distributorAddresses[0]!;
-
-    // Read balance data for the first distributor
-    const balanceData = this.fileManager.readDistributorBalances(
-      firstDistributorAddress,
-    );
-    if (!balanceData) return;
-
-    // Get all dates from balance data and sort chronologically
-    const sortedDates = Object.keys(balanceData.balances).sort();
-    if (sortedDates.length === 0) return;
-
-    // Read distribution events for the first distributor
-    const eventsData = this.fileManager.readRecipientRecievedEvents(
-      firstDistributorAddress,
-    );
-
-    // Process all dates to create daily entries
-    const dailyEntries = this.createDailyEntries(
-      sortedDates,
-      balanceData.balances,
-      eventsData,
-    );
-
-    // Create and write fee report
+    // Initialize the fee report structure
     const feeReport: FeeReport = {
       metadata: {
         chain_id: distributorsData.metadata.chain_id,
       },
-      distributors: {
-        [firstDistributorAddress]: dailyEntries,
-      },
+      distributors: {},
     };
 
-    this.fileManager.writeFeeReport(feeReport);
+    // Process each distributor
+    for (const distributorAddress of distributorAddresses) {
+      const dailyEntries = this.processDistributor(distributorAddress);
+      if (dailyEntries) {
+        feeReport.distributors[distributorAddress] = dailyEntries;
+      }
+    }
+
+    // Only write the report if we have data for at least one distributor
+    if (Object.keys(feeReport.distributors).length > 0) {
+      this.fileManager.writeFeeReport(feeReport);
+    }
+  }
+
+  private processDistributor(
+    distributorAddress: string,
+  ): FeeReportEntry[] | null {
+    // Read balance data for the distributor
+    const balanceData =
+      this.fileManager.readDistributorBalances(distributorAddress);
+    if (!balanceData) return null;
+
+    // Get all dates from balance data and sort chronologically
+    const sortedDates = Object.keys(balanceData.balances).sort();
+    if (sortedDates.length === 0) return null;
+
+    // Read distribution events for the distributor
+    const eventsData =
+      this.fileManager.readRecipientRecievedEvents(distributorAddress);
+
+    // Process all dates to create daily entries
+    return this.createDailyEntries(
+      sortedDates,
+      balanceData.balances,
+      eventsData,
+    );
   }
 
   private createDailyEntries(
