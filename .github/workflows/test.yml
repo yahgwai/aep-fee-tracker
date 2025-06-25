@@ -80,8 +80,6 @@ jobs:
     - name: Run tests
       run: npm test
       timeout-minutes: 2
-      env:
-        ARBITRUM_NOVA_RPC_URL: ${{ secrets.ARBITRUM_NOVA_RPC_URL }}
 
     - name: Test completed
       run: echo "Tests completed successfully!"
