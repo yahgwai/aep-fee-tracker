@@ -72,6 +72,7 @@ export class FeeCalculator {
   ): FeeReportEntry[] {
     const dailyEntries: FeeReportEntry[] = [];
     let previousBalanceWei: string = "0"; // Start with 0 as previous balance
+    let previousEndBlock: number = 0; // Track previous day's end block
 
     for (const date of sortedDates) {
       const currentBalance = balances[date]!;
@@ -84,7 +85,8 @@ export class FeeCalculator {
       const { distributionsWei, distributionsCount } =
         this.calculateDistributionsForDate(
           date,
-          balances[date]!.block_number,
+          previousEndBlock + 1, // Start from block after previous day
+          balances[date]!.block_number, // End at this day's block
           eventsData,
         );
 
@@ -98,6 +100,7 @@ export class FeeCalculator {
         ),
       );
       previousBalanceWei = currentBalance.balance_wei;
+      previousEndBlock = balances[date]!.block_number;
     }
 
     return dailyEntries;
@@ -138,7 +141,8 @@ export class FeeCalculator {
   }
 
   private calculateDistributionsForDate(
-    date: string,
+    _date: string,
+    startBlockNumber: number,
     endBlockNumber: number,
     eventsData: RecipientRecievedEventData | undefined,
   ): { distributionsWei: string; distributionsCount: number } {
@@ -150,21 +154,18 @@ export class FeeCalculator {
       };
     }
 
-    // For now, we'll use a simple approach: check if event block number <= end block
-    // In a real implementation, we'd need access to block numbers data to determine the exact range
+    // Count events within the block range for this date
     let totalDistributions = BigInt(0);
     let count = 0;
 
     for (const event of Object.values(eventsData.events)) {
-      // Check if event belongs to this date (block number <= end block for this date)
-      if (event.blockNumber <= endBlockNumber) {
-        // For the first date, include all events up to this block
-        // For subsequent dates, we'd need to track which events we've already counted
-        // For this minimal implementation, we'll just check the block number
-        if (event.blockNumber === 150 && date === "2022-07-12") {
-          totalDistributions += BigInt(event.value);
-          count++;
-        }
+      // Check if event is within this date's block range
+      if (
+        event.blockNumber >= startBlockNumber &&
+        event.blockNumber <= endBlockNumber
+      ) {
+        totalDistributions += BigInt(event.value);
+        count++;
       }
     }
 
