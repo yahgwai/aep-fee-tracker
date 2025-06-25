@@ -47,5 +47,41 @@ describe("Configuration Module", () => {
 
       expect(config.rpcUrl).toBe("https://archive-node.com/rpc");
     });
+
+    it("should include start date when provided", () => {
+      const parsedArgs: ParsedArguments = {
+        "rpc-url": "https://archive-node.com/rpc",
+        "start-date": "2024-01-01",
+        _: [],
+      };
+
+      const config = createConfiguration(parsedArgs);
+
+      expect(config.startDate).toBe("2024-01-01");
+    });
+
+    it("should include end date when provided", () => {
+      const parsedArgs: ParsedArguments = {
+        "rpc-url": "https://archive-node.com/rpc",
+        "end-date": "2024-01-31",
+        _: [],
+      };
+
+      const config = createConfiguration(parsedArgs);
+
+      expect(config.endDate).toBe("2024-01-31");
+    });
+
+    it("should not include dates when not provided", () => {
+      const parsedArgs: ParsedArguments = {
+        "rpc-url": "https://archive-node.com/rpc",
+        _: [],
+      };
+
+      const config = createConfiguration(parsedArgs);
+
+      expect(config.startDate).toBeUndefined();
+      expect(config.endDate).toBeUndefined();
+    });
   });
 });
