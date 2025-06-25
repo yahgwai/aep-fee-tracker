@@ -876,5 +876,162 @@ describe("FeeCalculator - Integration Tests", () => {
       expect(day1.distributions_count).toBe(3); // 3 events
       expect(day1.total_wei).toBe("1600000000000000000"); // 1.6 ETH total (1 + 0.6)
     });
+
+    it("should handle mixed dates with and without distribution events", () => {
+      const { fileManager } = testContext;
+
+      // Setup distributors data
+      const distributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x0000000000000000000000000000000000000070",
+            event_data: "event data",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      // Setup balance data for multiple days
+      const balanceData: BalanceData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        },
+        balances: {
+          "2022-07-12": {
+            block_number: 1000,
+            balance_wei: "1000000000000000000", // 1 ETH
+          },
+          "2022-07-13": {
+            block_number: 2000,
+            balance_wei: "2000000000000000000", // 2 ETH
+          },
+          "2022-07-14": {
+            block_number: 3000,
+            balance_wei: "2500000000000000000", // 2.5 ETH
+          },
+          "2022-07-15": {
+            block_number: 4000,
+            balance_wei: "3000000000000000000", // 3 ETH
+          },
+        },
+      };
+
+      // Setup distribution events - some days have events, some don't
+      const eventsData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          last_scanned_block: 4000,
+        },
+        events: {
+          // Day 1 - two events
+          "0xaaaa000000000000000000000000000000000000000000000000000000000001:0":
+            {
+              blockNumber: 500,
+              transactionHash:
+                "0xaaaa000000000000000000000000000000000000000000000000000000000001",
+              logIndex: 0,
+              address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+              topics: ["0xRecipientRecievedTopic"],
+              data: "0x",
+              recipient: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+              value: "100000000000000000", // 0.1 ETH
+            },
+          "0xaaaa000000000000000000000000000000000000000000000000000000000002:0":
+            {
+              blockNumber: 800,
+              transactionHash:
+                "0xaaaa000000000000000000000000000000000000000000000000000000000002",
+              logIndex: 0,
+              address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+              topics: ["0xRecipientRecievedTopic"],
+              data: "0x",
+              recipient: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+              value: "150000000000000000", // 0.15 ETH
+            },
+          // Day 2 - no events
+          // Day 3 - one event
+          "0xcccc000000000000000000000000000000000000000000000000000000000001:0":
+            {
+              blockNumber: 2800,
+              transactionHash:
+                "0xcccc000000000000000000000000000000000000000000000000000000000001",
+              logIndex: 0,
+              address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+              topics: ["0xRecipientRecievedTopic"],
+              data: "0x",
+              recipient: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+              value: "300000000000000000", // 0.3 ETH
+            },
+          // Day 4 - no events
+        },
+      };
+
+      // Write test data
+      fileManager.writeDistributors(distributorsData);
+      fileManager.writeDistributorBalances(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        balanceData,
+      );
+      fileManager.writeRecipientRecievedEvents(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        eventsData,
+      );
+
+      // Calculate fees
+      calculator.calculateFees();
+
+      // Read and verify the fee report
+      const feeReport = fileManager.readFeeReport();
+      expect(feeReport).toBeDefined();
+
+      const distributorReport =
+        feeReport!.distributors["0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"];
+      expect(distributorReport).toHaveLength(4);
+
+      // Day 1: Balance change 1 ETH + distributions 0.25 ETH
+      const day1 = distributorReport![0]!;
+      expect(day1.date).toBe("2022-07-12");
+      expect(day1.balance_change_wei).toBe("1000000000000000000");
+      expect(day1.distributions_wei).toBe("250000000000000000"); // 0.1 + 0.15
+      expect(day1.distributions_count).toBe(2);
+      expect(day1.total_wei).toBe("1250000000000000000");
+
+      // Day 2: Balance change 1 ETH + no distributions
+      const day2 = distributorReport![1]!;
+      expect(day2.date).toBe("2022-07-13");
+      expect(day2.balance_change_wei).toBe("1000000000000000000");
+      expect(day2.distributions_wei).toBe("0");
+      expect(day2.distributions_count).toBe(0);
+      expect(day2.total_wei).toBe("1000000000000000000");
+
+      // Day 3: Balance change 0.5 ETH + distribution 0.3 ETH
+      const day3 = distributorReport![2]!;
+      expect(day3.date).toBe("2022-07-14");
+      expect(day3.balance_change_wei).toBe("500000000000000000");
+      expect(day3.distributions_wei).toBe("300000000000000000");
+      expect(day3.distributions_count).toBe(1);
+      expect(day3.total_wei).toBe("800000000000000000");
+
+      // Day 4: Balance change 0.5 ETH + no distributions
+      const day4 = distributorReport![3]!;
+      expect(day4.date).toBe("2022-07-15");
+      expect(day4.balance_change_wei).toBe("500000000000000000");
+      expect(day4.distributions_wei).toBe("0");
+      expect(day4.distributions_count).toBe(0);
+      expect(day4.total_wei).toBe("500000000000000000");
+    });
   });
 });
