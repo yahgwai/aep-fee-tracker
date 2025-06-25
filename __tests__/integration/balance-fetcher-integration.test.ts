@@ -372,6 +372,16 @@ describe("BalanceFetcher - Integration Tests", () => {
       // The actual implementation uses withRetry which should handle transient failures
       // We'll just verify the balances are eventually fetched despite potential RPC issues
 
+      // Setup minimal test data - just 2 dates instead of 366
+      const minimalBlockNumbers: BlockNumberData = {
+        metadata: { chain_id: ARBITRUM_NOVA_CHAIN_ID },
+        blocks: {
+          "2023-03-15": 3120000,
+          "2023-03-16": 3163115,
+        },
+      };
+      fileManager.writeBlockNumbers(minimalBlockNumbers);
+
       // Act
       const result = await balanceFetcher.fetchBalances();
 
