@@ -15,7 +15,7 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 ### Component Responsibilities
 
 - Parse and validate command-line arguments
-- Set up environment configuration for components
+- Set up configuration for components
 - Execute components in dependency order
 - Propagate component failures
 
@@ -23,7 +23,7 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 
 - All components execute successfully in sequence
 - CLI exits with appropriate error codes on failure
-- Components receive required configuration via environment variables
+- Components receive required configuration via direct parameters or environment variables
 
 ## 3. Dependencies
 
@@ -31,7 +31,6 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 
 - Node.js runtime environment
 - Command-line argument parser (minimist or similar)
-- Child process execution utilities from Node.js stdlib
 
 ### System Component Dependencies
 
@@ -43,7 +42,7 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 
 ### Infrastructure Requirements
 
-- Access to Arbitrum Nova archive RPC endpoint
+- Access to an archive RPC endpoint
 - Write access to store directory
 - Node.js 18+ runtime
 
@@ -62,7 +61,7 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
        ↓
    Balance Fetcher
        ↓
-   Event Scanner
+   Recipient Recieved Scanner
        ↓
    Fee Calculator
    ```
@@ -71,9 +70,9 @@ The AEP Fee Calculator system requires a command-line interface to orchestrate t
 
 ### Integration Points
 
-- Environment variables: RPC_URL, CHAIN_ID, STORE_DIR
+- Configuration: Parameters passed directly to components or via environment variables
 - File system: Shared store directory for inter-component data exchange
-- Process execution: Child process spawning for each component
+- Component execution: Direct function calls within the same process
 
 ## 5. Public API
 
@@ -85,7 +84,7 @@ aep-fee-calculator --rpc-url <url> [--start-date <date>] [--end-date <date>] [--
 
 ### Parameters
 
-- `--rpc-url` (required): Arbitrum Nova archive RPC endpoint URL
+- `--rpc-url` (required): Archive RPC endpoint URL
 - `--start-date` (optional): Start date for processing in YYYY-MM-DD format
 - `--end-date` (optional): End date for processing in YYYY-MM-DD format
 - `--store-dir` (optional): Directory for storing calculation data (defaults to ./store)
@@ -106,25 +105,25 @@ aep-fee-calculator --rpc-url <url> [--start-date <date>] [--end-date <date>] [--
    - Parse optional date parameters if provided
    - Set store directory path
 
-2. **Environment Setup**
+2. **Configuration Setup**
 
-   - Set RPC_URL environment variable from --rpc-url
-   - Set CHAIN_ID to 42170 (Arbitrum Nova)
-   - Set STORE_DIR if provided via --store-dir
-   - Pass through START_DATE and END_DATE if provided
+   - Configuration can be provided via command-line arguments or environment variables
+   - Pass RPC_URL from --rpc-url (or use existing RPC_URL env var)
+   - Pass STORE_DIR if provided via --store-dir (or use existing STORE_DIR env var)
+   - Pass START_DATE and END_DATE if provided (or use existing env vars)
 
 3. **Component Execution**
 
    - For each component in sequence:
-     - Spawn child process executing the component
+     - Execute the component directly within the same process
      - Wait for completion
-     - If exit code is non-zero, terminate with error
+     - If component throws an error, terminate with error
    - Components to execute in order:
-     - node dist/block-finder.js
-     - node dist/distributor-detector.js
-     - node dist/balance-fetcher.js
-     - node dist/recipient-recieved-scanner.js
-     - node dist/fee-calculator.js
+     - blockFinder()
+     - distributorDetector()
+     - balanceFetcher()
+     - recipientRecievedScanner()
+     - feeCalculator()
 
 4. **Error Propagation**
    - If any component fails, immediately exit with status 1
@@ -143,15 +142,14 @@ interface CLIArguments {
 }
 ```
 
-### Environment Configuration
+### Component Configuration
 
 ```typescript
-interface EnvironmentConfig {
-  RPC_URL: string; // From --rpc-url
-  CHAIN_ID: "42170"; // Hard-coded for Arbitrum Nova
-  STORE_DIR?: string; // From --store-dir or default
-  START_DATE?: string; // From --start-date
-  END_DATE?: string; // From --end-date
+interface ComponentConfig {
+  RPC_URL: string; // From --rpc-url or environment
+  STORE_DIR?: string; // From --store-dir or environment or default
+  START_DATE?: string; // From --start-date or environment
+  END_DATE?: string; // From --end-date or environment
 }
 ```
 
@@ -201,21 +199,21 @@ interface EnvironmentConfig {
 
 ```bash
 # Run full pipeline with required RPC URL
-aep-fee-calculator --rpc-url https://nova.arbitrum.io/rpc
+aep-fee-calculator --rpc-url https://your-archive-node.com/rpc
 ```
 
 ### With Date Range
 
 ```bash
 # Process specific date range
-aep-fee-calculator --rpc-url https://nova.arbitrum.io/rpc --start-date 2024-01-01 --end-date 2024-01-31
+aep-fee-calculator --rpc-url https://your-archive-node.com/rpc --start-date 2024-01-01 --end-date 2024-01-31
 ```
 
 ### Custom Store Directory
 
 ```bash
 # Use custom store location
-aep-fee-calculator --rpc-url https://nova.arbitrum.io/rpc --store-dir /data/aep-fees
+aep-fee-calculator --rpc-url https://your-archive-node.com/rpc --store-dir /data/aep-fees
 ```
 
 ### Expected Output
