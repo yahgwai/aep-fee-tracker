@@ -10,5 +10,11 @@ export interface ParsedArguments {
 }
 
 export function parseArguments(args: string[]): ParsedArguments {
-  return minimist(args) as ParsedArguments;
+  const parsed = minimist(args) as ParsedArguments;
+
+  if (!parsed["rpc-url"]) {
+    throw new Error("--rpc-url is required");
+  }
+
+  return parsed;
 }

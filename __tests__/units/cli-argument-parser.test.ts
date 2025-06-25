@@ -8,5 +8,11 @@ describe("CLI Argument Parser", () => {
 
       expect(result["rpc-url"]).toBe("https://archive-node.com/rpc");
     });
+
+    it("should throw error when --rpc-url is missing", () => {
+      const args: string[] = [];
+
+      expect(() => parseArguments(args)).toThrow("--rpc-url is required");
+    });
   });
 });
