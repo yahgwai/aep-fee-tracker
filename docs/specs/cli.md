@@ -105,15 +105,7 @@ aep-fee-calculator --rpc-url <url> [--start-date <date>] [--end-date <date>] [--
    - Parse optional date parameters if provided
    - Set store directory path
 
-2. **Environment Setup**
-
-   - Set environment variables from command-line arguments
-   - Set RPC_URL from --rpc-url
-   - Set STORE_DIR from --store-dir (or use default './store')
-   - Set START_DATE from --start-date if provided
-   - Set END_DATE from --end-date if provided
-
-3. **Component Execution**
+2. **Component Execution**
 
    - For each component in sequence:
      - Execute the component directly within the same process
@@ -126,7 +118,7 @@ aep-fee-calculator --rpc-url <url> [--start-date <date>] [--end-date <date>] [--
      - recipientRecievedScanner()
      - feeCalculator()
 
-4. **Error Propagation**
+3. **Error Propagation**
    - If any component fails, immediately exit with status 1
    - Do not continue to subsequent components after failure
 
