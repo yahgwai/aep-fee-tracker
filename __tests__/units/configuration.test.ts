@@ -24,5 +24,17 @@ describe("Configuration Module", () => {
 
       expect(config.storeDirectory).toBe("./store");
     });
+
+    it("should use provided store directory", () => {
+      const parsedArgs: ParsedArguments = {
+        "rpc-url": "https://archive-node.com/rpc",
+        "store-dir": "/data/aep-fees",
+        _: [],
+      };
+
+      const config = createConfiguration(parsedArgs);
+
+      expect(config.storeDirectory).toBe("/data/aep-fees");
+    });
   });
 });
