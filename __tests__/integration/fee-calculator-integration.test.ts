@@ -169,7 +169,7 @@ describe("FeeCalculator - Integration Tests", () => {
       );
     });
 
-    it("should handle distributor with no balance data", () => {
+    it("should throw error when balance data is missing for a specific distributor", () => {
       const { fileManager } = testContext;
 
       const distributorsData: DistributorsData = {
@@ -195,12 +195,87 @@ describe("FeeCalculator - Integration Tests", () => {
 
       fileManager.writeDistributors(distributorsData);
 
-      // Calculate fees
+      // Mock FileManager to return undefined for balance data
+      jest
+        .spyOn(fileManager, "readDistributorBalances")
+        .mockReturnValue(undefined);
+
+      // Should throw descriptive error when specific distributor is requested
+      expect(() => {
+        calculator.calculateFees("0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB");
+      }).toThrow(
+        "Failed to load balance data for distributor\n  Distributor: 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB\n  FileManager returned no balance data\n  Check: Ensure balance fetcher has processed this distributor",
+      );
+    });
+
+    it("should skip distributors without balance data when processing all", () => {
+      const { fileManager } = testContext;
+
+      const distributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x0000000000000000000000000000000000000070",
+            event_data: "event data",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
+            type: DistributorType.L1_SURPLUS_FEE,
+            block: 200,
+            date: "2022-07-13",
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            method: "0x934be07d",
+            owner: "0x0000000000000000000000000000000000000070",
+            event_data: "event data 2",
+            is_reward_distributor: true,
+            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+          },
+        },
+      };
+
+      const balanceData: BalanceData = {
+        metadata: {
+          chain_id: 42170,
+          reward_distributor: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+        },
+        balances: {
+          "2022-07-13": {
+            block_number: 200,
+            balance_wei: "1000000000000000000",
+          },
+        },
+      };
+
+      fileManager.writeDistributors(distributorsData);
+      fileManager.writeDistributorBalances(
+        "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+        balanceData,
+      );
+      // First distributor has no balance data
+
+      // Should not throw and process only distributor with data
       calculator.calculateFees();
 
-      // Should not write any fee report
       const feeReport = fileManager.readFeeReport();
-      expect(feeReport).toBeUndefined();
+      expect(feeReport).toBeDefined();
+      expect(Object.keys(feeReport!.distributors)).toHaveLength(1);
+      expect(feeReport!.distributors).toHaveProperty(
+        "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+      );
+      expect(feeReport!.distributors).not.toHaveProperty(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
     });
 
     it("should handle distributor with empty balance data", () => {

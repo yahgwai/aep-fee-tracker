@@ -54,7 +54,10 @@ export class FeeCalculator {
 
     // Process each distributor
     for (const distributorAddress of distributorAddresses) {
-      const dailyEntries = this.processDistributor(distributorAddress);
+      const dailyEntries = this.processDistributor(
+        distributorAddress,
+        distributorAddresses.length === 1,
+      );
       if (dailyEntries) {
         feeReport.distributors[distributorAddress] = dailyEntries;
       }
@@ -68,11 +71,19 @@ export class FeeCalculator {
 
   private processDistributor(
     distributorAddress: string,
+    isSpecificDistributor: boolean,
   ): FeeReportEntry[] | null {
     // Read balance data for the distributor
     const balanceData =
       this.fileManager.readDistributorBalances(distributorAddress);
-    if (!balanceData) return null;
+    if (!balanceData) {
+      if (isSpecificDistributor) {
+        throw new Error(
+          `Failed to load balance data for distributor\n  Distributor: ${distributorAddress}\n  FileManager returned no balance data\n  Check: Ensure balance fetcher has processed this distributor`,
+        );
+      }
+      return null;
+    }
 
     // Get all dates from balance data and sort chronologically
     const sortedDates = Object.keys(balanceData.balances).sort();
