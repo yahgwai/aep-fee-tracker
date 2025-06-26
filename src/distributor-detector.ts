@@ -223,26 +223,7 @@ export class DistributorDetector {
     const endBlock = this.getBlockForDate(endDate);
     const scanRange = this.calculateScanRange(existingData, endBlock);
 
-    // Get date for fromBlock for logging
-    const blockNumbersData = this.fileManager.readBlockNumbers();
-    let fromDateStr = "genesis";
-    if (blockNumbersData && scanRange.fromBlock > 0) {
-      // Find the date corresponding to fromBlock
-      const sortedDates = Object.entries(blockNumbersData.blocks).sort(
-        ([, a], [, b]) => a! - b!,
-      );
-      for (const [date, block] of sortedDates) {
-        if (block! >= scanRange.fromBlock) {
-          fromDateStr = date;
-          break;
-        }
-      }
-    }
-    const endDateStr = endDate.toISOString().split("T")[0]!;
-
-    console.log(
-      `Scanning blocks ${scanRange.fromBlock}-${scanRange.toBlock} (${fromDateStr} to ${endDateStr})`,
-    );
+    console.log(`Scanning blocks ${scanRange.fromBlock}-${scanRange.toBlock}`);
 
     // Check if scanning is needed
     if (!this.isScanningNeeded(scanRange)) {
