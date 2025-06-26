@@ -1,7 +1,21 @@
 import { createConfiguration } from "../../src/configuration";
 import { ParsedArguments } from "../../src/parse-arguments";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 
 describe("Configuration Module", () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "config-test-"));
+    process.chdir(tempDir);
+  });
+
+  afterEach(() => {
+    process.chdir("/");
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
   describe("createConfiguration", () => {
     it("should create configuration from parsed arguments", () => {
       const parsedArgs: ParsedArguments = {
@@ -28,13 +42,14 @@ describe("Configuration Module", () => {
     it("should use provided store directory", () => {
       const parsedArgs: ParsedArguments = {
         "rpc-url": "https://archive-node.com/rpc",
-        "store-dir": "/data/aep-fees",
+        "store-dir": "./custom-store",
         _: [],
       };
 
       const config = createConfiguration(parsedArgs);
 
-      expect(config.storeDirectory).toBe("/data/aep-fees");
+      expect(config.storeDirectory).toBe("./custom-store");
+      expect(fs.existsSync("./custom-store")).toBe(true);
     });
 
     it("should include RPC URL in configuration", () => {
