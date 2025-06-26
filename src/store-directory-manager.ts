@@ -1,3 +1,6 @@
+import * as fs from "fs";
+import * as path from "path";
+
 const DEFAULT_STORE_DIR = "./store";
 
 export function validateAndCreateStoreDirectory(storeDirArg?: string): string {
@@ -15,6 +18,12 @@ export function validateAndCreateStoreDirectory(storeDirArg?: string): string {
 
   if (storeDirArg.includes("\0")) {
     throw new Error("Store directory path contains invalid characters");
+  }
+
+  // Check if parent directory exists
+  const parentDir = path.dirname(storeDirArg);
+  if (!fs.existsSync(parentDir)) {
+    throw new Error(`Parent directory '${parentDir}' does not exist`);
   }
 
   return storeDirArg;

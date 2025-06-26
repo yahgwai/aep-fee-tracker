@@ -40,6 +40,7 @@ describe("Store Directory Manager", () => {
     });
 
     it("returns the provided nested relative path", () => {
+      fs.mkdirSync("data");
       const result = validateAndCreateStoreDirectory("./data/store");
       expect(result).toBe("./data/store");
     });
