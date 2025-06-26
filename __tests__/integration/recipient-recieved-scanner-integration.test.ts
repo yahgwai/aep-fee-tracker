@@ -259,11 +259,10 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       // Act
       await scanner.scan(testDistributor);
 
-      // Assert
-      assertEventDataCreated(testDistributor);
+      // Assert - Non-reward distributors (hasEvents=false) should be skipped entirely
       const eventData =
         fileManager.readRecipientRecievedEvents(testDistributor);
-      expect(Object.keys(eventData?.events || {}).length).toBe(0);
+      expect(eventData).toBeUndefined();
     });
   });
 
@@ -560,12 +559,18 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       // Act
       await scanner.scan();
 
-      // Assert - All distributors should be processed
-      for (const distributorAddress of [
-        ...TEST_DISTRIBUTORS_WITH_EVENTS,
-        ...TEST_DISTRIBUTORS_WITHOUT_EVENTS,
-      ]) {
+      // Assert - Only reward distributors should be processed
+      // TEST_DISTRIBUTORS_WITH_EVENTS have is_reward_distributor: true (hasEvents=true)
+      for (const distributorAddress of TEST_DISTRIBUTORS_WITH_EVENTS) {
         assertEventDataCreated(distributorAddress);
+      }
+
+      // TEST_DISTRIBUTORS_WITHOUT_EVENTS have is_reward_distributor: false (hasEvents=false)
+      // They should be skipped entirely
+      for (const distributorAddress of TEST_DISTRIBUTORS_WITHOUT_EVENTS) {
+        const eventData =
+          fileManager.readRecipientRecievedEvents(distributorAddress);
+        expect(eventData).toBeUndefined();
       }
     }, 30000);
   });

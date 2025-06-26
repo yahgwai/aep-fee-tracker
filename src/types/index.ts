@@ -10,6 +10,13 @@ export {
 
 // Core Data Types
 
+export interface Configuration {
+  storeDirectory: string;
+  rpcUrl: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface BlockNumberData {
   metadata: {
     chain_id: number;

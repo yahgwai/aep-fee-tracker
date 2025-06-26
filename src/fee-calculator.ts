@@ -50,6 +50,8 @@ export class FeeCalculator {
 
     // Process each distributor
     for (const distributorAddress of distributorAddresses) {
+      const distributorInfo = distributorsData.distributors[distributorAddress];
+      if (!distributorInfo?.is_reward_distributor) continue;
       const dailyEntries = this.processDistributor(distributorAddress);
       if (dailyEntries) {
         feeReport.distributors[distributorAddress] = dailyEntries;
@@ -113,6 +115,7 @@ export class FeeCalculator {
       dailyEntries.push(
         this.createDailyEntry(
           date,
+          previousBalanceWei,
           currentBalance.balance_wei,
           balanceChangeWei,
           distributionsWei,
@@ -137,7 +140,8 @@ export class FeeCalculator {
 
   private createDailyEntry(
     date: string,
-    balanceWei: string,
+    previousBalanceWei: string,
+    currentBalanceWei: string,
     balanceChangeWei: bigint,
     distributionsWei: bigint,
     distributionsCount: number,
@@ -147,8 +151,8 @@ export class FeeCalculator {
 
     return {
       date,
-      start_balance_wei: balanceWei,
-      end_balance_wei: balanceWei,
+      start_balance_wei: previousBalanceWei,
+      end_balance_wei: currentBalanceWei,
       balance_change_wei: balanceChangeWei.toString(),
       distributions_wei: distributionsWei.toString(),
       distributions_count: distributionsCount,
