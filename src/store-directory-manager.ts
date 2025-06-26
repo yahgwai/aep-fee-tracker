@@ -20,7 +20,6 @@ export function validateAndCreateStoreDirectory(storeDirArg?: string): string {
     throw new Error("Store directory path contains invalid characters");
   }
 
-  // Check if parent directory exists
   const parentDir = path.dirname(storeDirArg);
   if (!fs.existsSync(parentDir)) {
     throw new Error(`Parent directory '${parentDir}' does not exist`);
