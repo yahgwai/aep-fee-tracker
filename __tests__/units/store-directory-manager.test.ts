@@ -12,4 +12,21 @@ describe("Store Directory Manager", () => {
       expect(result).toBe("./store");
     });
   });
+
+  describe("Valid Path Formats", () => {
+    it("returns the provided absolute path", () => {
+      const result = validateAndCreateStoreDirectory("/tmp/store");
+      expect(result).toBe("/tmp/store");
+    });
+
+    it("returns the provided relative path", () => {
+      const result = validateAndCreateStoreDirectory("./mystore");
+      expect(result).toBe("./mystore");
+    });
+
+    it("returns the provided nested relative path", () => {
+      const result = validateAndCreateStoreDirectory("./data/store");
+      expect(result).toBe("./data/store");
+    });
+  });
 });
