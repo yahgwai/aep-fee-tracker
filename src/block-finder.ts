@@ -85,8 +85,8 @@ export class BlockFinder {
     safeCurrentBlock: number,
   ): Promise<void> {
     const dateStr = this.formatDateString(date);
-    console.log(`Processing date: ${dateStr}`);
     if (result.blocks[dateStr]) return;
+    console.log(`Processing date: ${dateStr}`);
 
     const [lowerBound, upperBound] = this.getSearchBounds(
       date,
