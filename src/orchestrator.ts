@@ -36,6 +36,9 @@ async function parseDateRange(
   let startDate: Date;
   if (config.startDate) {
     startDate = new Date(config.startDate);
+    if (isNaN(startDate.getTime())) {
+      throw new Error("Invalid start date format");
+    }
   } else {
     // Fetch block 1 to get chain start timestamp
     const block1 = await provider.getBlock(1);
@@ -47,6 +50,14 @@ async function parseDateRange(
   }
 
   const endDate = config.endDate ? new Date(config.endDate) : yesterday;
+  if (config.endDate && isNaN(endDate.getTime())) {
+    throw new Error("Invalid end date format");
+  }
+
+  // Validate date range
+  if (startDate > endDate) {
+    throw new Error("Start date must be before or equal to end date");
+  }
 
   return { startDate, endDate };
 }
