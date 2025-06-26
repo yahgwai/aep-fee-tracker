@@ -1,6 +1,21 @@
 import { validateAndCreateStoreDirectory } from "../../src/store-directory-manager";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 
 describe("Store Directory Manager", () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "store-dir-test-"));
+    process.chdir(tempDir);
+  });
+
+  afterEach(() => {
+    process.chdir("/");
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
   describe("Default Value Handling", () => {
     it("returns './store' when no directory is provided", () => {
       const result = validateAndCreateStoreDirectory();
@@ -47,6 +62,20 @@ describe("Store Directory Manager", () => {
       expect(() => validateAndCreateStoreDirectory("store\0dir")).toThrow(
         "Store directory path contains invalid characters",
       );
+    });
+  });
+
+  describe("Parent Directory Validation", () => {
+    it("throws error when parent directory does not exist", () => {
+      expect(() =>
+        validateAndCreateStoreDirectory("./nonexistent/store"),
+      ).toThrow("Parent directory './nonexistent' does not exist");
+    });
+
+    it("succeeds when parent directory exists", () => {
+      fs.mkdirSync("existing");
+      const result = validateAndCreateStoreDirectory("./existing/store");
+      expect(result).toBe("./existing/store");
     });
   });
 });
