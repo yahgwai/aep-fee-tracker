@@ -1,8 +1,7 @@
 import { ParsedArguments } from "./parse-arguments";
 import { Configuration } from "./types";
 import { validateDateRange } from "./date-validation";
-
-const DEFAULT_STORE_DIRECTORY = "./store";
+import { validateAndCreateStoreDirectory } from "./store-directory-manager";
 
 export function createConfiguration(
   parsedArgs: ParsedArguments,
@@ -13,8 +12,13 @@ export function createConfiguration(
   // Validate dates if provided
   validateDateRange(startDate, endDate);
 
+  // Validate and create store directory
+  const storeDirectory = validateAndCreateStoreDirectory(
+    parsedArgs["store-dir"],
+  );
+
   const config: Configuration = {
-    storeDirectory: parsedArgs["store-dir"] || DEFAULT_STORE_DIRECTORY,
+    storeDirectory,
     rpcUrl: parsedArgs["rpc-url"]!,
   };
 
