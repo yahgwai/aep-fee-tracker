@@ -16,6 +16,17 @@ export function isValidCalendarDate(date: string): boolean {
   return roundtrip === date;
 }
 
+function validateDate(date: string, fieldName: string): void {
+  if (!validateDateFormat(date)) {
+    throw new Error(
+      `Invalid ${fieldName} date format: ${date}. Expected YYYY-MM-DD`,
+    );
+  }
+  if (!isValidCalendarDate(date)) {
+    throw new Error(`Invalid ${fieldName} calendar date: ${date}`);
+  }
+}
+
 export function validateDateRange(
   startDate: string | undefined,
   endDate: string | undefined,
@@ -25,36 +36,19 @@ export function validateDateRange(
     return;
   }
 
-  // Validate start date if provided
+  // Validate dates if provided
   if (startDate) {
-    if (!validateDateFormat(startDate)) {
-      throw new Error(
-        `Invalid start date format: ${startDate}. Expected YYYY-MM-DD`,
-      );
-    }
-    if (!isValidCalendarDate(startDate)) {
-      throw new Error(`Invalid start calendar date: ${startDate}`);
-    }
+    validateDate(startDate, "start");
   }
 
-  // Validate end date if provided
   if (endDate) {
-    if (!validateDateFormat(endDate)) {
-      throw new Error(
-        `Invalid end date format: ${endDate}. Expected YYYY-MM-DD`,
-      );
-    }
-    if (!isValidCalendarDate(endDate)) {
-      throw new Error(`Invalid end calendar date: ${endDate}`);
-    }
+    validateDate(endDate, "end");
   }
 
   // If both dates provided, ensure start <= end
-  if (startDate && endDate) {
-    if (startDate > endDate) {
-      throw new Error(
-        `Start date (${startDate}) must be before or equal to end date (${endDate})`,
-      );
-    }
+  if (startDate && endDate && startDate > endDate) {
+    throw new Error(
+      `Start date (${startDate}) must be before or equal to end date (${endDate})`,
+    );
   }
 }
