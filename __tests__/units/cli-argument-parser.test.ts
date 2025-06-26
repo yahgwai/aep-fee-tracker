@@ -22,6 +22,46 @@ describe("CLI Argument Parser", () => {
     });
   });
 
+  describe("URL Validation", () => {
+    it("should reject invalid URL without protocol", () => {
+      const args = ["--rpc-url", "archive-node.com/rpc"];
+
+      expect(() => parseArguments(args)).toThrow(
+        "Invalid RPC URL: URL must start with http:// or https://"
+      );
+    });
+
+    it("should reject invalid URL with wrong protocol", () => {
+      const args = ["--rpc-url", "ftp://archive-node.com"];
+
+      expect(() => parseArguments(args)).toThrow(
+        "Invalid RPC URL: URL must start with http:// or https://"
+      );
+    });
+
+    it("should reject malformed URL", () => {
+      const args = ["--rpc-url", "https://[invalid"];
+
+      expect(() => parseArguments(args)).toThrow(
+        "Invalid RPC URL: Invalid URL"
+      );
+    });
+
+    it("should accept valid HTTP URL", () => {
+      const args = ["--rpc-url", "http://localhost:8545"];
+      const result = parseArguments(args);
+
+      expect(result["rpc-url"]).toBe("http://localhost:8545");
+    });
+
+    it("should accept valid HTTPS URL", () => {
+      const args = ["--rpc-url", "https://archive-node.com/rpc"];
+      const result = parseArguments(args);
+
+      expect(result["rpc-url"]).toBe("https://archive-node.com/rpc");
+    });
+  });
+
   describe("Optional Arguments", () => {
     it("should parse --start-date argument", () => {
       const args = [
