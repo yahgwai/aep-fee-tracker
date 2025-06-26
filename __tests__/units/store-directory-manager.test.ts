@@ -29,4 +29,24 @@ describe("Store Directory Manager", () => {
       expect(result).toBe("./data/store");
     });
   });
+
+  describe("Invalid Path Formats", () => {
+    it("throws error for empty string", () => {
+      expect(() => validateAndCreateStoreDirectory("")).toThrow(
+        "Store directory path cannot be empty",
+      );
+    });
+
+    it("throws error for null path", () => {
+      expect(() =>
+        validateAndCreateStoreDirectory(null as unknown as string),
+      ).toThrow("Store directory path must be a string");
+    });
+
+    it("throws error for path with invalid characters", () => {
+      expect(() => validateAndCreateStoreDirectory("store\0dir")).toThrow(
+        "Store directory path contains invalid characters",
+      );
+    });
+  });
 });
