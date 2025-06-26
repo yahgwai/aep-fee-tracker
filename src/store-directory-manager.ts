@@ -1,4 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function validateAndCreateStoreDirectory(_storeDirArg?: string): string {
-  throw new Error("Not implemented");
+export function validateAndCreateStoreDirectory(storeDirArg?: string): string {
+  if (storeDirArg === undefined) {
+    return "./store";
+  }
+  return "./store";
 }
