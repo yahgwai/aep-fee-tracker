@@ -83,5 +83,82 @@ describe("Configuration Module", () => {
       expect(config.startDate).toBeUndefined();
       expect(config.endDate).toBeUndefined();
     });
+
+    describe("date validation", () => {
+      it("should throw error for invalid start date format", () => {
+        const parsedArgs: ParsedArguments = {
+          "rpc-url": "https://archive-node.com/rpc",
+          "start-date": "2024-1-1",
+          _: [],
+        };
+
+        expect(() => createConfiguration(parsedArgs)).toThrow(
+          "Invalid start date format: 2024-1-1. Expected YYYY-MM-DD",
+        );
+      });
+
+      it("should throw error for invalid end date format", () => {
+        const parsedArgs: ParsedArguments = {
+          "rpc-url": "https://archive-node.com/rpc",
+          "end-date": "2024/01/31",
+          _: [],
+        };
+
+        expect(() => createConfiguration(parsedArgs)).toThrow(
+          "Invalid end date format: 2024/01/31. Expected YYYY-MM-DD",
+        );
+      });
+
+      it("should throw error for invalid start calendar date", () => {
+        const parsedArgs: ParsedArguments = {
+          "rpc-url": "https://archive-node.com/rpc",
+          "start-date": "2024-02-30",
+          _: [],
+        };
+
+        expect(() => createConfiguration(parsedArgs)).toThrow(
+          "Invalid start calendar date: 2024-02-30",
+        );
+      });
+
+      it("should throw error for invalid end calendar date", () => {
+        const parsedArgs: ParsedArguments = {
+          "rpc-url": "https://archive-node.com/rpc",
+          "end-date": "2023-02-29",
+          _: [],
+        };
+
+        expect(() => createConfiguration(parsedArgs)).toThrow(
+          "Invalid end calendar date: 2023-02-29",
+        );
+      });
+
+      it("should throw error when start date is after end date", () => {
+        const parsedArgs: ParsedArguments = {
+          "rpc-url": "https://archive-node.com/rpc",
+          "start-date": "2024-02-01",
+          "end-date": "2024-01-31",
+          _: [],
+        };
+
+        expect(() => createConfiguration(parsedArgs)).toThrow(
+          "Start date (2024-02-01) must be before or equal to end date (2024-01-31)",
+        );
+      });
+
+      it("should accept valid date range", () => {
+        const parsedArgs: ParsedArguments = {
+          "rpc-url": "https://archive-node.com/rpc",
+          "start-date": "2024-01-01",
+          "end-date": "2024-01-31",
+          _: [],
+        };
+
+        const config = createConfiguration(parsedArgs);
+
+        expect(config.startDate).toBe("2024-01-01");
+        expect(config.endDate).toBe("2024-01-31");
+      });
+    });
   });
 });
