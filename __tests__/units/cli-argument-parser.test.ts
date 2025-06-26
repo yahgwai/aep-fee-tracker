@@ -27,7 +27,7 @@ describe("CLI Argument Parser", () => {
       const args = ["--rpc-url", "archive-node.com/rpc"];
 
       expect(() => parseArguments(args)).toThrow(
-        "Invalid RPC URL: URL must start with http:// or https://"
+        "Invalid RPC URL: URL must start with http:// or https://",
       );
     });
 
@@ -35,7 +35,7 @@ describe("CLI Argument Parser", () => {
       const args = ["--rpc-url", "ftp://archive-node.com"];
 
       expect(() => parseArguments(args)).toThrow(
-        "Invalid RPC URL: URL must start with http:// or https://"
+        "Invalid RPC URL: URL must start with http:// or https://",
       );
     });
 
@@ -43,7 +43,7 @@ describe("CLI Argument Parser", () => {
       const args = ["--rpc-url", "https://[invalid"];
 
       expect(() => parseArguments(args)).toThrow(
-        "Invalid RPC URL: Invalid URL"
+        "Invalid RPC URL: Invalid URL",
       );
     });
 

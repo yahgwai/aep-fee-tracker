@@ -22,7 +22,7 @@ if [ -f "package.json" ] && command -v npm > /dev/null 2>&1; then
     
     # Run build to ensure it compiles
     echo "Running build..."
-    if ! npm run build > /dev/null 2>&1; then
+    if ! npm run build; then
         echo "${RED}Build failed${NC}"
         exit 1
     fi
