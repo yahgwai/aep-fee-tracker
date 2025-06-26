@@ -116,9 +116,14 @@ export class BalanceFetcher {
     const allFetches: Array<{ address: string; date: string; block: number }> =
       [];
 
-    for (const [address, distributorInfo] of Object.entries(
-      distributorsToProcess,
-    )) {
+    const distributorEntries = Object.entries(distributorsToProcess);
+    let distributorIndex = 0;
+
+    for (const [address, distributorInfo] of distributorEntries) {
+      distributorIndex++;
+      console.log(
+        `Fetching balances for distributor ${distributorIndex}/${distributorEntries.length}: ${address}`,
+      );
       if (!distributorInfo) continue;
       if (!distributorInfo.is_reward_distributor) continue;
 
@@ -171,6 +176,7 @@ export class BalanceFetcher {
 
     // Fetch balances in chronological order
     for (const { address, date, block } of allFetches) {
+      console.log(`Fetching balance for ${address} on ${date}`);
       const balance = await withRetry(
         () => this.provider.getBalance(address, block),
         {
