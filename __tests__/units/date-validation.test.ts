@@ -2,6 +2,7 @@ import { describe, it, expect } from "@jest/globals";
 import {
   validateDateFormat,
   isValidCalendarDate,
+  validateDateRange,
 } from "../../src/date-validation";
 
 describe("date-validation", () => {
@@ -54,6 +55,49 @@ describe("date-validation", () => {
       expect(isValidCalendarDate("2024-13-01")).toBe(false); // invalid month
       expect(isValidCalendarDate("2024-1-15")).toBe(false); // wrong format
       expect(isValidCalendarDate("not-a-date")).toBe(false);
+    });
+  });
+
+  describe("validateDateRange", () => {
+    it("returns void when both dates are valid and start <= end", () => {
+      expect(() => validateDateRange("2024-01-01", "2024-01-31")).not.toThrow();
+      expect(() => validateDateRange("2024-01-15", "2024-01-15")).not.toThrow();
+    });
+
+    it("throws error when start date is after end date", () => {
+      expect(() => validateDateRange("2024-02-01", "2024-01-31")).toThrow(
+        "Start date (2024-02-01) must be before or equal to end date (2024-01-31)",
+      );
+    });
+
+    it("throws error for invalid start date format", () => {
+      expect(() => validateDateRange("2024-1-1", "2024-01-31")).toThrow(
+        "Invalid start date format: 2024-1-1. Expected YYYY-MM-DD",
+      );
+    });
+
+    it("throws error for invalid end date format", () => {
+      expect(() => validateDateRange("2024-01-01", "2024/01/31")).toThrow(
+        "Invalid end date format: 2024/01/31. Expected YYYY-MM-DD",
+      );
+    });
+
+    it("throws error for invalid start calendar date", () => {
+      expect(() => validateDateRange("2024-02-30", "2024-03-01")).toThrow(
+        "Invalid start calendar date: 2024-02-30",
+      );
+    });
+
+    it("throws error for invalid end calendar date", () => {
+      expect(() => validateDateRange("2024-01-01", "2024-02-30")).toThrow(
+        "Invalid end calendar date: 2024-02-30",
+      );
+    });
+
+    it("allows undefined dates", () => {
+      expect(() => validateDateRange(undefined, undefined)).not.toThrow();
+      expect(() => validateDateRange("2024-01-01", undefined)).not.toThrow();
+      expect(() => validateDateRange(undefined, "2024-01-31")).not.toThrow();
     });
   });
 });
