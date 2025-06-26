@@ -90,19 +90,19 @@ describe("URL Validation", () => {
 
   describe("Edge cases", () => {
     it("should handle undefined", () => {
-      expect(() => validateRpcUrl(undefined as any)).toThrow(
+      expect(() => validateRpcUrl(undefined as unknown as string)).toThrow(
         "Invalid RPC URL: URL is required"
       );
     });
 
     it("should handle null", () => {
-      expect(() => validateRpcUrl(null as any)).toThrow(
+      expect(() => validateRpcUrl(null as unknown as string)).toThrow(
         "Invalid RPC URL: URL is required"
       );
     });
 
     it("should handle non-string values", () => {
-      expect(() => validateRpcUrl(123 as any)).toThrow(
+      expect(() => validateRpcUrl(123 as unknown as string)).toThrow(
         "Invalid RPC URL: URL must be a string"
       );
     });
