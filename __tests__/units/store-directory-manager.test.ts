@@ -79,4 +79,45 @@ describe("Store Directory Manager", () => {
       expect(result).toBe("./existing/store");
     });
   });
+
+  describe("Directory Creation", () => {
+    it("creates directory when it does not exist", () => {
+      const storePath = "./newstore";
+      expect(fs.existsSync(storePath)).toBe(false);
+
+      validateAndCreateStoreDirectory(storePath);
+
+      expect(fs.existsSync(storePath)).toBe(true);
+    });
+
+    it("does not throw when directory already exists", () => {
+      const storePath = "./existingstore";
+      fs.mkdirSync(storePath);
+
+      expect(() => validateAndCreateStoreDirectory(storePath)).not.toThrow();
+      expect(fs.existsSync(storePath)).toBe(true);
+    });
+
+    it("creates nested directory when parent exists", () => {
+      const parentPath = "./parent";
+      const storePath = "./parent/store";
+      fs.mkdirSync(parentPath);
+
+      expect(fs.existsSync(storePath)).toBe(false);
+
+      validateAndCreateStoreDirectory(storePath);
+
+      expect(fs.existsSync(storePath)).toBe(true);
+    });
+
+    it("throws clear error when directory creation fails", () => {
+      // Create a file with the same name to force a creation error
+      const storePath = "./fileasdir";
+      fs.writeFileSync(storePath, "test");
+
+      expect(() => validateAndCreateStoreDirectory(storePath)).toThrow(
+        "Failed to create store directory './fileasdir'",
+      );
+    });
+  });
 });
