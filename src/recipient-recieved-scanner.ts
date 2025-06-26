@@ -127,10 +127,15 @@ export class RecipientRecievedScanner {
         }
       : distributorsData.distributors;
 
+    const distributorEntries = Object.entries(distributorsToProcess);
+    let distributorIndex = 0;
+
     // Process distributors
-    for (const [address, distributorInfo] of Object.entries(
-      distributorsToProcess,
-    )) {
+    for (const [address, distributorInfo] of distributorEntries) {
+      distributorIndex++;
+      console.log(
+        `Scanning events for distributor ${distributorIndex}/${distributorEntries.length}: ${address}`,
+      );
       if (!distributorInfo) continue;
       if (!distributorInfo.is_reward_distributor) continue;
 
@@ -236,6 +241,8 @@ export class RecipientRecievedScanner {
       return;
     }
 
+    console.log(`Scanning date range: ${startDate} to ${yesterdayStr}`);
+
     // Get chain ID from distributors data
     const distributorsData = this.fileManager.readDistributors();
     const chainId = distributorsData?.metadata.chain_id || 0;
@@ -285,6 +292,9 @@ export class RecipientRecievedScanner {
 
     // Parse and store all accumulated events at once
     if (allEvents.length > 0 || lastProcessedBlock > 0) {
+      console.log(
+        `Found ${allEvents.length} events for distributor ${address}`,
+      );
       this.parseAndStoreEvents(
         address,
         allEvents,

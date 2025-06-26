@@ -8,6 +8,8 @@ import { RecipientRecievedScanner } from "./recipient-recieved-scanner";
 import { FeeCalculator } from "./fee-calculator";
 
 export async function orchestrate(config: Configuration): Promise<void> {
+  console.log("Starting fee calculator pipeline...");
+
   // Initialize infrastructure
   const fileManager = new FileManager(config.storeDirectory);
   const provider = new ethers.JsonRpcProvider(config.rpcUrl);
@@ -69,18 +71,22 @@ async function executePipeline(
   endDate: Date,
 ): Promise<void> {
   // 1. Find blocks for date range
+  console.log("Starting Block Finder...");
   const blockFinder = new BlockFinder(fileManager, provider);
   await blockFinder.findBlocksForDateRange(startDate, endDate);
 
   // 2. Detect distributors up to end date
+  console.log("Starting Distributor Detector...");
   const distributorDetector = new DistributorDetector(fileManager, provider);
   await distributorDetector.detectDistributors(endDate);
 
   // 3. Fetch distributor balances
+  console.log("Starting Balance Fetcher...");
   const balanceFetcher = new BalanceFetcher(fileManager, provider);
   await balanceFetcher.fetchBalances();
 
   // 4. Scan for recipient received events
+  console.log("Starting Recipient Received Scanner...");
   const recipientRecievedScanner = new RecipientRecievedScanner(
     provider,
     fileManager,
@@ -88,6 +94,9 @@ async function executePipeline(
   await recipientRecievedScanner.scan();
 
   // 5. Calculate fees
+  console.log("Starting Fee Calculator...");
   const feeCalculator = new FeeCalculator(fileManager);
   feeCalculator.calculateFees();
+
+  console.log("Pipeline completed successfully");
 }

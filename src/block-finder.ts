@@ -29,6 +29,10 @@ export class BlockFinder {
   ): Promise<BlockNumberData> {
     this.validateDateRange(startDate, endDate);
 
+    console.log(
+      `Finding blocks for dates: ${this.formatDateString(startDate)} to ${this.formatDateString(endDate)}`,
+    );
+
     const result = await this.initializeResult();
     const safeCurrentBlock = await this.getSafeCurrentBlock();
 
@@ -81,6 +85,7 @@ export class BlockFinder {
     safeCurrentBlock: number,
   ): Promise<void> {
     const dateStr = this.formatDateString(date);
+    console.log(`Processing date: ${dateStr}`);
     if (result.blocks[dateStr]) return;
 
     const [lowerBound, upperBound] = this.getSearchBounds(
