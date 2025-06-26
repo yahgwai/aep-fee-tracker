@@ -25,7 +25,6 @@ export function validateAndCreateStoreDirectory(storeDirArg?: string): string {
     throw new Error(`Parent directory '${parentDir}' does not exist`);
   }
 
-  // Create directory if it doesn't exist
   if (!fs.existsSync(storeDirArg)) {
     try {
       fs.mkdirSync(storeDirArg);
