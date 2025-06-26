@@ -25,7 +25,7 @@ if [ -f "package.json" ]; then
     else
         # Run TypeScript type checking
         echo "Running TypeScript type check..."
-        if npm run typecheck 2>&1 | grep -E "(error|Error)" > /dev/null; then
+        if ! npm run typecheck; then
             echo "${RED}TypeScript type check failed${NC}"
             exit 1
         fi
@@ -33,7 +33,7 @@ if [ -f "package.json" ]; then
 
         # Run ESLint
         echo "Running ESLint..."
-        if ! npm run lint > /dev/null 2>&1; then
+        if ! npm run lint; then
             echo "${RED}ESLint check failed${NC}"
             echo "Run 'npm run lint:fix' to auto-fix issues"
             exit 1
@@ -42,7 +42,7 @@ if [ -f "package.json" ]; then
 
         # Check Prettier formatting
         echo "Checking code formatting..."
-        if ! npm run format:check > /dev/null 2>&1; then
+        if ! npm run format:check; then
             echo "${RED}Code formatting check failed${NC}"
             echo "Run 'npm run format' to auto-format"
             exit 1

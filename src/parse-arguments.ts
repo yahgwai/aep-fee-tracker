@@ -1,4 +1,5 @@
 import minimist from "minimist";
+import { validateRpcUrl } from "./url-validation";
 
 export interface ParsedArguments {
   "rpc-url"?: string;
@@ -18,6 +19,9 @@ export function parseArguments(args: string[]): ParsedArguments {
   if (!parsed["rpc-url"]) {
     throw new Error(`--rpc-url is required\n\n${USAGE_MESSAGE}`);
   }
+
+  // Validate the RPC URL format
+  validateRpcUrl(parsed["rpc-url"]);
 
   return parsed;
 }
