@@ -6,7 +6,7 @@ import {
   DistributorsData,
 } from "../../types";
 import { withRetry } from "../../utils/retry";
-import { REWARD_DISTRIBUTOR_BYTECODE } from "../../constants/reward-distributor-bytecode";
+import { REWARD_DISTRIBUTOR_BYTECODE_HASH } from "../../constants/reward-distributor-bytecode";
 import { DISTRIBUTOR_METHODS } from "../../constants";
 import {
   OWNER_ACTS_EVENT_ABI,
@@ -53,7 +53,8 @@ export class DistributorDetector {
         maxRetries: 3,
         operationName: `isRewardDistributor.getCode(${address})`,
       });
-      return deployedCode === REWARD_DISTRIBUTOR_BYTECODE;
+      const deployedCodeHash = ethers.keccak256(deployedCode);
+      return deployedCodeHash === REWARD_DISTRIBUTOR_BYTECODE_HASH;
     } catch {
       return false;
     }

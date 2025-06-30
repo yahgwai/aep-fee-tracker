@@ -20,10 +20,17 @@ describe("DistributorDetector.isRewardDistributor", () => {
     (withRetry as jest.Mock).mockImplementation((operation) => operation());
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   describe("Valid reward distributor", () => {
-    it("returns true when bytecode matches REWARD_DISTRIBUTOR_BYTECODE", async () => {
+    it("returns true when bytecode hash matches REWARD_DISTRIBUTOR_BYTECODE_HASH", async () => {
       const testAddress = "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce";
       mockProvider.getCode.mockResolvedValue(REWARD_DISTRIBUTOR_BYTECODE);
+
+      // Create a spy on ethers.keccak256 to verify hash comparison is used
+      const keccak256Spy = jest.spyOn(ethers, "keccak256");
 
       const result = await DistributorDetector.isRewardDistributor(
         mockProvider,
@@ -32,15 +39,20 @@ describe("DistributorDetector.isRewardDistributor", () => {
 
       expect(result).toBe(true);
       expect(mockProvider.getCode).toHaveBeenCalledWith(testAddress);
+      // This expectation will fail in RED phase as the current implementation doesn't use keccak256
+      expect(keccak256Spy).toHaveBeenCalledWith(REWARD_DISTRIBUTOR_BYTECODE);
     });
   });
 
   describe("Non-reward distributor contract", () => {
-    it("returns false when bytecode does not match", async () => {
+    it("returns false when bytecode hash does not match", async () => {
       const testAddress = "0x1234567890123456789012345678901234567890";
       const differentBytecode =
         "0x608060405234801561001057600080fd5b50610150806100206000396000f3fe";
       mockProvider.getCode.mockResolvedValue(differentBytecode);
+
+      // Create a spy on ethers.keccak256 to verify hash comparison is used
+      const keccak256Spy = jest.spyOn(ethers, "keccak256");
 
       const result = await DistributorDetector.isRewardDistributor(
         mockProvider,
@@ -49,13 +61,19 @@ describe("DistributorDetector.isRewardDistributor", () => {
 
       expect(result).toBe(false);
       expect(mockProvider.getCode).toHaveBeenCalledWith(testAddress);
+      // This expectation will fail in RED phase as the current implementation doesn't use keccak256
+      expect(keccak256Spy).toHaveBeenCalledWith(differentBytecode);
     });
   });
 
   describe("Address with no deployed code", () => {
     it("returns false for EOA (externally owned account)", async () => {
       const eoaAddress = "0xabc1234567890123456789012345678901234567";
-      mockProvider.getCode.mockResolvedValue("0x");
+      const emptyBytecode = "0x";
+      mockProvider.getCode.mockResolvedValue(emptyBytecode);
+
+      // Create a spy on ethers.keccak256 to verify hash comparison is used
+      const keccak256Spy = jest.spyOn(ethers, "keccak256");
 
       const result = await DistributorDetector.isRewardDistributor(
         mockProvider,
@@ -64,6 +82,8 @@ describe("DistributorDetector.isRewardDistributor", () => {
 
       expect(result).toBe(false);
       expect(mockProvider.getCode).toHaveBeenCalledWith(eoaAddress);
+      // This expectation will fail in RED phase as the current implementation doesn't use keccak256
+      expect(keccak256Spy).toHaveBeenCalledWith(emptyBytecode);
     });
   });
 
