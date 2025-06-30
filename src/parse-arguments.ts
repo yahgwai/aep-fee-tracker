@@ -21,16 +21,10 @@ const ARGUMENT_DESCRIPTIONS = `Valid arguments:
   --end-date <date>    End date in YYYY-MM-DD format
   --store-dir <path>   Directory for storing data`;
 
-export function parseArguments(args: string[]): ParsedArguments {
-  const parsed = minimist(args) as ParsedArguments;
-
-  // Check for unknown arguments
-  const unknownArgs: string[] = [];
-  for (const key of Object.keys(parsed)) {
-    if (key !== "_" && !VALID_ARGUMENTS.includes(key)) {
-      unknownArgs.push(`--${key}`);
-    }
-  }
+function validateUnknownArguments(parsed: ParsedArguments): void {
+  const unknownArgs = Object.keys(parsed)
+    .filter((key) => key !== "_" && !VALID_ARGUMENTS.includes(key))
+    .map((key) => `--${key}`);
 
   if (unknownArgs.length > 0) {
     const errorMessage =
@@ -39,13 +33,20 @@ export function parseArguments(args: string[]): ParsedArguments {
         : `Unknown arguments: ${unknownArgs.join(", ")}`;
     throw new Error(`${errorMessage}\n\n${ARGUMENT_DESCRIPTIONS}`);
   }
+}
 
+function validateRequiredArguments(parsed: ParsedArguments): void {
   if (!parsed["rpc-url"]) {
     throw new Error(`--rpc-url is required\n\n${USAGE_MESSAGE}`);
   }
+}
 
-  // Validate the RPC URL format
-  validateRpcUrl(parsed["rpc-url"]);
+export function parseArguments(args: string[]): ParsedArguments {
+  const parsed = minimist(args) as ParsedArguments;
+
+  validateUnknownArguments(parsed);
+  validateRequiredArguments(parsed);
+  validateRpcUrl(parsed["rpc-url"]!);
 
   return parsed;
 }
