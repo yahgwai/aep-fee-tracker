@@ -8,7 +8,7 @@
     "aep": "dist/src/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "postbuild": "chmod +x dist/src/cli.js",
     "typecheck": "tsc --noEmit",
     "test": "jest --maxWorkers=100%",
