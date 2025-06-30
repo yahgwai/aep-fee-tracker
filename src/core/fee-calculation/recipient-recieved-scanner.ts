@@ -114,11 +114,10 @@ export class RecipientRecievedScanner {
     }
 
     // Get max date from block numbers store
-    const blockDates = Object.keys(blockNumbersData.blocks);
-    if (blockDates.length === 0) {
+    const maxDateInStore = this.getMaxDateFromBlockStore(blockNumbersData);
+    if (!maxDateInStore) {
       return;
     }
-    const maxDateInStore = blockDates.sort().pop() as string;
 
     // Process distributors
     const distributorsToProcess = distributorAddress
@@ -177,6 +176,20 @@ export class RecipientRecievedScanner {
     if (!foundAddress) {
       throw new Error(`Distributor ${distributorAddress} not found`);
     }
+  }
+
+  /**
+   * Gets the maximum date available in the block numbers store.
+   * @private
+   */
+  private getMaxDateFromBlockStore(
+    blockNumbersData: BlockNumberData,
+  ): string | null {
+    const blockDates = Object.keys(blockNumbersData.blocks);
+    if (blockDates.length === 0) {
+      return null;
+    }
+    return blockDates.sort().pop() as string;
   }
 
   /**
@@ -319,6 +332,29 @@ export class RecipientRecievedScanner {
   }
 
   /**
+   * Finds the most recent block number before the given date.
+   * @private
+   */
+  private findPreviousBlockNumber(
+    date: string,
+    blockNumbersData: BlockNumberData,
+  ): number | null {
+    const sortedDates = Object.keys(blockNumbersData.blocks).sort();
+    const currentDateIndex = sortedDates.indexOf(date);
+
+    if (currentDateIndex <= 0) {
+      return null;
+    }
+
+    const previousDate = sortedDates[currentDateIndex - 1];
+    if (!previousDate) {
+      return null;
+    }
+
+    return blockNumbersData.blocks[previousDate] || null;
+  }
+
+  /**
    * Converts a date to a block range (start and end blocks).
    * @private
    */
@@ -331,20 +367,8 @@ export class RecipientRecievedScanner {
       throw new Error(`Block number not found for date ${date}`);
     }
 
-    // Find the most recent block before this date
-    const sortedDates = Object.keys(blockNumbersData.blocks).sort();
-    const currentDateIndex = sortedDates.indexOf(date);
-    let startBlock = 1;
-
-    if (currentDateIndex > 0) {
-      const previousDateWithBlock = sortedDates[currentDateIndex - 1];
-      if (previousDateWithBlock) {
-        const previousBlock = blockNumbersData.blocks[previousDateWithBlock];
-        if (previousBlock !== undefined) {
-          startBlock = previousBlock + 1;
-        }
-      }
-    }
+    const previousBlock = this.findPreviousBlockNumber(date, blockNumbersData);
+    const startBlock = previousBlock !== null ? previousBlock + 1 : 1;
 
     return { startBlock, endBlock };
   }
