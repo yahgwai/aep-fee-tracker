@@ -302,6 +302,74 @@ describe("orchestrator", () => {
       expect(endDate.toISOString()).toBe(new Date("2023-06-30").toISOString());
     });
 
+    it("should use store dates as defaults when not provided", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock block numbers data with specific date range
+      mockFileManager.readBlockNumbers = jest.fn().mockReturnValue({
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2024-05-01": 1000,
+          "2024-05-02": 2000,
+          "2024-05-03": 3000, // Max date in store
+        },
+      });
+
+      await orchestrate(configWithoutDates);
+
+      // Should read block numbers to get date range
+      expect(mockFileManager.readBlockNumbers).toHaveBeenCalled();
+
+      // Should NOT call getBlock or getBlockNumber for date calculation
+      expect(mockProvider.getBlockNumber).not.toHaveBeenCalled();
+      expect(mockProvider.getBlock).not.toHaveBeenCalled();
+
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // Should use min date (2024-05-01) as start
+      expect(startDate.toISOString()).toBe(
+        new Date("2024-05-01").toISOString(),
+      );
+      // Should use max date (2024-05-03) as end
+      expect(endDate.toISOString()).toBe(new Date("2024-05-03").toISOString());
+    });
+
+    it("should throw error when block store is empty and no dates provided", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock empty block numbers data
+      mockFileManager.readBlockNumbers = jest.fn().mockReturnValue({
+        metadata: { chain_id: 42170 },
+        blocks: {},
+      });
+
+      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
+        "No block numbers found in store and no dates provided",
+      );
+    });
+
+    it("should throw error when block store is missing and no dates provided", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock missing block numbers data
+      mockFileManager.readBlockNumbers = jest.fn().mockReturnValue(undefined);
+
+      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
+        "No block numbers found in store and no dates provided",
+      );
+    });
+
     it("should pass endDate to distributorDetector", async () => {
       await orchestrate(configuration);
 
