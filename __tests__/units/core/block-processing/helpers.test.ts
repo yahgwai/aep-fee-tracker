@@ -127,11 +127,12 @@ describe("BlockFinder - Helper Functions", () => {
   });
 
   describe("getSafeCurrentBlock", () => {
-    it("should return current block number minus 1000", async () => {
+    it("should return current block number minus SAFE_BLOCK_OFFSET", async () => {
+      const { SAFE_BLOCK_OFFSET } = require("../../../../src/constants");
       const safeBlock = await blockFinder.getSafeCurrentBlock();
       const currentBlock = await provider.getBlockNumber();
 
-      expect(safeBlock).toBe(currentBlock - 1000);
+      expect(safeBlock).toBe(currentBlock - SAFE_BLOCK_OFFSET);
     });
 
     it("should throw error when unable to get current block", async () => {
