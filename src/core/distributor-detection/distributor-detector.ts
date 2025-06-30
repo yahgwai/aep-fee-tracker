@@ -151,7 +151,7 @@ export class DistributorDetector {
     // Get block timestamp with retry logic
     const block = await withRetry(() => provider.getBlock(log.blockNumber), {
       maxRetries: 3,
-      operationName: `scanBlockRange.getBlock(${log.blockNumber})`,
+      operationName: `processLogEvent.getBlock(${log.blockNumber})`,
     });
 
     if (!block) {
