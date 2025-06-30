@@ -69,31 +69,25 @@ export class FileManager implements FileManagerInterface {
   }
 
   getMinDate(): DateString | undefined {
-    const blockNumbersData = this.readBlockNumbers();
-    if (
-      !blockNumbersData ||
-      Object.keys(blockNumbersData.blocks).length === 0
-    ) {
-      return undefined;
-    }
-
-    const dates = Object.keys(blockNumbersData.blocks);
-    dates.sort();
-    return dates[0] as DateString;
+    const sortedDates = this.getSortedBlockDates();
+    return sortedDates.length > 0 ? (sortedDates[0] as DateString) : undefined;
   }
 
   getMaxDate(): DateString | undefined {
+    const sortedDates = this.getSortedBlockDates();
+    return sortedDates.length > 0
+      ? (sortedDates[sortedDates.length - 1] as DateString)
+      : undefined;
+  }
+
+  private getSortedBlockDates(): string[] {
     const blockNumbersData = this.readBlockNumbers();
-    if (
-      !blockNumbersData ||
-      Object.keys(blockNumbersData.blocks).length === 0
-    ) {
-      return undefined;
+    if (!blockNumbersData) {
+      return [];
     }
 
     const dates = Object.keys(blockNumbersData.blocks);
-    dates.sort();
-    return dates[dates.length - 1] as DateString;
+    return dates.sort();
   }
 
   readDistributors(): DistributorsData | undefined {
