@@ -201,10 +201,14 @@ export class DistributorDetector {
       allLogs.push(...logs);
     }
 
-    // Process all logs in parallel for better performance
-    const processedResults = await Promise.all(
-      allLogs.map((log) => this.processLogEvent(log, provider)),
-    );
+    // Process logs sequentially to avoid RPC rate limiting issues
+    // Sequential processing ensures we don't overwhelm RPC providers with concurrent requests
+    // which can lead to 429 (rate limit) errors and degraded performance
+    const processedResults: DistributorInfo[] = [];
+    for (const log of allLogs) {
+      const distributorInfo = await this.processLogEvent(log, provider);
+      processedResults.push(distributorInfo);
+    }
 
     // Sort by block number
     return processedResults.sort((a, b) => a.block - b.block);
