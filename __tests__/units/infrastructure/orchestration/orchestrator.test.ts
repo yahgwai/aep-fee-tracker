@@ -190,11 +190,14 @@ describe("orchestrator", () => {
       );
     });
 
-    it("should use block 1 timestamp and yesterday when no dates provided", async () => {
+    it("should use block 1 timestamp and block store max date when no dates provided", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
       };
+
+      // Add getMaxDate method to mockFileManager
+      mockFileManager.getMaxDate = jest.fn().mockReturnValue("2024-01-15");
 
       // Mock block 1 with a timestamp (July 12, 2022 UTC)
       const block1Timestamp = Math.floor(
@@ -207,10 +210,6 @@ describe("orchestrator", () => {
       const chainStartDate = new Date(block1Timestamp * 1000);
       chainStartDate.setUTCHours(0, 0, 0, 0);
 
-      const yesterday = new Date();
-      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-      yesterday.setUTCHours(0, 0, 0, 0);
-
       await orchestrate(configWithoutDates);
 
       // Verify that block 1 was fetched
@@ -221,7 +220,7 @@ describe("orchestrator", () => {
       const [startDate, endDate] = callArgs!;
 
       expect(startDate.toISOString()).toBe(chainStartDate.toISOString());
-      expect(endDate.toISOString()).toBe(yesterday.toISOString());
+      expect(endDate).toEqual(new Date("2024-01-15"));
     });
 
     it("should throw error when block 1 cannot be fetched", async () => {
@@ -333,16 +332,22 @@ describe("orchestrator", () => {
       );
     });
 
-    it("should call balanceFetcher without parameters", async () => {
+    it("should call balanceFetcher with endDate parameter", async () => {
       await orchestrate(configuration);
 
-      expect(mockBalanceFetcher.fetchBalances).toHaveBeenCalledWith();
+      expect(mockBalanceFetcher.fetchBalances).toHaveBeenCalledWith(
+        undefined,
+        "2024-01-31",
+      );
     });
 
-    it("should call recipientRecievedScanner without parameters", async () => {
+    it("should call recipientRecievedScanner with endDate parameter", async () => {
       await orchestrate(configuration);
 
-      expect(mockRecipientRecievedScanner.scan).toHaveBeenCalledWith();
+      expect(mockRecipientRecievedScanner.scan).toHaveBeenCalledWith(
+        undefined,
+        "2024-01-31",
+      );
     });
 
     it("should call feeCalculator without parameters", async () => {
