@@ -49,6 +49,8 @@ describe("orchestrator", () => {
     // Create mock instances
     mockFileManager = {
       ensureStoreDirectory: jest.fn(),
+      getMaxDateFromBlockStore: jest.fn(),
+      getMinDateFromBlockStore: jest.fn(),
     } as unknown as jest.Mocked<FileManager>;
 
     mockProvider = {
@@ -220,20 +222,19 @@ describe("orchestrator", () => {
         rpcUrl: "https://test-rpc.example.com",
       };
 
-      // Mock block numbers data with specific date range
-      mockFileManager.readBlockNumbers = jest.fn().mockReturnValue({
-        metadata: { chain_id: 42170 },
-        blocks: {
-          "2024-05-01": 1000,
-          "2024-05-02": 2000,
-          "2024-05-03": 3000, // Max date in store
-        },
-      });
+      // Mock FileManager methods with specific date range
+      mockFileManager.getMinDateFromBlockStore.mockReturnValue(
+        new Date("2024-05-01"),
+      );
+      mockFileManager.getMaxDateFromBlockStore.mockReturnValue(
+        new Date("2024-05-03"),
+      );
 
       await orchestrate(configWithoutDates);
 
-      // Should read block numbers to get date range
-      expect(mockFileManager.readBlockNumbers).toHaveBeenCalled();
+      // Should call FileManager methods to get date range
+      expect(mockFileManager.getMinDateFromBlockStore).toHaveBeenCalled();
+      expect(mockFileManager.getMaxDateFromBlockStore).toHaveBeenCalled();
 
       // Should NOT call getBlock or getBlockNumber for date calculation
       expect(mockProvider.getBlockNumber).not.toHaveBeenCalled();
@@ -257,11 +258,9 @@ describe("orchestrator", () => {
         rpcUrl: "https://test-rpc.example.com",
       };
 
-      // Mock empty block numbers data
-      mockFileManager.readBlockNumbers = jest.fn().mockReturnValue({
-        metadata: { chain_id: 42170 },
-        blocks: {},
-      });
+      // Mock FileManager methods returning null for empty block store
+      mockFileManager.getMinDateFromBlockStore.mockReturnValue(null);
+      mockFileManager.getMaxDateFromBlockStore.mockReturnValue(null);
 
       await expect(orchestrate(configWithoutDates)).rejects.toThrow(
         "No block numbers found in store and no dates provided",
@@ -274,8 +273,9 @@ describe("orchestrator", () => {
         rpcUrl: "https://test-rpc.example.com",
       };
 
-      // Mock missing block numbers data
-      mockFileManager.readBlockNumbers = jest.fn().mockReturnValue(undefined);
+      // Mock FileManager methods returning null for missing block store
+      mockFileManager.getMinDateFromBlockStore.mockReturnValue(null);
+      mockFileManager.getMaxDateFromBlockStore.mockReturnValue(null);
 
       await expect(orchestrate(configWithoutDates)).rejects.toThrow(
         "No block numbers found in store and no dates provided",

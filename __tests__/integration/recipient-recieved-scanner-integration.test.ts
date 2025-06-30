@@ -455,19 +455,22 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       const firstScanData =
         fileManager.readRecipientRecievedEvents(testDistributor);
 
-      // Simulate new day added to block numbers
+      // Add a new historical date (not future)
       const updatedBlockNumbers = createLimitedBlockNumbers();
-      updatedBlockNumbers.blocks["2025-06-24"] = 88100000; // Future date
+      updatedBlockNumbers.blocks["2024-05-03"] = 68852046; // Historical date
       fileManager.writeBlockNumbers(updatedBlockNumbers);
 
-      // Second scan
+      // Second scan - should now scan the new date
       await scanner.scan(testDistributor);
       const secondScanData =
         fileManager.readRecipientRecievedEvents(testDistributor);
 
-      // Assert - Should not have scanned future date (yesterday logic)
+      // Assert - Should have scanned up to the new date
       expect(secondScanData?.metadata.last_scanned_block).toBe(
-        firstScanData?.metadata.last_scanned_block,
+        updatedBlockNumbers.blocks["2024-05-03"],
+      );
+      expect(secondScanData?.metadata.last_scanned_block).toBeGreaterThan(
+        firstScanData?.metadata.last_scanned_block || 0,
       );
     });
   });
