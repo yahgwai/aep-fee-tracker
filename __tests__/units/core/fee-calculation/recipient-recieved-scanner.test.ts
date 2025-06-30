@@ -937,7 +937,7 @@ describe("RecipientRecievedScanner", () => {
       });
     });
 
-    it("throws error when block number is missing for a date", async () => {
+    it("skips dates when block number is missing", async () => {
       const distributor =
         mockDistributorsData.distributors[
           "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
@@ -949,23 +949,36 @@ describe("RecipientRecievedScanner", () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
 
-      await expect(scanner.scan()).rejects.toThrow(
-        "Missing block number for date 2022-07-09 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-      );
+      // Should not throw error, should skip the missing date
+      await expect(scanner.scan()).resolves.not.toThrow();
+
+      // Verify it only queried for available dates
+      expect(mockProvider.getLogs).toHaveBeenCalled();
     });
 
-    it("validates all required block numbers before processing", async () => {
+    it("skips missing block numbers during processing", async () => {
       // Add a gap in block numbers
       delete mockBlockNumbersData.blocks["2022-07-13"];
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
 
-      await expect(scanner.scan()).rejects.toThrow(
-        "Missing block number for date 2022-07-13 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-      );
+      // Should not throw error, should skip the missing date
+      await expect(scanner.scan()).resolves.not.toThrow();
+
+      // Verify it queried for available dates only
+      const calls = mockProvider.getLogs.mock.calls;
+      const queriedDates = calls.map((call) => {
+        const filter = call[0] as { toBlock: number };
+        return filter.toBlock;
+      });
+
+      // Should not have queried for block 300 (2022-07-13)
+      expect(queriedDates).not.toContain(300);
     });
 
     it("handles first date in block data correctly", async () => {
