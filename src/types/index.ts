@@ -110,6 +110,8 @@ export type TxHash = string;
 export interface FileManager {
   readBlockNumbers(): BlockNumberData | undefined;
   writeBlockNumbers(data: BlockNumberData): void;
+  getMinDate(): DateString | undefined;
+  getMaxDate(): DateString | undefined;
   readDistributors(): DistributorsData | undefined;
   writeDistributors(data: DistributorsData): void;
   readDistributorBalances(address: Address): BalanceData | undefined;

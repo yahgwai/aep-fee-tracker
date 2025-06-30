@@ -68,6 +68,34 @@ export class FileManager implements FileManagerInterface {
     );
   }
 
+  getMinDate(): DateString | undefined {
+    const blockNumbersData = this.readBlockNumbers();
+    if (
+      !blockNumbersData ||
+      Object.keys(blockNumbersData.blocks).length === 0
+    ) {
+      return undefined;
+    }
+
+    const dates = Object.keys(blockNumbersData.blocks);
+    dates.sort();
+    return dates[0] as DateString;
+  }
+
+  getMaxDate(): DateString | undefined {
+    const blockNumbersData = this.readBlockNumbers();
+    if (
+      !blockNumbersData ||
+      Object.keys(blockNumbersData.blocks).length === 0
+    ) {
+      return undefined;
+    }
+
+    const dates = Object.keys(blockNumbersData.blocks);
+    dates.sort();
+    return dates[dates.length - 1] as DateString;
+  }
+
   readDistributors(): DistributorsData | undefined {
     return this.readJsonFileOrUndefined(
       path.join(this.storeDirectory, DISTRIBUTORS_FILE),

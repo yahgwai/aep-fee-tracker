@@ -11,6 +11,8 @@ describe("FeeCalculator Unit Tests", () => {
     mockFileManager = {
       readBlockNumbers: jest.fn(),
       writeBlockNumbers: jest.fn(),
+      getMinDate: jest.fn(),
+      getMaxDate: jest.fn(),
       readDistributors: jest.fn(),
       writeDistributors: jest.fn(),
       readDistributorBalances: jest.fn(),

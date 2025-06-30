@@ -191,4 +191,108 @@ describe("FileManager - Block Numbers", () => {
       );
     });
   });
+
+  describe("getMinDate()", () => {
+    it("should return undefined when block_numbers.json does not exist", () => {
+      const result = testContext.fileManager.getMinDate();
+      expect(result).toBeUndefined();
+    });
+
+    it("should return undefined when blocks object is empty", () => {
+      const testData = createBlockNumberData({
+        blocks: {},
+      });
+      testContext.fileManager.writeBlockNumbers(testData);
+
+      const result = testContext.fileManager.getMinDate();
+      expect(result).toBeUndefined();
+    });
+
+    it("should return the earliest date when blocks contains multiple dates", () => {
+      const testData = createBlockNumberData({
+        blocks: {
+          "2024-01-17": 12367890,
+          "2024-01-15": 12345678,
+          "2024-01-16": 12356789,
+        },
+      });
+      testContext.fileManager.writeBlockNumbers(testData);
+
+      const result = testContext.fileManager.getMinDate();
+      expect(result).toBe("2024-01-15");
+    });
+
+    it("should return the only date when blocks contains single date", () => {
+      const testData = createBlockNumberData({
+        blocks: {
+          "2024-01-20": 12345678,
+        },
+      });
+      testContext.fileManager.writeBlockNumbers(testData);
+
+      const result = testContext.fileManager.getMinDate();
+      expect(result).toBe("2024-01-20");
+    });
+  });
+
+  describe("getMaxDate()", () => {
+    it("should return undefined when block_numbers.json does not exist", () => {
+      const result = testContext.fileManager.getMaxDate();
+      expect(result).toBeUndefined();
+    });
+
+    it("should return undefined when blocks object is empty", () => {
+      const testData = createBlockNumberData({
+        blocks: {},
+      });
+      testContext.fileManager.writeBlockNumbers(testData);
+
+      const result = testContext.fileManager.getMaxDate();
+      expect(result).toBeUndefined();
+    });
+
+    it("should return the latest date when blocks contains multiple dates", () => {
+      const testData = createBlockNumberData({
+        blocks: {
+          "2024-01-17": 12367890,
+          "2024-01-15": 12345678,
+          "2024-01-16": 12356789,
+        },
+      });
+      testContext.fileManager.writeBlockNumbers(testData);
+
+      const result = testContext.fileManager.getMaxDate();
+      expect(result).toBe("2024-01-17");
+    });
+
+    it("should return the only date when blocks contains single date", () => {
+      const testData = createBlockNumberData({
+        blocks: {
+          "2024-01-20": 12345678,
+        },
+      });
+      testContext.fileManager.writeBlockNumbers(testData);
+
+      const result = testContext.fileManager.getMaxDate();
+      expect(result).toBe("2024-01-20");
+    });
+
+    it("should handle dates spanning multiple years correctly", () => {
+      const testData = createBlockNumberData({
+        blocks: {
+          "2023-12-31": 11111111,
+          "2024-01-01": 22222222,
+          "2024-12-31": 33333333,
+          "2025-01-01": 44444444,
+        },
+      });
+      testContext.fileManager.writeBlockNumbers(testData);
+
+      const minDate = testContext.fileManager.getMinDate();
+      const maxDate = testContext.fileManager.getMaxDate();
+
+      expect(minDate).toBe("2023-12-31");
+      expect(maxDate).toBe("2025-01-01");
+    });
+  });
 });

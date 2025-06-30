@@ -362,6 +362,8 @@ describe("Core Types", () => {
           blocks: {},
         }),
         writeBlockNumbers: () => {},
+        getMinDate: () => undefined,
+        getMaxDate: () => undefined,
         readDistributors: () => ({
           metadata: { chain_id: 42170, arbowner_address: "" },
           distributors: {},
