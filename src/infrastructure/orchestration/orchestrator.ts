@@ -1,6 +1,5 @@
 import { ethers } from "ethers";
 import { Configuration } from "../../types";
-import { SAFE_BLOCK_OFFSET } from "../../constants";
 import { FileManager } from "../storage/file-manager";
 import { BlockFinder } from "../../core/block-processing/block-finder";
 import { DistributorDetector } from "../../core/distributor-detection/distributor-detector";
@@ -17,7 +16,7 @@ export async function orchestrate(config: Configuration): Promise<void> {
   fileManager.ensureStoreDirectory();
 
   // Parse date range
-  const { startDate, endDate } = await parseDateRange(config, provider);
+  const { startDate, endDate } = await parseDateRange(config, fileManager);
 
   // Execute pipeline components sequentially
   await executePipeline(fileManager, provider, startDate, endDate);
@@ -25,12 +24,12 @@ export async function orchestrate(config: Configuration): Promise<void> {
 
 async function parseDateRange(
   config: Configuration,
-  provider: ethers.Provider,
+  fileManager: FileManager,
 ): Promise<{
   startDate: Date;
   endDate: Date;
 }> {
-  // Calculate end date from safe block timestamp
+  // Determine end date
   let endDate: Date;
   if (config.endDate) {
     endDate = new Date(config.endDate);
@@ -38,23 +37,21 @@ async function parseDateRange(
       throw new Error("Invalid end date format");
     }
   } else {
-    // Get current block number
-    const currentBlockNumber = await provider.getBlockNumber();
-    const safeBlockNumber = currentBlockNumber - SAFE_BLOCK_OFFSET;
-
-    // Get safe block timestamp
-    const safeBlock = await provider.getBlock(safeBlockNumber);
-    if (!safeBlock) {
-      throw new Error(`Unable to fetch block ${safeBlockNumber}`);
+    // Get max date from block numbers store
+    const blockNumbersData = fileManager.readBlockNumbers();
+    if (
+      !blockNumbersData ||
+      Object.keys(blockNumbersData.blocks).length === 0
+    ) {
+      throw new Error("No block numbers found in store and no dates provided");
     }
 
-    // Calculate date from safe block timestamp
-    const safeBlockDate = new Date(safeBlock.timestamp * 1000);
-
-    // Set end date to one day before safe block date
-    endDate = new Date(safeBlockDate);
-    endDate.setUTCDate(endDate.getUTCDate() - 1);
-    endDate.setUTCHours(0, 0, 0, 0);
+    const blockDates = Object.keys(blockNumbersData.blocks).sort();
+    const maxDateStr = blockDates[blockDates.length - 1];
+    if (!maxDateStr) {
+      throw new Error("No block numbers found in store and no dates provided");
+    }
+    endDate = new Date(maxDateStr);
   }
 
   // Determine start date
@@ -65,13 +62,21 @@ async function parseDateRange(
       throw new Error("Invalid start date format");
     }
   } else {
-    // Fetch block 1 to get chain start timestamp
-    const block1 = await provider.getBlock(1);
-    if (!block1) {
-      throw new Error("Failed to fetch block 1 from provider");
+    // Get min date from block numbers store
+    const blockNumbersData = fileManager.readBlockNumbers();
+    if (
+      !blockNumbersData ||
+      Object.keys(blockNumbersData.blocks).length === 0
+    ) {
+      throw new Error("No block numbers found in store and no dates provided");
     }
-    startDate = new Date(block1.timestamp * 1000);
-    startDate.setUTCHours(0, 0, 0, 0);
+
+    const blockDates = Object.keys(blockNumbersData.blocks).sort();
+    const minDateStr = blockDates[0];
+    if (!minDateStr) {
+      throw new Error("No block numbers found in store and no dates provided");
+    }
+    startDate = new Date(minDateStr);
   }
 
   // Validate date range
