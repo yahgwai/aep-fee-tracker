@@ -113,11 +113,12 @@ export class RecipientRecievedScanner {
       return;
     }
 
-    // Get max date from block numbers store
-    const maxDateInStore = this.getMaxDateFromBlockStore(blockNumbersData);
-    if (!maxDateInStore) {
+    // Get max date from block numbers store using FileManager
+    const maxDate = this.fileManager.getMaxDate();
+    if (!maxDate) {
       return;
     }
+    const maxDateInStore = this.formatDate(maxDate);
 
     // Process distributors
     const distributorsToProcess = distributorAddress
@@ -176,20 +177,6 @@ export class RecipientRecievedScanner {
     if (!foundAddress) {
       throw new Error(`Distributor ${distributorAddress} not found`);
     }
-  }
-
-  /**
-   * Gets the maximum date available in the block numbers store.
-   * @private
-   */
-  private getMaxDateFromBlockStore(
-    blockNumbersData: BlockNumberData,
-  ): string | null {
-    const blockDates = Object.keys(blockNumbersData.blocks);
-    if (blockDates.length === 0) {
-      return null;
-    }
-    return blockDates.sort().pop() as string;
   }
 
   /**

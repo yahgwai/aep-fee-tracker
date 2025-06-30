@@ -395,8 +395,8 @@ describe("Core Types", () => {
         validateWeiValue: () => {},
         validateTransactionHash: () => {},
         validateEnumValue: () => {},
-        getMaxDateFromBlockStore: () => new Date("2024-01-01"),
-        getMinDateFromBlockStore: () => new Date("2024-01-01"),
+        getMaxDate: () => new Date("2024-01-01"),
+        getMinDate: () => new Date("2024-01-01"),
       };
       expect(mockFileManager).toBeDefined();
     });

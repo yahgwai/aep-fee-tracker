@@ -417,23 +417,30 @@ export class FileManager implements FileManagerInterface {
   }
 
   /**
-   * Gets the maximum date available in the block numbers store.
-   * @returns The maximum date as a Date object, or null if no dates exist
+   * Gets sorted dates from the block numbers store.
+   * @returns Array of sorted date strings, or empty array if no dates exist
+   * @private
    */
-  getMaxDateFromBlockStore(): Date | null {
+  private getSortedDatesFromBlockStore(): string[] {
     const blockNumbersData = this.readBlockNumbers();
     if (
       !blockNumbersData ||
       Object.keys(blockNumbersData.blocks).length === 0
     ) {
-      return null;
+      return [];
     }
+    return Object.keys(blockNumbersData.blocks).sort();
+  }
 
-    const sortedDates = Object.keys(blockNumbersData.blocks).sort();
+  /**
+   * Gets the maximum date available in the block numbers store.
+   * @returns The maximum date as a Date object, or null if no dates exist
+   */
+  getMaxDate(): Date | null {
+    const sortedDates = this.getSortedDatesFromBlockStore();
     if (sortedDates.length === 0) {
       return null;
     }
-
     const maxDateStr = sortedDates[sortedDates.length - 1];
     return maxDateStr ? new Date(maxDateStr) : null;
   }
@@ -442,20 +449,11 @@ export class FileManager implements FileManagerInterface {
    * Gets the minimum date available in the block numbers store.
    * @returns The minimum date as a Date object, or null if no dates exist
    */
-  getMinDateFromBlockStore(): Date | null {
-    const blockNumbersData = this.readBlockNumbers();
-    if (
-      !blockNumbersData ||
-      Object.keys(blockNumbersData.blocks).length === 0
-    ) {
-      return null;
-    }
-
-    const sortedDates = Object.keys(blockNumbersData.blocks).sort();
+  getMinDate(): Date | null {
+    const sortedDates = this.getSortedDatesFromBlockStore();
     if (sortedDates.length === 0) {
       return null;
     }
-
     const minDateStr = sortedDates[0];
     return minDateStr ? new Date(minDateStr) : null;
   }

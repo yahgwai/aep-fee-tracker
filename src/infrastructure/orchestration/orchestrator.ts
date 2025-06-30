@@ -34,7 +34,7 @@ async function parseDateRange(
   if (config.endDate) {
     endDate = parseConfigDate(config.endDate, "end");
   } else {
-    const maxDate = fileManager.getMaxDateFromBlockStore();
+    const maxDate = fileManager.getMaxDate();
     if (!maxDate) {
       throw new Error("No block numbers found in store and no dates provided");
     }
@@ -45,7 +45,7 @@ async function parseDateRange(
   if (config.startDate) {
     startDate = parseConfigDate(config.startDate, "start");
   } else {
-    const minDate = fileManager.getMinDateFromBlockStore();
+    const minDate = fileManager.getMinDate();
     if (!minDate) {
       throw new Error("No block numbers found in store and no dates provided");
     }

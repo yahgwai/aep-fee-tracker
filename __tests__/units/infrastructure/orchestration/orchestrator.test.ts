@@ -49,8 +49,8 @@ describe("orchestrator", () => {
     // Create mock instances
     mockFileManager = {
       ensureStoreDirectory: jest.fn(),
-      getMaxDateFromBlockStore: jest.fn(),
-      getMinDateFromBlockStore: jest.fn(),
+      getMaxDate: jest.fn(),
+      getMinDate: jest.fn(),
     } as unknown as jest.Mocked<FileManager>;
 
     mockProvider = {
@@ -223,18 +223,14 @@ describe("orchestrator", () => {
       };
 
       // Mock FileManager methods with specific date range
-      mockFileManager.getMinDateFromBlockStore.mockReturnValue(
-        new Date("2024-05-01"),
-      );
-      mockFileManager.getMaxDateFromBlockStore.mockReturnValue(
-        new Date("2024-05-03"),
-      );
+      mockFileManager.getMinDate.mockReturnValue(new Date("2024-05-01"));
+      mockFileManager.getMaxDate.mockReturnValue(new Date("2024-05-03"));
 
       await orchestrate(configWithoutDates);
 
       // Should call FileManager methods to get date range
-      expect(mockFileManager.getMinDateFromBlockStore).toHaveBeenCalled();
-      expect(mockFileManager.getMaxDateFromBlockStore).toHaveBeenCalled();
+      expect(mockFileManager.getMinDate).toHaveBeenCalled();
+      expect(mockFileManager.getMaxDate).toHaveBeenCalled();
 
       // Should NOT call getBlock or getBlockNumber for date calculation
       expect(mockProvider.getBlockNumber).not.toHaveBeenCalled();
@@ -259,8 +255,8 @@ describe("orchestrator", () => {
       };
 
       // Mock FileManager methods returning null for empty block store
-      mockFileManager.getMinDateFromBlockStore.mockReturnValue(null);
-      mockFileManager.getMaxDateFromBlockStore.mockReturnValue(null);
+      mockFileManager.getMinDate.mockReturnValue(null);
+      mockFileManager.getMaxDate.mockReturnValue(null);
 
       await expect(orchestrate(configWithoutDates)).rejects.toThrow(
         "No block numbers found in store and no dates provided",
@@ -274,8 +270,8 @@ describe("orchestrator", () => {
       };
 
       // Mock FileManager methods returning null for missing block store
-      mockFileManager.getMinDateFromBlockStore.mockReturnValue(null);
-      mockFileManager.getMaxDateFromBlockStore.mockReturnValue(null);
+      mockFileManager.getMinDate.mockReturnValue(null);
+      mockFileManager.getMaxDate.mockReturnValue(null);
 
       await expect(orchestrate(configWithoutDates)).rejects.toThrow(
         "No block numbers found in store and no dates provided",
