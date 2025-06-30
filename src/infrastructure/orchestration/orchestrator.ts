@@ -29,55 +29,14 @@ async function parseDateRange(
   startDate: Date;
   endDate: Date;
 }> {
-  // Determine end date
-  let endDate: Date;
-  if (config.endDate) {
-    endDate = new Date(config.endDate);
-    if (isNaN(endDate.getTime())) {
-      throw new Error("Invalid end date format");
-    }
-  } else {
-    // Get max date from block numbers store
-    const blockNumbersData = fileManager.readBlockNumbers();
-    if (
-      !blockNumbersData ||
-      Object.keys(blockNumbersData.blocks).length === 0
-    ) {
-      throw new Error("No block numbers found in store and no dates provided");
-    }
+  // Get dates from config or block store
+  const endDate = config.endDate
+    ? parseConfigDate(config.endDate, "end")
+    : getMaxDateFromBlockStore(fileManager);
 
-    const blockDates = Object.keys(blockNumbersData.blocks).sort();
-    const maxDateStr = blockDates[blockDates.length - 1];
-    if (!maxDateStr) {
-      throw new Error("No block numbers found in store and no dates provided");
-    }
-    endDate = new Date(maxDateStr);
-  }
-
-  // Determine start date
-  let startDate: Date;
-  if (config.startDate) {
-    startDate = new Date(config.startDate);
-    if (isNaN(startDate.getTime())) {
-      throw new Error("Invalid start date format");
-    }
-  } else {
-    // Get min date from block numbers store
-    const blockNumbersData = fileManager.readBlockNumbers();
-    if (
-      !blockNumbersData ||
-      Object.keys(blockNumbersData.blocks).length === 0
-    ) {
-      throw new Error("No block numbers found in store and no dates provided");
-    }
-
-    const blockDates = Object.keys(blockNumbersData.blocks).sort();
-    const minDateStr = blockDates[0];
-    if (!minDateStr) {
-      throw new Error("No block numbers found in store and no dates provided");
-    }
-    startDate = new Date(minDateStr);
-  }
+  const startDate = config.startDate
+    ? parseConfigDate(config.startDate, "start")
+    : getMinDateFromBlockStore(fileManager);
 
   // Validate date range
   if (startDate > endDate) {
@@ -85,6 +44,48 @@ async function parseDateRange(
   }
 
   return { startDate, endDate };
+}
+
+function parseConfigDate(dateStr: string, dateType: string): Date {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    throw new Error(`Invalid ${dateType} date format`);
+  }
+  return date;
+}
+
+function getDateRangeFromBlockStore(fileManager: FileManager): {
+  sortedDates: string[];
+} {
+  const blockNumbersData = fileManager.readBlockNumbers();
+  if (!blockNumbersData || Object.keys(blockNumbersData.blocks).length === 0) {
+    throw new Error("No block numbers found in store and no dates provided");
+  }
+
+  const sortedDates = Object.keys(blockNumbersData.blocks).sort();
+  if (sortedDates.length === 0) {
+    throw new Error("No block numbers found in store and no dates provided");
+  }
+
+  return { sortedDates };
+}
+
+function getMaxDateFromBlockStore(fileManager: FileManager): Date {
+  const { sortedDates } = getDateRangeFromBlockStore(fileManager);
+  const maxDateStr = sortedDates[sortedDates.length - 1];
+  if (!maxDateStr) {
+    throw new Error("No block numbers found in store and no dates provided");
+  }
+  return new Date(maxDateStr);
+}
+
+function getMinDateFromBlockStore(fileManager: FileManager): Date {
+  const { sortedDates } = getDateRangeFromBlockStore(fileManager);
+  const minDateStr = sortedDates[0];
+  if (!minDateStr) {
+    throw new Error("No block numbers found in store and no dates provided");
+  }
+  return new Date(minDateStr);
 }
 
 async function executePipeline(
