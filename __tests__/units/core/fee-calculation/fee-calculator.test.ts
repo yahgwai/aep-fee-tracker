@@ -36,6 +36,7 @@ describe("FeeCalculator Unit Tests", () => {
     it("should set start_balance_wei to previous balance and end_balance_wei to current balance", () => {
       // Test data matching the spec example
       const date = "2024-01-15";
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
       const previousBalanceWei = "1500000000000000000000"; // 1500 ETH (start balance)
       const currentBalanceWei = "1480000000000000000000"; // 1480 ETH (end balance)
       const balanceChangeWei = BigInt("-20000000000000000000"); // -20 ETH
@@ -48,6 +49,7 @@ describe("FeeCalculator Unit Tests", () => {
       const calculatorWithPrivates = calculator as unknown as {
         createDailyEntry: (
           date: string,
+          distributorAddress: string,
           previousBalanceWei: string,
           currentBalanceWei: string,
           balanceChangeWei: bigint,
@@ -69,6 +71,7 @@ describe("FeeCalculator Unit Tests", () => {
       // Now the implementation accepts both previousBalanceWei and currentBalanceWei
       const result = createDailyEntry(
         date,
+        distributorAddress,
         previousBalanceWei,
         currentBalanceWei,
         balanceChangeWei,
@@ -84,6 +87,70 @@ describe("FeeCalculator Unit Tests", () => {
       expect(result.distributions_wei).toBe("25000000000000000000");
       expect(result.distributions_count).toBe(5);
       expect(result.total_wei).toBe("5000000000000000000"); // -20 + 25 = 5
+    });
+
+    it("should log warning when total_wei is negative", () => {
+      // Scenario: Large withdrawal causes negative balance change exceeding distributions
+      const date = "2024-01-20";
+      const distributorAddress = "0x1234567890123456789012345678901234567890";
+      const previousBalanceWei = "1000000000000000000000"; // 1000 ETH
+      const currentBalanceWei = "500000000000000000000"; // 500 ETH
+      const balanceChangeWei = BigInt("-500000000000000000000"); // -500 ETH (large withdrawal)
+      const distributionsWei = BigInt("100000000000000000000"); // 100 ETH distributed
+      const distributionsCount = 10;
+
+      // Mock console.warn
+      const consoleWarnSpy = jest
+        .spyOn(console, "warn")
+        .mockImplementation(() => {});
+
+      // Access private method through reflection for unit testing
+      // Note: We're updating the expected signature to include distributorAddress
+      const calculatorWithPrivates = calculator as unknown as {
+        createDailyEntry: (
+          date: string,
+          distributorAddress: string,
+          previousBalanceWei: string,
+          currentBalanceWei: string,
+          balanceChangeWei: bigint,
+          distributionsWei: bigint,
+          distributionsCount: number,
+        ) => {
+          date: string;
+          start_balance_wei: string;
+          end_balance_wei: string;
+          balance_change_wei: string;
+          distributions_wei: string;
+          distributions_count: number;
+          total_wei: string;
+        };
+      };
+      const createDailyEntry =
+        calculatorWithPrivates.createDailyEntry.bind(calculator);
+
+      // Create entry with negative total_wei
+      const result = createDailyEntry(
+        date,
+        distributorAddress,
+        previousBalanceWei,
+        currentBalanceWei,
+        balanceChangeWei,
+        distributionsWei,
+        distributionsCount,
+      );
+
+      // Verify warning was logged with all required information
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Negative total_wei detected for distributor 0x1234567890123456789012345678901234567890 on 2024-01-20: -400000000000000000000 wei (balance_change_wei: -500000000000000000000, distributions_wei: 100000000000000000000)",
+        ),
+      );
+
+      // Verify result still contains negative total_wei
+      expect(result.total_wei).toBe("-400000000000000000000");
+
+      // Restore console.warn
+      consoleWarnSpy.mockRestore();
     });
   });
 

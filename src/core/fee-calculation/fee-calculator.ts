@@ -94,6 +94,7 @@ export class FeeCalculator {
 
     // Process all dates to create daily entries
     return this.createDailyEntries(
+      distributorAddress,
       sortedDates,
       balanceData.balances,
       eventsData,
@@ -101,6 +102,7 @@ export class FeeCalculator {
   }
 
   private createDailyEntries(
+    distributorAddress: string,
     sortedDates: string[],
     balances: { [date: string]: { block_number: number; balance_wei: string } },
     eventsData: RecipientRecievedEventData | undefined,
@@ -127,6 +129,7 @@ export class FeeCalculator {
       dailyEntries.push(
         this.createDailyEntry(
           date,
+          distributorAddress,
           previousBalanceWei,
           currentBalance.balance_wei,
           balanceChangeWei,
@@ -152,6 +155,7 @@ export class FeeCalculator {
 
   private createDailyEntry(
     date: string,
+    distributorAddress: string,
     previousBalanceWei: string,
     currentBalanceWei: string,
     balanceChangeWei: bigint,
@@ -160,6 +164,13 @@ export class FeeCalculator {
   ): FeeReportEntry {
     // Calculate total_wei as sum of balance change and distributions
     const totalWei = balanceChangeWei + distributionsWei;
+
+    // Check if total_wei is negative and log warning
+    if (totalWei < 0n) {
+      console.warn(
+        `Negative total_wei detected for distributor ${distributorAddress} on ${date}: ${totalWei.toString()} wei (balance_change_wei: ${balanceChangeWei.toString()}, distributions_wei: ${distributionsWei.toString()})`,
+      );
+    }
 
     return {
       date,
