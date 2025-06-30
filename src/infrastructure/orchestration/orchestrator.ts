@@ -16,7 +16,11 @@ export async function orchestrate(config: Configuration): Promise<void> {
   fileManager.ensureStoreDirectory();
 
   // Parse date range
-  const { startDate, endDate } = await parseDateRange(config, provider);
+  const { startDate, endDate } = await parseDateRange(
+    config,
+    provider,
+    fileManager,
+  );
 
   // Execute pipeline components sequentially
   await executePipeline(fileManager, provider, startDate, endDate);
@@ -25,15 +29,11 @@ export async function orchestrate(config: Configuration): Promise<void> {
 async function parseDateRange(
   config: Configuration,
   provider: ethers.Provider,
+  fileManager: FileManager,
 ): Promise<{
   startDate: Date;
   endDate: Date;
 }> {
-  // Default to yesterday for end date (since we can only process complete days)
-  const yesterday = new Date();
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  yesterday.setUTCHours(0, 0, 0, 0);
-
   // Determine start date
   let startDate: Date;
   if (config.startDate) {
@@ -51,9 +51,20 @@ async function parseDateRange(
     startDate.setUTCHours(0, 0, 0, 0);
   }
 
-  const endDate = config.endDate ? new Date(config.endDate) : yesterday;
-  if (config.endDate && isNaN(endDate.getTime())) {
-    throw new Error("Invalid end date format");
+  // Determine end date
+  let endDate: Date;
+  if (config.endDate) {
+    endDate = new Date(config.endDate);
+    if (isNaN(endDate.getTime())) {
+      throw new Error("Invalid end date format");
+    }
+  } else {
+    // Use max date from block store
+    const maxDateStr = fileManager.getMaxDate();
+    if (!maxDateStr) {
+      throw new Error("No block data available in store");
+    }
+    endDate = new Date(maxDateStr);
   }
 
   // Validate date range
@@ -70,6 +81,9 @@ async function executePipeline(
   startDate: Date,
   endDate: Date,
 ): Promise<void> {
+  // Format endDate as YYYY-MM-DD string
+  const endDateStr = endDate.toISOString().split("T")[0];
+
   // 1. Find blocks for date range
   console.log("Starting Block Finder...");
   const blockFinder = new BlockFinder(fileManager, provider);
@@ -83,7 +97,7 @@ async function executePipeline(
   // 3. Fetch distributor balances
   console.log("Starting Balance Fetcher...");
   const balanceFetcher = new BalanceFetcher(fileManager, provider);
-  await balanceFetcher.fetchBalances();
+  await balanceFetcher.fetchBalances(undefined, endDateStr);
 
   // 4. Scan for recipient received events
   console.log("Starting Recipient Received Scanner...");
@@ -91,7 +105,7 @@ async function executePipeline(
     provider,
     fileManager,
   );
-  await recipientRecievedScanner.scan();
+  await recipientRecievedScanner.scan(undefined, endDateStr);
 
   // 5. Calculate fees
   console.log("Starting Fee Calculator...");

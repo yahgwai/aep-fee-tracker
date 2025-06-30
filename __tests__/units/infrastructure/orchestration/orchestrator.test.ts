@@ -238,6 +238,70 @@ describe("orchestrator", () => {
       );
     });
 
+    it("should use block store max date instead of yesterday when no endDate provided", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Add getMaxDate method to mockFileManager
+      mockFileManager.getMaxDate = jest.fn().mockReturnValue("2024-01-15");
+
+      // Mock block 1 with a timestamp
+      const block1Timestamp = Math.floor(
+        new Date("2022-07-12T00:00:00Z").getTime() / 1000,
+      );
+      mockProvider.getBlock.mockResolvedValue({
+        timestamp: block1Timestamp,
+      } as unknown as ethers.Block);
+
+      await orchestrate(configWithoutDates);
+
+      // Verify getMaxDate was called
+      expect(mockFileManager.getMaxDate).toHaveBeenCalled();
+
+      // Verify that the block store date was used as end date
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      const [, endDate] = callArgs!;
+      expect(endDate).toEqual(new Date("2024-01-15"));
+    });
+
+    it("should throw error when block store has no dates", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Add getMaxDate method that returns undefined
+      mockFileManager.getMaxDate = jest.fn().mockReturnValue(undefined);
+
+      // Mock block 1 with a timestamp (needed for start date)
+      const block1Timestamp = Math.floor(
+        new Date("2022-07-12T00:00:00Z").getTime() / 1000,
+      );
+      mockProvider.getBlock.mockResolvedValue({
+        timestamp: block1Timestamp,
+      } as unknown as ethers.Block);
+
+      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
+        "No block data available in store",
+      );
+    });
+
+    it("should pass endDate to BalanceFetcher and RecipientRecievedScanner", async () => {
+      await orchestrate(configuration);
+
+      // Should pass endDate as formatted string to components
+      expect(mockBalanceFetcher.fetchBalances).toHaveBeenCalledWith(
+        undefined,
+        "2024-01-31",
+      );
+      expect(mockRecipientRecievedScanner.scan).toHaveBeenCalledWith(
+        undefined,
+        "2024-01-31",
+      );
+    });
+
     it("should use provided dates when specified", async () => {
       const customConfig: Configuration = {
         storeDirectory: "/test/store",
