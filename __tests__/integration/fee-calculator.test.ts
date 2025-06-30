@@ -190,7 +190,7 @@ describe("FeeCalculator - Comprehensive Integration Tests with Real Data", () =>
       expect(actualData).toEqual(expectedData);
     });
 
-    it("should handle filtering to a distributor with no balance data", () => {
+    it("should throw error when filtering to a non-reward distributor", () => {
       // Setup test data
       fileManager.writeDistributors(testData.distributorsData);
 
@@ -207,15 +207,15 @@ describe("FeeCalculator - Comprehensive Integration Tests with Real Data", () =>
         }
       }
 
-      // Try to calculate fees for a distributor without balance data
-      // Note: This distributor exists but we didn't write balance data for it
-      const distributorWithoutData =
-        "0xdff90519a9DE6ad469D4f9839a9220C5D340B792";
-      calculator.calculateFees(distributorWithoutData);
+      // Try to calculate fees for a non-reward distributor
+      // Note: This distributor exists but has is_reward_distributor: false
+      const nonRewardDistributor = "0xdff90519a9DE6ad469D4f9839a9220C5D340B792";
 
-      // Should not create a fee report
-      const actualReport = fileManager.readFeeReport();
-      expect(actualReport).toBeUndefined();
+      expect(() => {
+        calculator.calculateFees(nonRewardDistributor);
+      }).toThrow(
+        "Distributor address 0xdff90519a9DE6ad469D4f9839a9220C5D340B792 is not a reward distributor and does not generate fee reports",
+      );
     });
   });
 

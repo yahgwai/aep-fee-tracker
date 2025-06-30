@@ -34,6 +34,14 @@ export class FeeCalculator {
           `Distributor address ${distributorAddress} not found in distributor data`,
         );
       }
+      // Check if the specific distributor is a reward distributor
+      if (
+        !distributorsData.distributors[distributorAddress].is_reward_distributor
+      ) {
+        throw new Error(
+          `Distributor address ${distributorAddress} is not a reward distributor and does not generate fee reports`,
+        );
+      }
       distributorAddresses = [distributorAddress];
     } else if (distributorAddresses.length === 0) {
       // No distributor specified and no distributors exist - just return

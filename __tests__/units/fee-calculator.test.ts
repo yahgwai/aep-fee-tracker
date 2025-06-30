@@ -93,6 +93,39 @@ describe("FeeCalculator Unit Tests", () => {
       jest.clearAllMocks();
     });
 
+    it("should throw error when specific non-reward distributor is requested", () => {
+      const mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0xNonRewardDistributor": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-12",
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: false,
+            distributor_address: "0xNonRewardDistributor",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+
+      // Should throw when requesting a specific distributor that is not a reward distributor
+      expect(() => {
+        calculator.calculateFees("0xNonRewardDistributor");
+      }).toThrow(
+        "Distributor address 0xNonRewardDistributor is not a reward distributor and does not generate fee reports",
+      );
+    });
+
     it("skips distributors where is_reward_distributor is false", () => {
       const mockDistributorsData = {
         metadata: {
