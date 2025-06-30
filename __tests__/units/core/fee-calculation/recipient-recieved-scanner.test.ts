@@ -68,8 +68,8 @@ describe("RecipientRecievedScanner", () => {
       expect(typeof scanner.scan).toBe("function");
     });
 
-    it("accepts optional distributorAddress parameter", () => {
-      expect(scanner.scan.length).toBeLessThanOrEqual(1);
+    it("accepts optional distributorAddress and endDate parameters", () => {
+      expect(scanner.scan.length).toBeLessThanOrEqual(2);
     });
 
     it("returns a Promise", () => {
@@ -604,6 +604,171 @@ describe("RecipientRecievedScanner", () => {
 
       await expect(scanner.scan()).rejects.toThrow(
         "Cannot find date for block 999 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+      );
+    });
+  });
+
+  describe("scan - endDate parameter", () => {
+    let scanner: RecipientRecievedScanner;
+    let mockDistributorsData: DistributorsData;
+    let mockBlockNumbersData: BlockNumberData;
+
+    beforeEach(() => {
+      mockFileManager = {
+        readDistributors: jest.fn(),
+        readBlockNumbers: jest.fn(),
+        readRecipientRecievedEvents: jest.fn(),
+        writeRecipientRecievedEvents: jest.fn(),
+        validateDateFormat: jest.fn(),
+      } as unknown as jest.Mocked<FileManager>;
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+
+      mockDistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 152,
+            date: "2022-07-10",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      mockBlockNumbersData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-10": 50,
+          "2022-07-11": 100,
+          "2022-07-12": 200,
+          "2022-07-13": 300,
+          "2022-07-14": 400,
+          "2022-07-15": 500,
+          "2022-07-16": 600,
+        },
+      };
+    });
+
+    it("accepts endDate as second parameter", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      await expect(
+        scanner.scan(undefined, "2022-07-12"),
+      ).resolves.not.toThrow();
+    });
+
+    it("uses provided endDate instead of calculating yesterday", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      // Spy on console.log to verify the date range
+      const consoleSpy = jest.spyOn(console, "log");
+
+      await scanner.scan(undefined, "2022-07-12");
+
+      // Should log scanning up to 2022-07-12, not yesterday (2022-07-14)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Scanning date range: 2022-07-10 to 2022-07-12",
+        ),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("validates endDate format", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.validateDateFormat.mockImplementation((date: string) => {
+        if (date === "invalid-date") {
+          throw new Error("Invalid date format: invalid-date");
+        }
+      });
+
+      await expect(scanner.scan(undefined, "invalid-date")).rejects.toThrow(
+        "Invalid date format: invalid-date",
+      );
+    });
+
+    it("validates endDate is a valid calendar date", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.validateDateFormat.mockImplementation((date: string) => {
+        if (date === "2022-13-01") {
+          throw new Error("Invalid calendar date: 2022-13-01");
+        }
+      });
+
+      await expect(scanner.scan(undefined, "2022-13-01")).rejects.toThrow(
+        "Invalid calendar date: 2022-13-01",
+      );
+    });
+
+    it("throws error if endDate is not in block numbers data", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+
+      await expect(scanner.scan(undefined, "2022-07-20")).rejects.toThrow(
+        "No block number found for end date: 2022-07-20",
+      );
+    });
+
+    it("correctly processes distributor with custom endDate", async () => {
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+
+      // Mock getLogs to return some events
+      const mockEvents = [
+        {
+          blockNumber: 150,
+          blockHash: "0xdef456",
+          transactionHash: "0xabc123",
+          transactionIndex: 0,
+          removed: false,
+          index: 0,
+          address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          topics: [
+            RECIPIENT_RECIEVED_EVENT_TOPIC,
+            ethers.zeroPadValue(
+              "0x1234567890123456789012345678901234567890",
+              32,
+            ),
+          ],
+          data: ethers.zeroPadValue("0x1000", 32),
+          provider: mockProvider,
+          toJSON: () => ({}),
+          getBlock: () => Promise.resolve({} as unknown),
+          getTransaction: () => Promise.resolve({} as unknown),
+          getTransactionReceipt: () => Promise.resolve({} as unknown),
+          removedEvent: () => Promise.resolve({} as unknown),
+        } as unknown as ethers.Log,
+      ];
+      mockProvider.getLogs.mockResolvedValue(mockEvents);
+
+      await scanner.scan(undefined, "2022-07-11");
+
+      // Verify writeRecipientRecievedEvents was called
+      expect(mockFileManager.writeRecipientRecievedEvents).toHaveBeenCalledWith(
+        "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            last_scanned_block: 100, // Should be the block for 2022-07-11
+          }),
+        }),
       );
     });
   });

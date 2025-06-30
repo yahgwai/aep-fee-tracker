@@ -81,15 +81,21 @@ export class RecipientRecievedScanner {
    * Currently implements only address validation. Full implementation pending issue #173 and #174.
    *
    * @param distributorAddress - Optional distributor address. If provided, scans only that distributor. If omitted, scans all distributors
+   * @param endDate - Optional end date in YYYY-MM-DD format. If omitted, defaults to yesterday
    * @returns Promise that resolves when scanning is complete
-   * @throws Error if invalid Ethereum address provided
+   * @throws Error if invalid Ethereum address provided or invalid date format
    */
-  async scan(distributorAddress?: string): Promise<void> {
+  async scan(distributorAddress?: string, endDate?: string): Promise<void> {
     if (
       distributorAddress !== undefined &&
       !ethers.isAddress(distributorAddress)
     ) {
       throw new Error(`Invalid Ethereum address: ${distributorAddress}`);
+    }
+
+    // Validate endDate if provided
+    if (endDate !== undefined) {
+      this.fileManager.validateDateFormat(endDate);
     }
 
     const distributorsData = this.fileManager.readDistributors();
@@ -113,11 +119,21 @@ export class RecipientRecievedScanner {
       return;
     }
 
-    // Calculate yesterday's date
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = this.formatDate(yesterday);
+    // Determine end date
+    let endDateStr: string;
+    if (endDate !== undefined) {
+      endDateStr = endDate;
+      // Verify the date exists in block numbers data
+      if (!(endDateStr in blockNumbersData.blocks)) {
+        throw new Error(`No block number found for end date: ${endDateStr}`);
+      }
+    } else {
+      // Calculate yesterday's date
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      endDateStr = this.formatDate(yesterday);
+    }
 
     // Process distributors
     const distributorsToProcess = distributorAddress
@@ -143,7 +159,7 @@ export class RecipientRecievedScanner {
         address,
         distributorInfo,
         blockNumbersData,
-        yesterdayStr,
+        endDateStr,
       );
     }
   }
@@ -195,17 +211,17 @@ export class RecipientRecievedScanner {
   }
 
   /**
-   * Processes a distributor day by day from last scanned date to yesterday.
+   * Processes a distributor day by day from last scanned date to end date.
    * @private
    */
   private async processDistributor(
     address: string,
     distributorInfo: DistributorInfo,
     blockNumbersData: BlockNumberData,
-    yesterdayStr: string,
+    endDateStr: string,
   ): Promise<void> {
     // Check if distributor is created in the future
-    if (distributorInfo.date > yesterdayStr) {
+    if (distributorInfo.date > endDateStr) {
       return;
     }
 
@@ -236,12 +252,12 @@ export class RecipientRecievedScanner {
       startDate = distributorInfo.date;
     }
 
-    // Skip if start date is after yesterday (all dates processed)
-    if (startDate > yesterdayStr) {
+    // Skip if start date is after end date (all dates processed)
+    if (startDate > endDateStr) {
       return;
     }
 
-    console.log(`Scanning date range: ${startDate} to ${yesterdayStr}`);
+    console.log(`Scanning date range: ${startDate} to ${endDateStr}`);
 
     // Get chain ID from distributors data
     const distributorsData = this.fileManager.readDistributors();
@@ -252,7 +268,7 @@ export class RecipientRecievedScanner {
 
     // Process one day at a time
     const currentDate = new Date(startDate);
-    const endDate = new Date(yesterdayStr);
+    const endDate = new Date(endDateStr);
     let lastProcessedBlock = 0;
 
     while (currentDate <= endDate) {
