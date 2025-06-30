@@ -1,13 +1,13 @@
 import * as fs from "fs";
 import * as path from "path";
-import { FileManager } from "../src/file-manager";
+import { FileManager } from "../src/infrastructure/storage/file-manager";
 import {
   DistributorsData,
   DistributorInfo,
   DistributorType,
 } from "../src/types";
 import { getAddress } from "ethers";
-import { DistributorDetector } from "../src/distributor-detector";
+import { DistributorDetector } from "../src/core/distributor-detection/distributor-detector";
 import { JsonRpcProvider } from "ethers";
 
 // Method selectors to distributor types mapping

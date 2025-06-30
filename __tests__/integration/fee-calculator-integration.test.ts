@@ -3,8 +3,8 @@ import {
   setupTestEnvironment,
   cleanupTestEnvironment,
   TestContext,
-} from "../units/file-manager/test-utils";
-import { FeeCalculator } from "../../src/fee-calculator";
+} from "../units/infrastructure/storage/test-utils";
+import { FeeCalculator } from "../../src/core/fee-calculation/fee-calculator";
 import {
   DistributorType,
   DistributorsData,

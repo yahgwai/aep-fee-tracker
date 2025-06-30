@@ -5,19 +5,21 @@ import {
   DistributorType,
   type DateString,
   type Address,
-  DISTRIBUTOR_METHODS,
   FileManager,
   FileManagerError,
   ValidationError,
-  CONTRACTS,
-  CHAIN_IDS,
-  STORE_DIR,
-  DISTRIBUTORS_DIR,
   isValidDistributorType,
   isValidDateString,
   isValidDecimalString,
   FeeReport,
 } from "../../src/types";
+import {
+  DISTRIBUTOR_METHODS,
+  CONTRACTS,
+  CHAIN_IDS,
+  STORE_DIR,
+  DISTRIBUTORS_DIR,
+} from "../../src/constants";
 
 describe("Core Types", () => {
   describe("BlockNumberData", () => {

@@ -4,8 +4,8 @@ import {
   DISTRIBUTOR_METHOD_SIGNATURES,
   ALL_DISTRIBUTOR_METHOD_SIGNATURES,
   OWNER_ACTS_EVENT_ABI,
-} from "../../../src/constants/distributor-detector";
-import { CONTRACTS, DISTRIBUTOR_METHODS } from "../../../src/types";
+} from "../../../src/core/distributor-detection/constants";
+import { CONTRACTS, DISTRIBUTOR_METHODS } from "../../../src/constants";
 
 describe("Distributor Detector Constants", () => {
   describe("ARBOWNER_PRECOMPILE_ADDRESS", () => {

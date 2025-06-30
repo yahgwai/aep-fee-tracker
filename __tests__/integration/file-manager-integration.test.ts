@@ -6,8 +6,9 @@ import {
   setupTestEnvironment,
   cleanupTestEnvironment,
   TestContext,
-} from "../units/file-manager/test-utils";
-import { DistributorType, CONTRACTS } from "../../src/types";
+} from "../units/infrastructure/storage/test-utils";
+import { DistributorType } from "../../src/types";
+import { CONTRACTS } from "../../src/constants";
 
 describe("FileManager - Integration Tests", () => {
   let testContext: TestContext;

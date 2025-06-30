@@ -4,15 +4,15 @@ import {
   setupTestEnvironment,
   cleanupTestEnvironment,
   TestContext,
-} from "../units/file-manager/test-utils";
+} from "../units/infrastructure/storage/test-utils";
 import {
   createProvider,
   createBlockFinder,
   instrumentProviderForCallTracking,
   getDateRange,
-} from "../units/block-finder/test-utils";
-import { BlockFinder } from "../../src/block-finder";
-import { CHAIN_IDS } from "../../src/types";
+} from "../units/core/block-processing/test-utils";
+import { BlockFinder } from "../../src/core/block-processing/block-finder";
+import { CHAIN_IDS } from "../../src/constants";
 
 describe("BlockFinder - Incremental Processing Integration Test", () => {
   let testContext: TestContext;
