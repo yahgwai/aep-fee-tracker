@@ -606,6 +606,125 @@ describe("RecipientRecievedScanner", () => {
         "Cannot find date for block 999 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
       );
     });
+
+    it("uses max date from block store instead of calculating yesterday", async () => {
+      // Set up block numbers data that ends at 2022-05-02 (much earlier than "today")
+      const historicalBlockNumbersData: BlockNumberData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-05-01": 100,
+          "2022-05-02": 200, // Max date in store
+        },
+      };
+
+      // Distributor created on 2022-05-01
+      const historicalDistributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 100,
+            date: "2022-05-01",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(
+        historicalDistributorsData,
+      );
+      mockFileManager.readBlockNumbers.mockReturnValue(
+        historicalBlockNumbersData,
+      );
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.scan();
+
+      // Verify it queried for blocks up to 2022-05-02 (store max), not yesterday (2022-07-14)
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 101, // Day after creation
+        toBlock: 200, // Max block in store
+      });
+
+      // Verify no calls were made for dates beyond the store
+      const allCalls = mockProvider.getLogs.mock.calls;
+      const maxBlockQueried = Math.max(
+        ...allCalls.map((call) => {
+          const filter = call[0] as { toBlock: number };
+          return filter.toBlock;
+        }),
+      );
+      expect(maxBlockQueried).toBe(200); // Should not exceed max block in store
+    });
+
+    it("respects block store boundaries when processing distributors", async () => {
+      // Set up block numbers data with limited range
+      const limitedBlockNumbersData: BlockNumberData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-05-01": 100,
+          "2022-05-02": 200,
+          "2022-05-03": 300, // Only 3 days of data
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(limitedBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.scan();
+
+      // Even though distributor was created on 2022-07-12, it should not process
+      // because that date is not in the block store
+      expect(mockProvider.getLogs).not.toHaveBeenCalled();
+    });
+
+    it("handles missing block numbers gracefully without querying", async () => {
+      // Set up block numbers data with gaps
+      const gappedBlockNumbersData: BlockNumberData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-12": 200, // Creation date
+          "2022-07-14": 400, // Missing 2022-07-13
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(gappedBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.scan();
+
+      // Should query for 2022-07-12 and 2022-07-14, but not fail on missing 2022-07-13
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(2);
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 1, // No previous day, so starts at 1
+        toBlock: 200,
+      });
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 201,
+        toBlock: 400,
+      });
+    });
   });
 
   describe("scan - distributor filtering", () => {
