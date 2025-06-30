@@ -62,11 +62,13 @@ export class BalanceFetcher {
    * Uses incremental processing to only fetch balances for dates that haven't been fetched yet.
    *
    * @param distributorAddress - If provided, only fetch balances for this specific distributor
+   * @param endDate - Optional end date in YYYY-MM-DD format. If omitted, fetches all available dates
    * @returns Promise that resolves with collected decimal string balances by distributor and date, or empty record if no new balances to fetch
    * @throws Error on any failure
    */
   async fetchBalances(
     distributorAddress?: string,
+    endDate?: string,
   ): Promise<Record<string, Record<string, string>>> {
     // Validate distributorAddress parameter if provided
     if (
@@ -75,6 +77,12 @@ export class BalanceFetcher {
     ) {
       throw new Error(`Invalid Ethereum address: ${distributorAddress}`);
     }
+
+    // Validate endDate if provided
+    if (endDate !== undefined) {
+      this.fileManager.validateDateFormat(endDate);
+    }
+
     const distributorsData = this.fileManager.readDistributors();
 
     // Early return if no distributors data
@@ -97,6 +105,11 @@ export class BalanceFetcher {
     const blockNumbersData = this.fileManager.readBlockNumbers();
     if (!blockNumbersData) {
       return {};
+    }
+
+    // Verify endDate exists in block numbers data if provided
+    if (endDate !== undefined && !(endDate in blockNumbersData.blocks)) {
+      throw new Error(`No block number found for end date: ${endDate}`);
     }
 
     // Process distributors
@@ -136,9 +149,13 @@ export class BalanceFetcher {
         this.fileManager.readDistributorBalances(address);
       existingBalancesByDistributor[address] = existingBalances;
 
-      // Get all block numbers from creation date onward
+      // Get all block numbers from creation date onward, up to endDate if provided
       const endOfDayBlocks = Object.entries(blockNumbersData.blocks).filter(
-        ([date]) => date >= creationDate,
+        ([date]) => {
+          const afterCreation = date >= creationDate;
+          const beforeEnd = endDate === undefined || date <= endDate;
+          return afterCreation && beforeEnd;
+        },
       );
 
       // Skip future distributors (no applicable blocks to fetch)
