@@ -118,15 +118,27 @@ export class BalanceFetcher {
       [];
 
     const distributorEntries = Object.entries(distributorsToProcess);
-    let distributorIndex = 0;
+
+    // Count only reward distributors for accurate progress tracking
+    const rewardDistributors = distributorEntries.filter(
+      ([, info]) => info && info.is_reward_distributor,
+    );
+    let rewardDistributorIndex = 0;
 
     for (const [address, distributorInfo] of distributorEntries) {
-      distributorIndex++;
-      console.log(
-        `Fetching balances for distributor ${distributorIndex}/${distributorEntries.length}: ${address}`,
-      );
       if (!distributorInfo) continue;
-      if (!distributorInfo.is_reward_distributor) continue;
+
+      if (!distributorInfo.is_reward_distributor) {
+        console.log(
+          `Skipping distributor ${address}: not a reward distributor`,
+        );
+        continue;
+      }
+
+      rewardDistributorIndex++;
+      console.log(
+        `Fetching balances for distributor ${rewardDistributorIndex}/${rewardDistributors.length}: ${address}`,
+      );
 
       const creationDate = distributorInfo.date;
       const creationBlock = distributorInfo.block;
