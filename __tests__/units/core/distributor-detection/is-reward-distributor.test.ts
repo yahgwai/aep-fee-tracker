@@ -42,6 +42,29 @@ describe("DistributorDetector.isRewardDistributor", () => {
       // This expectation will fail in RED phase as the current implementation doesn't use keccak256
       expect(keccak256Spy).toHaveBeenCalledWith(REWARD_DISTRIBUTOR_BYTECODE);
     });
+
+    it("returns true when bytecode hash matches the second valid hash", async () => {
+      const testAddress = "0x1234567890123456789012345678901234567890";
+      // For this test, we'll mock the keccak256 function to return the second valid hash
+      const secondValidBytecode = "0x6080604052"; // Any bytecode
+      mockProvider.getCode.mockResolvedValue(secondValidBytecode);
+
+      // Mock keccak256 to return the second valid hash
+      const keccak256Spy = jest
+        .spyOn(ethers, "keccak256")
+        .mockReturnValue(
+          "0xa7904d3bd7401c3158aea39169580e48698add2034b89ea52d657e96c22e1741",
+        );
+
+      const result = await DistributorDetector.isRewardDistributor(
+        mockProvider,
+        testAddress,
+      );
+
+      expect(result).toBe(true);
+      expect(mockProvider.getCode).toHaveBeenCalledWith(testAddress);
+      expect(keccak256Spy).toHaveBeenCalledWith(secondValidBytecode);
+    });
   });
 
   describe("Non-reward distributor contract", () => {
