@@ -7,8 +7,7 @@ import {
   BlockFinderError,
 } from "../../types";
 import { withRetry } from "../../utils/retry";
-
-const FINALITY_BLOCKS = 1000;
+import { SAFE_BLOCK_OFFSET } from "../../constants";
 const MILLISECONDS_PER_SECOND = 1000;
 const MINIMUM_VALID_BLOCK = 1;
 const RETRY_CONFIG = {
@@ -334,7 +333,7 @@ export class BlockFinder {
           operationName: "getBlockNumber",
         },
       );
-      return currentBlock - FINALITY_BLOCKS;
+      return currentBlock - SAFE_BLOCK_OFFSET;
     } catch (error) {
       const rpcError = new RPCError(
         `Failed to get current block number after ${RETRY_CONFIG.maxRetries} retries`,

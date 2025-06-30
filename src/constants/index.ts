@@ -19,6 +19,9 @@ export const CHAIN_IDS = {
   ARBITRUM_NOVA: 42170,
 } as const;
 
+// Block processing constants
+export const SAFE_BLOCK_OFFSET = 100;
+
 // Directory constants
 export const STORE_DIR = "store";
 export const DISTRIBUTORS_DIR = "distributors";

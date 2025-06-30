@@ -131,7 +131,7 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       );
     }, 30000);
 
-    it("should skip dates that are too recent (less than 1000 blocks old)", async () => {
+    it("should skip dates that are too recent (less than SAFE_BLOCK_OFFSET blocks old)", async () => {
       const recentDate = new Date();
 
       jest.spyOn(provider, "getBlockNumber").mockImplementation(async () => {
@@ -278,6 +278,32 @@ describe("BlockFinder - findBlocksForDateRange", () => {
         blockFinder.findBlocksForDateRange(startDate, endDate),
       ).rejects.toThrow(
         /All blocks in range are after midnight|Unable to find block|before the target date/,
+      );
+    });
+  });
+
+  describe("getSafeCurrentBlock", () => {
+    it("should use SAFE_BLOCK_OFFSET from constants", async () => {
+      const { SAFE_BLOCK_OFFSET } = require("../../../../src/constants");
+
+      const currentBlockNumber = 5000;
+      jest
+        .spyOn(provider, "getBlockNumber")
+        .mockResolvedValue(currentBlockNumber);
+
+      const safeBlock = await blockFinder.getSafeCurrentBlock();
+
+      expect(safeBlock).toBe(currentBlockNumber - SAFE_BLOCK_OFFSET);
+      expect(SAFE_BLOCK_OFFSET).toBe(100);
+    });
+
+    it("should handle RPC errors when getting current block", async () => {
+      jest
+        .spyOn(provider, "getBlockNumber")
+        .mockRejectedValue(new Error("RPC error"));
+
+      await expect(blockFinder.getSafeCurrentBlock()).rejects.toThrow(
+        "Failed to get current block number",
       );
     });
   });
