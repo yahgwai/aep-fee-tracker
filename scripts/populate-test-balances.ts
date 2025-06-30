@@ -4,9 +4,9 @@ import * as path from "path";
 import * as fs from "fs";
 import * as dotenv from "dotenv";
 import { ethers } from "ethers";
-import { FileManager } from "../src/file-manager";
-import { BlockFinder } from "../src/block-finder";
-import { BalanceFetcher } from "../src/balance-fetcher";
+import { FileManager } from "../src/infrastructure/storage/file-manager";
+import { BlockFinder } from "../src/core/block-processing/block-finder";
+import { BalanceFetcher } from "../src/core/fee-calculation/balance-fetcher";
 
 // Load environment variables
 dotenv.config();

@@ -5,9 +5,9 @@ import {
   setupTestEnvironment,
   cleanupTestEnvironment,
   TestContext,
-} from "../units/file-manager/test-utils";
-import { FeeCalculator } from "../../src/fee-calculator";
-import { FileManager } from "../../src/file-manager";
+} from "../units/infrastructure/storage/test-utils";
+import { FeeCalculator } from "../../src/core/fee-calculation/fee-calculator";
+import { FileManager } from "../../src/infrastructure/storage/file-manager";
 import {
   DistributorsData,
   BalanceData,

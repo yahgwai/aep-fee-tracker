@@ -2,21 +2,21 @@ import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
 import { ethers } from "ethers";
-import { DistributorDetector } from "../../src/distributor-detector";
-import { FileManager } from "../../src/file-manager";
+import { DistributorDetector } from "../../src/core/distributor-detection/distributor-detector";
+import { FileManager } from "../../src/infrastructure/storage/file-manager";
 import {
   DistributorsData,
   BlockNumberData,
   DistributorType,
-  DISTRIBUTOR_METHODS,
 } from "../../src/types";
+import { DISTRIBUTOR_METHODS } from "../../src/constants";
 import {
   setupTestEnvironment,
   cleanupTestEnvironment,
   TestContext,
-} from "../units/file-manager/test-utils";
+} from "../units/infrastructure/storage/test-utils";
 import testBlockNumbers from "../test-data/distributor-detector/block_numbers.json";
-import { ARBOWNER_PRECOMPILE_ADDRESS } from "../../src/constants/distributor-detector";
+import { ARBOWNER_PRECOMPILE_ADDRESS } from "../../src/core/distributor-detection/constants";
 
 // Network configuration for Nova RPC
 const ARBITRUM_NOVA_CHAIN_ID = 42170;

@@ -5,11 +5,11 @@
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "bin": {
-    "aep": "dist/src/cli.js"
+    "aep": "dist/src/cli/cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "postbuild": "chmod +x dist/src/cli.js",
+    "postbuild": "chmod +x dist/src/cli/cli.js",
     "typecheck": "tsc --noEmit",
     "test": "jest --maxWorkers=100%",
     "test:coverage": "jest --coverage --maxWorkers=100%",
