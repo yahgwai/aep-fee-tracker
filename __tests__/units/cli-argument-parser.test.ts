@@ -118,4 +118,148 @@ describe("CLI Argument Parser", () => {
       expect(result["store-dir"]).toBe("/data/aep-fees");
     });
   });
+
+  describe("Unknown Arguments Validation", () => {
+    it("should reject single unknown argument", () => {
+      const args = [
+        "--rpc-url",
+        "https://archive-node.com/rpc",
+        "--unknown",
+        "value",
+      ];
+
+      expect(() => parseArguments(args)).toThrow("Unknown argument: --unknown");
+    });
+
+    it("should reject misspelled argument", () => {
+      const args = [
+        "--rpc-url",
+        "https://archive-node.com/rpc",
+        "--stroe-dir",
+        "/data/aep-fees",
+      ];
+
+      expect(() => parseArguments(args)).toThrow(
+        "Unknown argument: --stroe-dir",
+      );
+    });
+
+    it("should reject multiple unknown arguments", () => {
+      const args = [
+        "--rpc-url",
+        "https://archive-node.com/rpc",
+        "--unknown1",
+        "value1",
+        "--unknown2",
+        "value2",
+      ];
+
+      expect(() => parseArguments(args)).toThrow(
+        /Unknown arguments: --unknown1, --unknown2/,
+      );
+    });
+
+    it("should include valid arguments list in error message", () => {
+      const args = [
+        "--rpc-url",
+        "https://archive-node.com/rpc",
+        "--unknown",
+        "value",
+      ];
+
+      expect(() => parseArguments(args)).toThrow();
+
+      try {
+        parseArguments(args);
+      } catch (error) {
+        const message = (error as Error).message;
+        expect(message).toContain("Valid arguments:");
+        expect(message).toContain("--rpc-url");
+        expect(message).toContain("--start-date");
+        expect(message).toContain("--end-date");
+        expect(message).toContain("--store-dir");
+      }
+    });
+
+    it("should provide descriptions for valid arguments", () => {
+      const args = [
+        "--rpc-url",
+        "https://archive-node.com/rpc",
+        "--unknown",
+        "value",
+      ];
+
+      expect(() => parseArguments(args)).toThrow();
+
+      try {
+        parseArguments(args);
+      } catch (error) {
+        const message = (error as Error).message;
+        expect(message).toContain(
+          "--rpc-url <url>      RPC endpoint URL (required)",
+        );
+        expect(message).toContain(
+          "--start-date <date>  Start date in YYYY-MM-DD format",
+        );
+        expect(message).toContain(
+          "--end-date <date>    End date in YYYY-MM-DD format",
+        );
+        expect(message).toContain(
+          "--store-dir <path>   Directory for storing data",
+        );
+      }
+    });
+
+    it("should accept all valid arguments without error", () => {
+      const validCombinations = [
+        ["--rpc-url", "https://archive-node.com/rpc"],
+        [
+          "--rpc-url",
+          "https://archive-node.com/rpc",
+          "--start-date",
+          "2024-01-01",
+        ],
+        [
+          "--rpc-url",
+          "https://archive-node.com/rpc",
+          "--end-date",
+          "2024-01-31",
+        ],
+        ["--rpc-url", "https://archive-node.com/rpc", "--store-dir", "/data"],
+        [
+          "--rpc-url",
+          "https://archive-node.com/rpc",
+          "--start-date",
+          "2024-01-01",
+          "--end-date",
+          "2024-01-31",
+          "--store-dir",
+          "/data",
+        ],
+      ];
+
+      validCombinations.forEach((args) => {
+        expect(() => parseArguments(args)).not.toThrow();
+      });
+    });
+
+    it("should handle boolean flags as unknown arguments", () => {
+      const args = ["--rpc-url", "https://archive-node.com/rpc", "--verbose"];
+
+      expect(() => parseArguments(args)).toThrow("Unknown argument: --verbose");
+    });
+
+    it("should handle arguments with special characters", () => {
+      const args = [
+        "--rpc-url",
+        "https://archive-node.com/rpc",
+        "--special-chars!@#",
+        "value",
+      ];
+
+      expect(() => parseArguments(args)).toThrow(
+        "Unknown argument: --special-chars!@#",
+      );
+    });
+  });
 });
