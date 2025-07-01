@@ -15,15 +15,67 @@ import {
 
 jest.mock("../../../../src/infrastructure/storage/file-manager");
 
+// Helper function to create a properly mocked FileManager
+function createMockFileManager(
+  overrides?: Partial<jest.Mocked<FileManager>>,
+): jest.Mocked<FileManager> {
+  const mock = {
+    readDistributors: jest.fn(),
+    writeDistributors: jest.fn(),
+    readBlockNumbers: jest.fn(),
+    writeBlockNumbers: jest.fn(),
+    readDistributorBalances: jest.fn(),
+    writeDistributorBalances: jest.fn(),
+    readRecipientRecievedEvents: jest.fn(),
+    writeRecipientRecievedEvents: jest.fn(),
+    readFeeReport: jest.fn(),
+    writeFeeReport: jest.fn(),
+    ensureStoreDirectory: jest.fn(),
+    validateAddress: jest.fn((address: string) => address),
+    formatDate: jest.fn((date: Date) => date.toISOString().split("T")[0]),
+    validateDateFormat: jest.fn(),
+    validateBlockNumber: jest.fn(),
+    validateWeiValue: jest.fn(),
+    validateTransactionHash: jest.fn(),
+    validateEnumValue: jest.fn(),
+    getMaxDate: jest.fn(() => {
+      // Calculate from block numbers
+      const data = mock.readBlockNumbers();
+      if (!data || !data.blocks) {
+        return null;
+      }
+      const dates = Object.keys(data.blocks).sort();
+      if (dates.length === 0) {
+        return null;
+      }
+      const maxDate = dates[dates.length - 1];
+      return maxDate ? new Date(maxDate) : null;
+    }),
+    getMinDate: jest.fn(() => {
+      // Calculate from block numbers
+      const data = mock.readBlockNumbers();
+      if (!data || !data.blocks) {
+        return null;
+      }
+      const dates = Object.keys(data.blocks).sort();
+      if (dates.length === 0) {
+        return null;
+      }
+      const minDate = dates[0];
+      return minDate ? new Date(minDate) : null;
+    }),
+    ...overrides,
+  } as unknown as jest.Mocked<FileManager>;
+
+  return mock;
+}
+
 describe("RecipientRecievedScanner", () => {
   let mockFileManager: jest.Mocked<FileManager>;
   let mockProvider: jest.Mocked<ethers.Provider>;
 
   beforeEach(() => {
-    mockFileManager = {
-      readDistributors: jest.fn(),
-      writeRecipientRecievedEvents: jest.fn(),
-    } as unknown as jest.Mocked<FileManager>;
+    mockFileManager = createMockFileManager();
     mockProvider = {
       getLogs: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<ethers.Provider>;
@@ -88,10 +140,10 @@ describe("RecipientRecievedScanner", () => {
     let scanner: RecipientRecievedScanner;
 
     beforeEach(() => {
-      mockFileManager = {
+      mockFileManager = createMockFileManager({
         readDistributors: jest.fn().mockReturnValue(undefined),
         writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      });
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
     });
 
@@ -128,10 +180,7 @@ describe("RecipientRecievedScanner", () => {
     let scanner: RecipientRecievedScanner;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
     });
 
@@ -199,12 +248,7 @@ describe("RecipientRecievedScanner", () => {
     let mockDistributorsData: DistributorsData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       // Set up a mock date for "today" to make tests deterministic
@@ -252,7 +296,8 @@ describe("RecipientRecievedScanner", () => {
 
       await scanner.scan();
 
-      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
+      // readBlockNumbers is called twice: once directly by scan() and once by getMaxDate()
+      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(2);
     });
 
     it("returns early when no block numbers data is available", async () => {
@@ -271,12 +316,7 @@ describe("RecipientRecievedScanner", () => {
     let mockDistributorsData: DistributorsData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       // Set up a mock date for "today" to make tests deterministic
@@ -361,12 +401,7 @@ describe("RecipientRecievedScanner", () => {
     let mockBlockNumbersData: BlockNumberData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       // Set up a mock date for "today" to make tests deterministic
@@ -732,12 +767,7 @@ describe("RecipientRecievedScanner", () => {
     let mockDistributorsData: DistributorsData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       mockDistributorsData = {
@@ -825,12 +855,7 @@ describe("RecipientRecievedScanner", () => {
     let mockBlockNumbersData: BlockNumberData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       // Set up a mock date for "today" to make tests deterministic
@@ -1123,7 +1148,7 @@ describe("RecipientRecievedScanner", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
-      mockFileManager = {} as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       mockProvider = {
         getLogs: jest.fn(),
       } as unknown as jest.Mocked<ethers.Provider>;
@@ -1296,12 +1321,7 @@ describe("RecipientRecievedScanner", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       mockProvider = {
         getLogs: jest.fn(),
       } as unknown as jest.Mocked<ethers.Provider>;
@@ -1640,12 +1660,7 @@ describe("RecipientRecievedScanner", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       mockProvider = {
         getLogs: jest.fn(),
       } as unknown as jest.Mocked<ethers.Provider>;
@@ -2157,12 +2172,7 @@ describe("RecipientRecievedScanner", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       mockProvider = {
         getLogs: jest.fn().mockResolvedValue([]),
       } as unknown as jest.Mocked<ethers.Provider>;
