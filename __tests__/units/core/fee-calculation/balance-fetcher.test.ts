@@ -91,7 +91,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -103,7 +103,7 @@ describe("BalanceFetcher", () => {
               "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024fcdde2b400000000000000000000000037daa99b1caae0c22670963e103a66ca2c5db2db00000000000000000000000000000000000000000000000000000000",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          }],
         },
       };
 
@@ -169,7 +169,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -180,7 +180,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          }],
         },
       };
     });
@@ -238,7 +238,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": {
+          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 672,
             date: "2022-08-08",
@@ -249,7 +249,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
-          },
+          }],
         },
       };
     });
@@ -295,7 +295,7 @@ describe("BalanceFetcher", () => {
       const distributorsWithFutureDate = {
         metadata: mockDistributorsData.metadata,
         distributors: {
-          "0xFutureDistributor": {
+          "0xFutureDistributor": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 9999999,
             date: futureDateString,
@@ -306,7 +306,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0xFutureDistributor",
-          },
+          }],
         },
       };
 
@@ -369,7 +369,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": {
+          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": [{
             type: DistributorType.L2_BASE_FEE,
             block: 684,
             date: "2022-08-10", // Changed to a date NOT in block numbers
@@ -380,7 +380,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
-          },
+          }],
         },
       };
 
@@ -406,7 +406,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -417,7 +417,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          }],
         },
       };
 
@@ -451,7 +451,7 @@ describe("BalanceFetcher", () => {
         },
         distributors: {
           // Distributor created on 2023-03-16
-          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": {
+          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 3163115,
             date: "2023-03-16",
@@ -462,9 +462,9 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
-          },
+          }],
           // Distributor created on 2022-08-10 (date not in block numbers)
-          "0xTestDistributor": {
+          "0xTestDistributor": [{
             type: DistributorType.L1_BASE_FEE,
             block: 4000,
             date: "2022-08-10",
@@ -475,7 +475,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0xTestDistributor",
-          },
+          }],
         },
       };
 
@@ -555,7 +555,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -566,8 +566,8 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
-          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": {
+          }],
+          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": [{
             type: DistributorType.L1_SURPLUS_FEE,
             block: 3163115,
             date: "2023-03-16",
@@ -578,7 +578,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
-          },
+          }],
         },
       };
     });
@@ -663,7 +663,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -674,7 +674,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          }],
         },
       };
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
@@ -696,7 +696,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -707,7 +707,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          }],
         },
       };
 
@@ -794,7 +794,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -805,7 +805,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          }],
         },
       };
 
@@ -878,7 +878,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonRewardDistributor": {
+          "0xNonRewardDistributor": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -889,8 +889,8 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: false,
             distributor_address: "0xNonRewardDistributor",
-          },
-          "0xRewardDistributor": {
+          }],
+          "0xRewardDistributor": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -901,7 +901,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0xRewardDistributor",
-          },
+          }],
         },
       };
 
@@ -935,7 +935,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonReward1": {
+          "0xNonReward1": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -946,8 +946,8 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: false,
             distributor_address: "0xNonReward1",
-          },
-          "0xRewardDistributor": {
+          }],
+          "0xRewardDistributor": [{
             type: DistributorType.L2_BASE_FEE,
             block: 152,
             date: "2022-07-12",
@@ -958,8 +958,8 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0xRewardDistributor",
-          },
-          "0xNonReward2": {
+          }],
+          "0xNonReward2": [{
             type: DistributorType.L1_BASE_FEE,
             block: 152,
             date: "2022-07-12",
@@ -970,7 +970,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: false,
             distributor_address: "0xNonReward2",
-          },
+          }],
         },
       };
 
@@ -1017,7 +1017,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xRewardDistributor1": {
+          "0xRewardDistributor1": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -1028,8 +1028,8 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0xRewardDistributor1",
-          },
-          "0xRewardDistributor2": {
+          }],
+          "0xRewardDistributor2": [{
             type: DistributorType.L2_BASE_FEE,
             block: 152,
             date: "2022-07-12",
@@ -1040,7 +1040,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0xRewardDistributor2",
-          },
+          }],
         },
       };
 
@@ -1069,7 +1069,7 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonReward1": {
+          "0xNonReward1": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -1080,8 +1080,8 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: false,
             distributor_address: "0xNonReward1",
-          },
-          "0xNonReward2": {
+          }],
+          "0xNonReward2": [{
             type: DistributorType.L2_BASE_FEE,
             block: 152,
             date: "2022-07-12",
@@ -1092,7 +1092,7 @@ describe("BalanceFetcher", () => {
             event_data: "0x...",
             is_reward_distributor: false,
             distributor_address: "0xNonReward2",
-          },
+          }],
         },
       };
 

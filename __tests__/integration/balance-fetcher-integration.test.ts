@@ -91,7 +91,7 @@ function createTestDistributorsData(): DistributorsData {
 
   // Add distributor 1 - checksummed address
   const addr1 = ethers.getAddress("0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB");
-  distributors.distributors[addr1] = {
+  distributors.distributors[addr1] = [{
     type: DistributorType.L2_SURPLUS_FEE,
     block: 152,
     date: "2022-07-12",
@@ -102,11 +102,11 @@ function createTestDistributorsData(): DistributorsData {
     event_data: "",
     is_reward_distributor: false,
     distributor_address: addr1,
-  };
+  }];
 
   // Add distributor 2 - checksummed address
   const addr2 = ethers.getAddress("0xdff90519a9DE6ad469D4f9839a9220C5D340B792");
-  distributors.distributors[addr2] = {
+  distributors.distributors[addr2] = [{
     type: DistributorType.L2_BASE_FEE,
     block: 684,
     date: "2022-08-09",
@@ -117,11 +117,11 @@ function createTestDistributorsData(): DistributorsData {
     event_data: "",
     is_reward_distributor: false,
     distributor_address: addr2,
-  };
+  }];
 
   // Add distributor 3 - checksummed address
   const addr3 = ethers.getAddress("0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce");
-  distributors.distributors[addr3] = {
+  distributors.distributors[addr3] = [{
     type: DistributorType.L1_SURPLUS_FEE,
     block: 3163115,
     date: "2023-03-16",
@@ -132,11 +132,11 @@ function createTestDistributorsData(): DistributorsData {
     event_data: "",
     is_reward_distributor: true,
     distributor_address: addr3,
-  };
+  }];
 
   // Add distributor 4 - checksummed address
   const addr4 = ethers.getAddress("0x509386DbF5C0BE6fd68Df97A05fdB375136c32De");
-  distributors.distributors[addr4] = {
+  distributors.distributors[addr4] = [{
     type: DistributorType.L2_SURPLUS_FEE,
     block: 3163115,
     date: "2023-03-16",
@@ -147,11 +147,11 @@ function createTestDistributorsData(): DistributorsData {
     event_data: "",
     is_reward_distributor: true,
     distributor_address: addr4,
-  };
+  }];
 
   // Add distributor 5 - checksummed address
   const addr5 = ethers.getAddress("0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f");
-  distributors.distributors[addr5] = {
+  distributors.distributors[addr5] = [{
     type: DistributorType.L2_BASE_FEE,
     block: 3163115,
     date: "2023-03-16",
@@ -162,7 +162,7 @@ function createTestDistributorsData(): DistributorsData {
     event_data: "",
     is_reward_distributor: true,
     distributor_address: addr5,
-  };
+  }];
 
   return distributors;
 }
@@ -244,7 +244,7 @@ describe("BalanceFetcher - Integration Tests", () => {
       // Verify balance files were created only for reward distributors
       for (const distributorAddress of Object.keys(TEST_DISTRIBUTORS)) {
         const distributorInfo =
-          testDistributorsData.distributors[distributorAddress];
+          testDistributorsData.distributors[distributorAddress]?.[0];
         const balanceData =
           fileManager.readDistributorBalances(distributorAddress);
 
@@ -278,7 +278,7 @@ describe("BalanceFetcher - Integration Tests", () => {
 
       for (const distributorAddress of Object.keys(TEST_DISTRIBUTORS)) {
         const distributorInfo =
-          testDistributorsData.distributors[distributorAddress];
+          testDistributorsData.distributors[distributorAddress]?.[0];
         const fetchedData =
           fileManager.readDistributorBalances(distributorAddress);
 

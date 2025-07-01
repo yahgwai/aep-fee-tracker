@@ -39,8 +39,9 @@ export class FeeCalculator {
         );
       }
       // Check if the specific distributor is a reward distributor
+      const distributorArray = distributorsData.distributors[distributorAddress];
       if (
-        !distributorsData.distributors[distributorAddress].is_reward_distributor
+        !distributorArray?.[0]?.is_reward_distributor
       ) {
         throw new Error(
           `Distributor address ${distributorAddress} is not a reward distributor and does not generate fee reports`,
@@ -62,7 +63,7 @@ export class FeeCalculator {
 
     // Process each distributor
     for (const distributorAddress of distributorAddresses) {
-      const distributorInfo = distributorsData.distributors[distributorAddress];
+      const distributorInfo = distributorsData.distributors[distributorAddress]?.[0];
       if (!distributorInfo?.is_reward_distributor) continue;
       const dailyEntries = this.processDistributor(distributorAddress);
       if (dailyEntries) {

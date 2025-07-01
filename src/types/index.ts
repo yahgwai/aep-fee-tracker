@@ -30,7 +30,7 @@ export interface DistributorsData {
     last_scanned_block?: number;
   };
   distributors: {
-    [address: string]: DistributorInfo;
+    [address: string]: DistributorInfo[];
   };
 }
 

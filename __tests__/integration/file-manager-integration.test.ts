@@ -61,7 +61,7 @@ describe("FileManager - Integration Tests", () => {
           last_scanned_block: 238803498,
         },
         distributors: {
-          [distributor1Address]: {
+          [distributor1Address]: [{
             type: DistributorType.L2_BASE_FEE,
             block: 237300000,
             date: "2024-01-10",
@@ -74,8 +74,8 @@ describe("FileManager - Integration Tests", () => {
             }),
             is_reward_distributor: false,
             distributor_address: distributor1Address,
-          },
-          [distributor2Address]: {
+          }],
+          [distributor2Address]: [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 238100000,
             date: "2024-01-11",
@@ -88,7 +88,7 @@ describe("FileManager - Integration Tests", () => {
             }),
             is_reward_distributor: true,
             distributor_address: distributor2Address,
-          },
+          }],
         },
       };
       fileManager.writeDistributors(distributors);
@@ -262,7 +262,7 @@ describe("FileManager - Integration Tests", () => {
       const distributorsInRange = Object.entries(
         savedDistributors!.distributors,
       ).filter(
-        ([, info]) => info.block >= startBlock && info.block <= endBlock,
+        ([, infoArray]) => infoArray?.[0]?.block >= startBlock && infoArray?.[0]?.block <= endBlock,
       );
 
       expect(distributorsInRange).toHaveLength(2);
@@ -297,7 +297,7 @@ describe("FileManager - Integration Tests", () => {
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {
-          [addrA]: {
+          [addrA]: [{
             type: DistributorType.L2_BASE_FEE,
             block: 237518127,
             date: "2024-01-10",
@@ -307,8 +307,8 @@ describe("FileManager - Integration Tests", () => {
             event_data: "{}",
             is_reward_distributor: true,
             distributor_address: addrA,
-          },
-          [addrB]: {
+          }],
+          [addrB]: [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 237518127,
             date: "2024-01-10",
@@ -318,8 +318,8 @@ describe("FileManager - Integration Tests", () => {
             event_data: "{}",
             is_reward_distributor: true,
             distributor_address: addrB,
-          },
-          [addrC]: {
+          }],
+          [addrC]: [{
             type: DistributorType.L1_BASE_FEE,
             block: 237518127,
             date: "2024-01-10",
@@ -329,7 +329,7 @@ describe("FileManager - Integration Tests", () => {
             event_data: "{}",
             is_reward_distributor: false,
             distributor_address: addrC,
-          },
+          }],
         },
       };
       fileManager.writeDistributors(distributors);
@@ -363,7 +363,7 @@ describe("FileManager - Integration Tests", () => {
         // Add new distributor
         () => {
           const currentDistributors = fileManager.readDistributors()!;
-          currentDistributors.distributors[addrD] = {
+          currentDistributors.distributors[addrD] = [{
             type: DistributorType.L1_SURPLUS_FEE,
             block: 237946584,
             date: "2024-01-11",
@@ -375,7 +375,7 @@ describe("FileManager - Integration Tests", () => {
             }),
             is_reward_distributor: true,
             distributor_address: addrD,
-          };
+          }];
           fileManager.writeDistributors(currentDistributors);
         },
       ];

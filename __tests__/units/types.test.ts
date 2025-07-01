@@ -54,29 +54,78 @@ describe("Core Types", () => {
           arbowner_address: "0x0000000000000000000000000000000000000070",
         },
         distributors: {
-          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 12345678,
-            date: "2024-01-15",
-            tx_hash: "0xabc123",
-            method: "0x57f585db",
-            owner: "0x0000000000000000000000000000000000000070",
-            event_data:
-              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
-            is_reward_distributor: true,
-            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
-          },
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 12345678,
+              date: "2024-01-15",
+              tx_hash: "0xabc123",
+              method: "0x57f585db",
+              owner: "0x0000000000000000000000000000000000000070",
+              event_data:
+                "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+              is_reward_distributor: true,
+              distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+            },
+          ],
         },
       };
       expect(data.metadata.chain_id).toBe(42170);
       expect(data.metadata.arbowner_address).toBe(
         "0x0000000000000000000000000000000000000070",
       );
-      const distributor =
+      const distributors =
         data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"];
-      expect(distributor).toBeDefined();
-      expect(distributor?.type).toBe(DistributorType.L2_BASE_FEE);
-      expect(distributor?.block).toBe(12345678);
+      expect(distributors).toBeDefined();
+      expect(Array.isArray(distributors)).toBe(true);
+      expect(distributors).toHaveLength(1);
+      expect(distributors?.[0]?.type).toBe(DistributorType.L2_BASE_FEE);
+      expect(distributors?.[0]?.block).toBe(12345678);
+    });
+
+    it("should support array of DistributorInfo for each address", () => {
+      const data: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+        },
+        distributors: {
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 12345678,
+              date: "2024-01-15",
+              tx_hash: "0xabc123",
+              method: "0x57f585db",
+              owner: "0x0000000000000000000000000000000000000070",
+              event_data:
+                "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+              is_reward_distributor: true,
+              distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+            },
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 12345680,
+              date: "2024-01-16",
+              tx_hash: "0xdef456",
+              method: "0xfcdde2b4",
+              owner: "0x0000000000000000000000000000000000000070",
+              event_data:
+                "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+              is_reward_distributor: true,
+              distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+            },
+          ],
+        },
+      };
+      expect(data.metadata.chain_id).toBe(42170);
+      const distributors =
+        data.distributors["0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9"];
+      expect(distributors).toBeDefined();
+      expect(Array.isArray(distributors)).toBe(true);
+      expect(distributors).toHaveLength(2);
+      expect(distributors?.[0]?.type).toBe(DistributorType.L2_BASE_FEE);
+      expect(distributors?.[1]?.type).toBe(DistributorType.L2_SURPLUS_FEE);
     });
   });
 

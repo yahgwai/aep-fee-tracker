@@ -51,7 +51,7 @@ describe("BalanceFetcher - Decimal String Conversion", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -62,7 +62,7 @@ describe("BalanceFetcher - Decimal String Conversion", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          }],
         },
       };
 

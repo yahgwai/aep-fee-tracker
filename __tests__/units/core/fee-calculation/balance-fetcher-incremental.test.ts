@@ -43,7 +43,7 @@ describe("BalanceFetcher - Incremental Processing", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -54,7 +54,7 @@ describe("BalanceFetcher - Incremental Processing", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          }],
         },
       };
 
@@ -91,7 +91,7 @@ describe("BalanceFetcher - Incremental Processing", () => {
         ...mockDistributorsData,
         distributors: {
           ...mockDistributorsData.distributors,
-          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": {
+          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": [{
             type: DistributorType.L1_SURPLUS_FEE,
             block: 155,
             date: "2022-07-12",
@@ -102,7 +102,7 @@ describe("BalanceFetcher - Incremental Processing", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
-          },
+          }],
         },
       };
 
@@ -156,7 +156,7 @@ describe("BalanceFetcher - Incremental Processing", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
             type: DistributorType.L2_SURPLUS_FEE,
             block: 152,
             date: "2022-07-12",
@@ -167,7 +167,7 @@ describe("BalanceFetcher - Incremental Processing", () => {
             event_data: "0x...",
             is_reward_distributor: true,
             distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          }],
         },
       };
 

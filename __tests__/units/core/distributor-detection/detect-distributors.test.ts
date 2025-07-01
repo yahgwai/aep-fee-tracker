@@ -35,7 +35,7 @@ describe("DistributorDetector.detectDistributors", () => {
       last_scanned_block: 150,
     },
     distributors: {
-      "0x1234567890123456789012345678901234567890": {
+      "0x1234567890123456789012345678901234567890": [{
         type: DistributorType.L2_BASE_FEE,
         block: 120,
         date: "2023-03-14",
@@ -45,7 +45,7 @@ describe("DistributorDetector.detectDistributors", () => {
         event_data: "0x",
         is_reward_distributor: true,
         distributor_address: "0x1234567890123456789012345678901234567890",
-      },
+      }],
     },
   };
 

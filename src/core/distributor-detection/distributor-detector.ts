@@ -328,12 +328,21 @@ export class DistributorDetector {
       distributors: { ...(existingData?.distributors || {}) },
     };
 
-    // Add new distributors (skip if already known)
+    // Add new distributors
     for (const distributor of newDistributors) {
-      if (!updatedData.distributors[distributor.distributor_address]) {
-        updatedData.distributors[distributor.distributor_address] = distributor;
+      const address = distributor.distributor_address;
+      
+      if (!updatedData.distributors[address]) {
+        // Initialize with single-element array for new address
+        updatedData.distributors[address] = [distributor];
         console.log(
-          `Found new distributor: ${distributor.distributor_address} (type: ${distributor.type})`,
+          `Found new distributor: ${address} (type: ${distributor.type})`,
+        );
+      } else {
+        // Append to existing array for existing address
+        updatedData.distributors[address].push(distributor);
+        console.log(
+          `Found additional type for distributor: ${address} (type: ${distributor.type})`,
         );
       }
     }
