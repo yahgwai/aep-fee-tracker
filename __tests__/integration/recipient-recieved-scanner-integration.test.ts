@@ -124,21 +124,16 @@ function createTestDistributorsData(): DistributorsData {
       DistributorType.L2_SURPLUS_FEE,
       DistributorType.L2_BASE_FEE,
     ];
-    distributors.distributors[addr] = createTestDistributor(
-      addr,
-      types[index]!,
-      true,
-    );
+    distributors.distributors[addr] = [
+      createTestDistributor(addr, types[index]!, true),
+    ];
   });
 
   // Add distributors without events
   TEST_DISTRIBUTORS_WITHOUT_EVENTS.forEach((addr, index) => {
     const types = [DistributorType.L2_SURPLUS_FEE, DistributorType.L2_BASE_FEE];
-    distributors.distributors[addr] = createTestDistributor(
-      addr,
-      types[index]!,
-      false,
-      {
+    distributors.distributors[addr] = [
+      createTestDistributor(addr, types[index]!, false, {
         owner:
           index === 0
             ? "0x9C040726F2A657226Ed95712245DeE84b650A1b5"
@@ -147,8 +142,8 @@ function createTestDistributorsData(): DistributorsData {
           index === 0
             ? "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9"
             : "0x91cf95025dd73017bb3b8a2a93e2bb2c666bbdce97f88ac4ae3e583aa1aa6a96",
-      },
-    );
+      }),
+    ];
   });
 
   return distributors;
@@ -508,18 +503,20 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       const futureAddress = ethers.getAddress(
         "0x1234567890123456789012345678901234567890",
       );
-      futureDistributors.distributors[futureAddress] = {
-        type: DistributorType.L1_SURPLUS_FEE,
-        block: 99999999,
-        date: "2026-01-01", // Future date
-        tx_hash:
-          "0x0000000000000000000000000000000000000000000000000000000000000000",
-        method: DISTRIBUTOR_METHODS.L1_SURPLUS_FEE,
-        owner: "0x0000000000000000000000000000000000000000",
-        event_data: "",
-        is_reward_distributor: true,
-        distributor_address: futureAddress,
-      };
+      futureDistributors.distributors[futureAddress] = [
+        {
+          type: DistributorType.L1_SURPLUS_FEE,
+          block: 99999999,
+          date: "2026-01-01", // Future date
+          tx_hash:
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+          method: DISTRIBUTOR_METHODS.L1_SURPLUS_FEE,
+          owner: "0x0000000000000000000000000000000000000000",
+          event_data: "",
+          is_reward_distributor: true,
+          distributor_address: futureAddress,
+        },
+      ];
       fileManager.writeDistributors(futureDistributors);
 
       // Act

@@ -76,11 +76,12 @@ describe("DistributorDetector - Integration Tests", () => {
       // Same address (0x37da...) was set for both L2_SURPLUS_FEE and L1_SURPLUS_FEE
       // With array structure, both types are now stored
       expect(Object.keys(result1.distributors).length).toBe(1);
-      
+
       // Verify both distributor types are stored in the array
-      const distributorArray = result1.distributors["0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"];
+      const distributorArray =
+        result1.distributors["0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"];
       expect(distributorArray).toHaveLength(2);
-      
+
       // First should be L2_SURPLUS_FEE at block 152
       expect(distributorArray?.[0]).toMatchObject({
         type: DistributorType.L2_SURPLUS_FEE,
@@ -91,7 +92,7 @@ describe("DistributorDetector - Integration Tests", () => {
         is_reward_distributor: false,
         distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
       });
-      
+
       // Second should be L1_SURPLUS_FEE at block 153
       expect(distributorArray?.[1]).toMatchObject({
         type: DistributorType.L1_SURPLUS_FEE,
@@ -213,17 +214,19 @@ describe("DistributorDetector - Integration Tests", () => {
           last_scanned_block: 100,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash: "0x" + "a".repeat(64),
-            method: DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0xOLDDATA",
-            is_reward_distributor: false,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          }],
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash: "0x" + "a".repeat(64),
+              method: DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0xOLDDATA",
+              is_reward_distributor: false,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 

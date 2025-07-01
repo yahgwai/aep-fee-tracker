@@ -61,34 +61,38 @@ describe("FileManager - Integration Tests", () => {
           last_scanned_block: 238803498,
         },
         distributors: {
-          [distributor1Address]: [{
-            type: DistributorType.L2_BASE_FEE,
-            block: 237300000,
-            date: "2024-01-10",
-            tx_hash: "0x" + "a".repeat(64),
-            method: "factory",
-            owner: getAddress("0x2222222222222222222222222222222222222222"),
-            event_data: JSON.stringify({
-              factory: "0x3333333333333333333333333333333333333333",
-              event: "DistributorCreated",
-            }),
-            is_reward_distributor: false,
-            distributor_address: distributor1Address,
-          }],
-          [distributor2Address]: [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 238100000,
-            date: "2024-01-11",
-            tx_hash: "0x" + "b".repeat(64),
-            method: "factory",
-            owner: getAddress("0x5555555555555555555555555555555555555555"),
-            event_data: JSON.stringify({
-              factory: "0x6666666666666666666666666666666666666666",
-              event: "DistributorCreated",
-            }),
-            is_reward_distributor: true,
-            distributor_address: distributor2Address,
-          }],
+          [distributor1Address]: [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 237300000,
+              date: "2024-01-10",
+              tx_hash: "0x" + "a".repeat(64),
+              method: "factory",
+              owner: getAddress("0x2222222222222222222222222222222222222222"),
+              event_data: JSON.stringify({
+                factory: "0x3333333333333333333333333333333333333333",
+                event: "DistributorCreated",
+              }),
+              is_reward_distributor: false,
+              distributor_address: distributor1Address,
+            },
+          ],
+          [distributor2Address]: [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 238100000,
+              date: "2024-01-11",
+              tx_hash: "0x" + "b".repeat(64),
+              method: "factory",
+              owner: getAddress("0x5555555555555555555555555555555555555555"),
+              event_data: JSON.stringify({
+                factory: "0x6666666666666666666666666666666666666666",
+                event: "DistributorCreated",
+              }),
+              is_reward_distributor: true,
+              distributor_address: distributor2Address,
+            },
+          ],
         },
       };
       fileManager.writeDistributors(distributors);
@@ -261,9 +265,12 @@ describe("FileManager - Integration Tests", () => {
 
       const distributorsInRange = Object.entries(
         savedDistributors!.distributors,
-      ).filter(
-        ([, infoArray]) => infoArray?.[0]?.block >= startBlock && infoArray?.[0]?.block <= endBlock,
-      );
+      ).filter(([, infoArray]) => {
+        const firstInfo = infoArray?.[0];
+        return firstInfo
+          ? firstInfo.block >= startBlock && firstInfo.block <= endBlock
+          : false;
+      });
 
       expect(distributorsInRange).toHaveLength(2);
       expect(distributorsInRange.map(([addr]) => addr)).toContain(
@@ -297,39 +304,45 @@ describe("FileManager - Integration Tests", () => {
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {
-          [addrA]: [{
-            type: DistributorType.L2_BASE_FEE,
-            block: 237518127,
-            date: "2024-01-10",
-            tx_hash: "0x" + "a".repeat(64),
-            method: "direct",
-            owner: CONTRACTS.ARB_OWNER,
-            event_data: "{}",
-            is_reward_distributor: true,
-            distributor_address: addrA,
-          }],
-          [addrB]: [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 237518127,
-            date: "2024-01-10",
-            tx_hash: "0x" + "b".repeat(64),
-            method: "direct",
-            owner: CONTRACTS.ARB_OWNER,
-            event_data: "{}",
-            is_reward_distributor: true,
-            distributor_address: addrB,
-          }],
-          [addrC]: [{
-            type: DistributorType.L1_BASE_FEE,
-            block: 237518127,
-            date: "2024-01-10",
-            tx_hash: "0x" + "c".repeat(64),
-            method: "direct",
-            owner: CONTRACTS.ARB_OWNER,
-            event_data: "{}",
-            is_reward_distributor: false,
-            distributor_address: addrC,
-          }],
+          [addrA]: [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 237518127,
+              date: "2024-01-10",
+              tx_hash: "0x" + "a".repeat(64),
+              method: "direct",
+              owner: CONTRACTS.ARB_OWNER,
+              event_data: "{}",
+              is_reward_distributor: true,
+              distributor_address: addrA,
+            },
+          ],
+          [addrB]: [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 237518127,
+              date: "2024-01-10",
+              tx_hash: "0x" + "b".repeat(64),
+              method: "direct",
+              owner: CONTRACTS.ARB_OWNER,
+              event_data: "{}",
+              is_reward_distributor: true,
+              distributor_address: addrB,
+            },
+          ],
+          [addrC]: [
+            {
+              type: DistributorType.L1_BASE_FEE,
+              block: 237518127,
+              date: "2024-01-10",
+              tx_hash: "0x" + "c".repeat(64),
+              method: "direct",
+              owner: CONTRACTS.ARB_OWNER,
+              event_data: "{}",
+              is_reward_distributor: false,
+              distributor_address: addrC,
+            },
+          ],
         },
       };
       fileManager.writeDistributors(distributors);
@@ -363,19 +376,23 @@ describe("FileManager - Integration Tests", () => {
         // Add new distributor
         () => {
           const currentDistributors = fileManager.readDistributors()!;
-          currentDistributors.distributors[addrD] = [{
-            type: DistributorType.L1_SURPLUS_FEE,
-            block: 237946584,
-            date: "2024-01-11",
-            tx_hash: "0x" + "e".repeat(64),
-            method: "factory",
-            owner: CONTRACTS.ARB_OWNER,
-            event_data: JSON.stringify({
-              factory: getAddress("0x5000000000000000000000000000000000000005"),
-            }),
-            is_reward_distributor: true,
-            distributor_address: addrD,
-          }];
+          currentDistributors.distributors[addrD] = [
+            {
+              type: DistributorType.L1_SURPLUS_FEE,
+              block: 237946584,
+              date: "2024-01-11",
+              tx_hash: "0x" + "e".repeat(64),
+              method: "factory",
+              owner: CONTRACTS.ARB_OWNER,
+              event_data: JSON.stringify({
+                factory: getAddress(
+                  "0x5000000000000000000000000000000000000005",
+                ),
+              }),
+              is_reward_distributor: true,
+              distributor_address: addrD,
+            },
+          ];
           fileManager.writeDistributors(currentDistributors);
         },
       ];

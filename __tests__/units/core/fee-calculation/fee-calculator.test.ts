@@ -168,18 +168,20 @@ describe("FeeCalculator Unit Tests", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonRewardDistributor": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonRewardDistributor",
-          },
+          "0xNonRewardDistributor": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonRewardDistributor",
+            },
+          ],
         },
       };
 
@@ -201,30 +203,34 @@ describe("FeeCalculator Unit Tests", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonRewardDistributor": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonRewardDistributor",
-          },
-          "0xRewardDistributor": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor",
-          },
+          "0xNonRewardDistributor": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonRewardDistributor",
+            },
+          ],
+          "0xRewardDistributor": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor",
+            },
+          ],
         },
       };
 
@@ -283,30 +289,34 @@ describe("FeeCalculator Unit Tests", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xRewardDistributor1": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1111111111111111111111111111111111111111111111111111111111111111",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor1",
-          },
-          "0xRewardDistributor2": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x2222222222222222222222222222222222222222222222222222222222222222",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor2",
-          },
+          "0xRewardDistributor1": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1111111111111111111111111111111111111111111111111111111111111111",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor1",
+            },
+          ],
+          "0xRewardDistributor2": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x2222222222222222222222222222222222222222222222222222222222222222",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor2",
+            },
+          ],
         },
       };
 
@@ -377,30 +387,34 @@ describe("FeeCalculator Unit Tests", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonReward1": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1111111111111111111111111111111111111111111111111111111111111111",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward1",
-          },
-          "0xNonReward2": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x2222222222222222222222222222222222222222222222222222222222222222",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward2",
-          },
+          "0xNonReward1": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1111111111111111111111111111111111111111111111111111111111111111",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward1",
+            },
+          ],
+          "0xNonReward2": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x2222222222222222222222222222222222222222222222222222222222222222",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward2",
+            },
+          ],
         },
       };
 

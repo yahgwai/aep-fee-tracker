@@ -127,9 +127,9 @@ export class BalanceFetcher {
 
     for (const [address, distributorInfoArray] of distributorEntries) {
       if (!distributorInfoArray || distributorInfoArray.length === 0) continue;
-      
+
       const distributorInfo = distributorInfoArray[0];
-      
+
       if (!distributorInfo) {
         console.log(
           `Skipping distributor ${address}: no distributor info in array`,

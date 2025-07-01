@@ -143,18 +143,20 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          }],
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -217,18 +219,20 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          }],
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
     });
@@ -289,18 +293,20 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          }],
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
     });
@@ -379,18 +385,20 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          }],
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -427,28 +435,32 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x1111111111111111111111111111111111111111": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 100,
-            date: "2022-07-10",
-            tx_hash: "0x1111",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x1111111111111111111111111111111111111111",
-          }],
-          "0x2222222222222222222222222222222222222222": [{
-            type: DistributorType.L1_BASE_FEE,
-            block: 250,
-            date: "2022-07-13",
-            tx_hash: "0x2222",
-            method: "0x57f585db",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x2222222222222222222222222222222222222222",
-          }],
+          "0x1111111111111111111111111111111111111111": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 100,
+              date: "2022-07-10",
+              tx_hash: "0x1111",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x1111111111111111111111111111111111111111",
+            },
+          ],
+          "0x2222222222222222222222222222222222222222": [
+            {
+              type: DistributorType.L1_BASE_FEE,
+              block: 250,
+              date: "2022-07-13",
+              tx_hash: "0x2222",
+              method: "0x57f585db",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x2222222222222222222222222222222222222222",
+            },
+          ],
         },
       };
 
@@ -555,17 +567,19 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x9999999999999999999999999999999999999999": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 500,
-            date: "2022-07-16", // Created in the future (tomorrow)
-            tx_hash: "0x9999",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x9999999999999999999999999999999999999999",
-          }],
+          "0x9999999999999999999999999999999999999999": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 500,
+              date: "2022-07-16", // Created in the future (tomorrow)
+              tx_hash: "0x9999",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x9999999999999999999999999999999999999999",
+            },
+          ],
         },
       };
 
@@ -628,30 +642,34 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          }],
-          "0x7B065Fcb0760dF0CEA8CFd144e08554F3CeA73D1": [{
-            type: DistributorType.L1_BASE_FEE,
-            block: 200,
-            date: "2022-07-15",
-            tx_hash:
-              "0x5151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0x57f585db",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x7B065Fcb0760dF0CEA8CFd144e08554F3CeA73D1",
-          }],
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
+          "0x7B065Fcb0760dF0CEA8CFd144e08554F3CeA73D1": [
+            {
+              type: DistributorType.L1_BASE_FEE,
+              block: 200,
+              date: "2022-07-15",
+              tx_hash:
+                "0x5151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0x57f585db",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x7B065Fcb0760dF0CEA8CFd144e08554F3CeA73D1",
+            },
+          ],
         },
       };
     });
@@ -724,18 +742,20 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          }],
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -823,8 +843,8 @@ describe("RecipientRecievedScanner", () => {
         mockDistributorsData.distributors[
           "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
         ];
-      if (distributor) {
-        distributor.date = "2022-07-09"; // Date before available block data
+      if (distributor && distributor[0]) {
+        distributor[0].date = "2022-07-09"; // Date before available block data
       }
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
@@ -855,8 +875,8 @@ describe("RecipientRecievedScanner", () => {
         mockDistributorsData.distributors[
           "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
         ];
-      if (distributor) {
-        distributor.date = "2022-07-10";
+      if (distributor && distributor[0]) {
+        distributor[0].date = "2022-07-10";
       }
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
@@ -890,17 +910,19 @@ describe("RecipientRecievedScanner", () => {
       // Add another distributor
       mockDistributorsData.distributors[
         "0x1234567890123456789012345678901234567890"
-      ] = {
-        type: DistributorType.L1_BASE_FEE,
-        block: 250,
-        date: "2022-07-13",
-        tx_hash: "0xabc",
-        method: "0x57f585db",
-        owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-        event_data: "0x...",
-        is_reward_distributor: true,
-        distributor_address: "0x1234567890123456789012345678901234567890",
-      };
+      ] = [
+        {
+          type: DistributorType.L1_BASE_FEE,
+          block: 250,
+          date: "2022-07-13",
+          tx_hash: "0xabc",
+          method: "0x57f585db",
+          owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+          event_data: "0x...",
+          is_reward_distributor: true,
+          distributor_address: "0x1234567890123456789012345678901234567890",
+        },
+      ];
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
@@ -1185,18 +1207,20 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          }],
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -1529,18 +1553,20 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [{
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          }],
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -2061,30 +2087,34 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonRewardDistributor": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonRewardDistributor",
-          },
-          "0xRewardDistributor": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor",
-          },
+          "0xNonRewardDistributor": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonRewardDistributor",
+            },
+          ],
+          "0xRewardDistributor": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor",
+            },
+          ],
         },
       };
 
@@ -2121,42 +2151,48 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonReward1": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1111111111111111111111111111111111111111111111111111111111111111",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward1",
-          },
-          "0xRewardDistributor": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x2222222222222222222222222222222222222222222222222222222222222222",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor",
-          },
-          "0xNonReward2": {
-            type: DistributorType.L1_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x3333333333333333333333333333333333333333333333333333333333333333",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward2",
-          },
+          "0xNonReward1": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1111111111111111111111111111111111111111111111111111111111111111",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward1",
+            },
+          ],
+          "0xRewardDistributor": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x2222222222222222222222222222222222222222222222222222222222222222",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor",
+            },
+          ],
+          "0xNonReward2": [
+            {
+              type: DistributorType.L1_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x3333333333333333333333333333333333333333333333333333333333333333",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward2",
+            },
+          ],
         },
       };
 
@@ -2202,30 +2238,34 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xRewardDistributor1": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1111111111111111111111111111111111111111111111111111111111111111",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor1",
-          },
-          "0xRewardDistributor2": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x2222222222222222222222222222222222222222222222222222222222222222",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor2",
-          },
+          "0xRewardDistributor1": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1111111111111111111111111111111111111111111111111111111111111111",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor1",
+            },
+          ],
+          "0xRewardDistributor2": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x2222222222222222222222222222222222222222222222222222222222222222",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor2",
+            },
+          ],
         },
       };
 
@@ -2256,30 +2296,34 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonReward1": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1111111111111111111111111111111111111111111111111111111111111111",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward1",
-          },
-          "0xNonReward2": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x2222222222222222222222222222222222222222222222222222222222222222",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward2",
-          },
+          "0xNonReward1": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1111111111111111111111111111111111111111111111111111111111111111",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward1",
+            },
+          ],
+          "0xNonReward2": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x2222222222222222222222222222222222222222222222222222222222222222",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward2",
+            },
+          ],
         },
       };
 

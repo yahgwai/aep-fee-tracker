@@ -91,78 +91,88 @@ function createTestDistributorsData(): DistributorsData {
 
   // Add distributor 1 - checksummed address
   const addr1 = ethers.getAddress("0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB");
-  distributors.distributors[addr1] = [{
-    type: DistributorType.L2_SURPLUS_FEE,
-    block: 152,
-    date: "2022-07-12",
-    tx_hash:
-      "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-    method: DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
-    owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-    event_data: "",
-    is_reward_distributor: false,
-    distributor_address: addr1,
-  }];
+  distributors.distributors[addr1] = [
+    {
+      type: DistributorType.L2_SURPLUS_FEE,
+      block: 152,
+      date: "2022-07-12",
+      tx_hash:
+        "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+      method: DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
+      owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+      event_data: "",
+      is_reward_distributor: false,
+      distributor_address: addr1,
+    },
+  ];
 
   // Add distributor 2 - checksummed address
   const addr2 = ethers.getAddress("0xdff90519a9DE6ad469D4f9839a9220C5D340B792");
-  distributors.distributors[addr2] = [{
-    type: DistributorType.L2_BASE_FEE,
-    block: 684,
-    date: "2022-08-09",
-    tx_hash:
-      "0x91cf95025dd73017bb3b8a2a93e2bb2c666bbdce97f88ac4ae3e583aa1aa6a96",
-    method: DISTRIBUTOR_METHODS.L2_BASE_FEE,
-    owner: "0x67CB8A1b249D1b1A79f1e6252faCE5c90Cfc38EA",
-    event_data: "",
-    is_reward_distributor: false,
-    distributor_address: addr2,
-  }];
+  distributors.distributors[addr2] = [
+    {
+      type: DistributorType.L2_BASE_FEE,
+      block: 684,
+      date: "2022-08-09",
+      tx_hash:
+        "0x91cf95025dd73017bb3b8a2a93e2bb2c666bbdce97f88ac4ae3e583aa1aa6a96",
+      method: DISTRIBUTOR_METHODS.L2_BASE_FEE,
+      owner: "0x67CB8A1b249D1b1A79f1e6252faCE5c90Cfc38EA",
+      event_data: "",
+      is_reward_distributor: false,
+      distributor_address: addr2,
+    },
+  ];
 
   // Add distributor 3 - checksummed address
   const addr3 = ethers.getAddress("0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce");
-  distributors.distributors[addr3] = [{
-    type: DistributorType.L1_SURPLUS_FEE,
-    block: 3163115,
-    date: "2023-03-16",
-    tx_hash:
-      "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
-    method: DISTRIBUTOR_METHODS.L1_SURPLUS_FEE,
-    owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
-    event_data: "",
-    is_reward_distributor: true,
-    distributor_address: addr3,
-  }];
+  distributors.distributors[addr3] = [
+    {
+      type: DistributorType.L1_SURPLUS_FEE,
+      block: 3163115,
+      date: "2023-03-16",
+      tx_hash:
+        "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
+      method: DISTRIBUTOR_METHODS.L1_SURPLUS_FEE,
+      owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
+      event_data: "",
+      is_reward_distributor: true,
+      distributor_address: addr3,
+    },
+  ];
 
   // Add distributor 4 - checksummed address
   const addr4 = ethers.getAddress("0x509386DbF5C0BE6fd68Df97A05fdB375136c32De");
-  distributors.distributors[addr4] = [{
-    type: DistributorType.L2_SURPLUS_FEE,
-    block: 3163115,
-    date: "2023-03-16",
-    tx_hash:
-      "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
-    method: DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
-    owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
-    event_data: "",
-    is_reward_distributor: true,
-    distributor_address: addr4,
-  }];
+  distributors.distributors[addr4] = [
+    {
+      type: DistributorType.L2_SURPLUS_FEE,
+      block: 3163115,
+      date: "2023-03-16",
+      tx_hash:
+        "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
+      method: DISTRIBUTOR_METHODS.L2_SURPLUS_FEE,
+      owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
+      event_data: "",
+      is_reward_distributor: true,
+      distributor_address: addr4,
+    },
+  ];
 
   // Add distributor 5 - checksummed address
   const addr5 = ethers.getAddress("0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f");
-  distributors.distributors[addr5] = [{
-    type: DistributorType.L2_BASE_FEE,
-    block: 3163115,
-    date: "2023-03-16",
-    tx_hash:
-      "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
-    method: DISTRIBUTOR_METHODS.L2_BASE_FEE,
-    owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
-    event_data: "",
-    is_reward_distributor: true,
-    distributor_address: addr5,
-  }];
+  distributors.distributors[addr5] = [
+    {
+      type: DistributorType.L2_BASE_FEE,
+      block: 3163115,
+      date: "2023-03-16",
+      tx_hash:
+        "0x96c37e0e24e1de2b39e6f5f37e587285b55c666de2e37eb0a13f96a8b949b2e2",
+      method: DISTRIBUTOR_METHODS.L2_BASE_FEE,
+      owner: "0x10e7853938491D1f65f46dC201a5A4c622521201",
+      event_data: "",
+      is_reward_distributor: true,
+      distributor_address: addr5,
+    },
+  ];
 
   return distributors;
 }

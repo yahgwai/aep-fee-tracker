@@ -91,28 +91,32 @@ describe("FileManager - Distributors", () => {
       const testData = createDistributorsData({
         distributors: {
           [VALID_ADDRESS]: [createDistributorInfo()],
-          [INVALID_ADDRESS]: [createDistributorInfo({
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 15678901,
-            date: "2024-06-01",
-            tx_hash:
-              "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-            method: "0xfcdde2b4",
-            event_data:
-              "0x0000000000000000000000001234567890123456789012345678901234567890",
-            distributor_address: INVALID_ADDRESS,
-          })],
-          "0x2234567890123456789012345678901234567890": [createDistributorInfo({
-            type: DistributorType.L1_SURPLUS_FEE,
-            block: 18901234,
-            date: "2024-09-15",
-            tx_hash:
-              "0x7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef123456",
-            method: "0x934be07d",
-            event_data:
-              "0x000000000000000000000000abcdef1234567890abcdef1234567890abcdef12",
-            distributor_address: "0x2234567890123456789012345678901234567890",
-          })],
+          [INVALID_ADDRESS]: [
+            createDistributorInfo({
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 15678901,
+              date: "2024-06-01",
+              tx_hash:
+                "0xdef4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+              method: "0xfcdde2b4",
+              event_data:
+                "0x0000000000000000000000001234567890123456789012345678901234567890",
+              distributor_address: INVALID_ADDRESS,
+            }),
+          ],
+          "0x2234567890123456789012345678901234567890": [
+            createDistributorInfo({
+              type: DistributorType.L1_SURPLUS_FEE,
+              block: 18901234,
+              date: "2024-09-15",
+              tx_hash:
+                "0x7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef123456",
+              method: "0x934be07d",
+              event_data:
+                "0x000000000000000000000000abcdef1234567890abcdef1234567890abcdef12",
+              distributor_address: "0x2234567890123456789012345678901234567890",
+            }),
+          ],
         },
       });
 
@@ -139,10 +143,12 @@ describe("FileManager - Distributors", () => {
     it("should validate distributor types match the DistributorType enum", () => {
       const invalidData = createDistributorsData({
         distributors: {
-          [VALID_ADDRESS]: [{
-            ...createDistributorInfo(),
-            type: "INVALID_TYPE" as unknown as DistributorType,
-          }],
+          [VALID_ADDRESS]: [
+            {
+              ...createDistributorInfo(),
+              type: "INVALID_TYPE" as unknown as DistributorType,
+            },
+          ],
         },
       });
 
@@ -157,7 +163,9 @@ describe("FileManager - Distributors", () => {
       const { date, ...incompleteInfo } = distributorInfo;
       const missingFieldData = createDistributorsData({
         distributors: {
-          [VALID_ADDRESS]: [incompleteInfo as unknown as typeof distributorInfo],
+          [VALID_ADDRESS]: [
+            incompleteInfo as unknown as typeof distributorInfo,
+          ],
         },
       });
 
@@ -173,19 +181,21 @@ describe("FileManager - Distributors", () => {
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {
-          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [{
-            type: DistributorType.L2_BASE_FEE,
-            block: 12345678,
-            date: "01/15/2024",
-            tx_hash:
-              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
-            method: "0x57f585db",
-            owner: CONTRACTS.ARB_OWNER,
-            event_data:
-              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
-            is_reward_distributor: true,
-            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
-          }],
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 12345678,
+              date: "01/15/2024",
+              tx_hash:
+                "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
+              method: "0x57f585db",
+              owner: CONTRACTS.ARB_OWNER,
+              event_data:
+                "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+              is_reward_distributor: true,
+              distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+            },
+          ],
         },
       };
 
@@ -201,18 +211,20 @@ describe("FileManager - Distributors", () => {
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {
-          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [{
-            type: DistributorType.L2_BASE_FEE,
-            block: 12345678,
-            date: "2024-01-15",
-            tx_hash: "0xinvalid",
-            method: "0x57f585db",
-            owner: CONTRACTS.ARB_OWNER,
-            event_data:
-              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
-            is_reward_distributor: true,
-            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
-          }],
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 12345678,
+              date: "2024-01-15",
+              tx_hash: "0xinvalid",
+              method: "0x57f585db",
+              owner: CONTRACTS.ARB_OWNER,
+              event_data:
+                "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+              is_reward_distributor: true,
+              distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+            },
+          ],
         },
       };
 
@@ -228,19 +240,21 @@ describe("FileManager - Distributors", () => {
           arbowner_address: CONTRACTS.ARB_OWNER,
         },
         distributors: {
-          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [{
-            type: DistributorType.L2_BASE_FEE,
-            block: 12345678,
-            date: "2024-01-15",
-            tx_hash:
-              "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
-            method: "0x57f585db",
-            owner: CONTRACTS.ARB_OWNER,
-            event_data:
-              "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
-            is_reward_distributor: true,
-            distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
-          }],
+          "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 12345678,
+              date: "2024-01-15",
+              tx_hash:
+                "0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
+              method: "0x57f585db",
+              owner: CONTRACTS.ARB_OWNER,
+              event_data:
+                "0x00000000000000000000000067a24ce4321ab3af51c2d0a4801c3e111d88c9d9",
+              is_reward_distributor: true,
+              distributor_address: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
+            },
+          ],
         },
       };
 
@@ -301,8 +315,12 @@ describe("FileManager - Distributors", () => {
       const result = testContext.fileManager.readDistributors();
 
       expect(result?.distributors[VALID_ADDRESS]).toHaveLength(2);
-      expect(result?.distributors[VALID_ADDRESS]?.[0]?.type).toBe(DistributorType.L2_BASE_FEE);
-      expect(result?.distributors[VALID_ADDRESS]?.[1]?.type).toBe(DistributorType.L2_SURPLUS_FEE);
+      expect(result?.distributors[VALID_ADDRESS]?.[0]?.type).toBe(
+        DistributorType.L2_BASE_FEE,
+      );
+      expect(result?.distributors[VALID_ADDRESS]?.[1]?.type).toBe(
+        DistributorType.L2_SURPLUS_FEE,
+      );
     });
 
     it("should use validateEnumValue for distributor type validation", () => {
@@ -313,20 +331,22 @@ describe("FileManager - Distributors", () => {
           arbowner_address: "0x0000000000000000000000000000000000000001",
         },
         distributors: {
-          [address]: [{
-            address: address,
-            // @ts-expect-error Testing invalid type
-            type: "INVALID_TYPE",
-            display_name: "Test Distributor",
-            block: 12345678,
-            date: "2024-01-15",
-            tx_hash:
-              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-            method: "create",
-            owner: "0x0000000000000000000000000000000000000001",
-            event_data: "{}",
-            is_reward_distributor: true,
-          }],
+          [address]: [
+            {
+              address: address,
+              // @ts-expect-error Testing invalid type
+              type: "INVALID_TYPE",
+              display_name: "Test Distributor",
+              block: 12345678,
+              date: "2024-01-15",
+              tx_hash:
+                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+              method: "create",
+              owner: "0x0000000000000000000000000000000000000001",
+              event_data: "{}",
+              is_reward_distributor: true,
+            },
+          ],
         },
       };
 

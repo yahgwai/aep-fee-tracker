@@ -35,17 +35,19 @@ describe("DistributorDetector.detectDistributors", () => {
       last_scanned_block: 150,
     },
     distributors: {
-      "0x1234567890123456789012345678901234567890": [{
-        type: DistributorType.L2_BASE_FEE,
-        block: 120,
-        date: "2023-03-14",
-        tx_hash: "0x" + "a".repeat(64),
-        method: "0x12345678",
-        owner: "0xABCDEF0123456789012345678901234567890123",
-        event_data: "0x",
-        is_reward_distributor: true,
-        distributor_address: "0x1234567890123456789012345678901234567890",
-      }],
+      "0x1234567890123456789012345678901234567890": [
+        {
+          type: DistributorType.L2_BASE_FEE,
+          block: 120,
+          date: "2023-03-14",
+          tx_hash: "0x" + "a".repeat(64),
+          method: "0x12345678",
+          owner: "0xABCDEF0123456789012345678901234567890123",
+          event_data: "0x",
+          is_reward_distributor: true,
+          distributor_address: "0x1234567890123456789012345678901234567890",
+        },
+      ],
     },
   };
 
@@ -107,7 +109,7 @@ describe("DistributorDetector.detectDistributors", () => {
           last_scanned_block: 300,
         },
         distributors: {
-          "0xABCDEF0123456789ABCDEF0123456789ABCDEF01": newDistributorInfo,
+          "0xABCDEF0123456789ABCDEF0123456789ABCDEF01": [newDistributorInfo],
         },
       };
 
@@ -141,7 +143,7 @@ describe("DistributorDetector.detectDistributors", () => {
             existingDistributors.distributors[
               "0x1234567890123456789012345678901234567890"
             ]!,
-          "0xABCDEF0123456789ABCDEF0123456789ABCDEF01": newDistributorInfo,
+          "0xABCDEF0123456789ABCDEF0123456789ABCDEF01": [newDistributorInfo],
         },
       };
 
@@ -203,12 +205,20 @@ describe("DistributorDetector.detectDistributors", () => {
     it("should skip already known distributors", async () => {
       // Arrange
       const endDate = new Date("2023-03-16");
-      const duplicateDistributor: DistributorInfo = {
-        ...existingDistributors.distributors[
+      const existingDistributorInfo =
+        existingDistributors.distributors[
           "0x1234567890123456789012345678901234567890"
-        ]!,
+        ]![0]!;
+      const duplicateDistributor: DistributorInfo = {
+        type: existingDistributorInfo.type,
         block: 180,
         date: "2023-03-15",
+        tx_hash: existingDistributorInfo.tx_hash,
+        method: existingDistributorInfo.method,
+        owner: existingDistributorInfo.owner,
+        event_data: existingDistributorInfo.event_data,
+        is_reward_distributor: existingDistributorInfo.is_reward_distributor,
+        distributor_address: existingDistributorInfo.distributor_address,
       };
 
       mockFileManager.readDistributors.mockReturnValue(existingDistributors);
@@ -232,7 +242,7 @@ describe("DistributorDetector.detectDistributors", () => {
             existingDistributors.distributors[
               "0x1234567890123456789012345678901234567890"
             ]!,
-          "0xABCDEF0123456789ABCDEF0123456789ABCDEF01": newDistributorInfo,
+          "0xABCDEF0123456789ABCDEF0123456789ABCDEF01": [newDistributorInfo],
         },
       };
 

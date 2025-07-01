@@ -330,21 +330,23 @@ export class FileManager implements FileManagerInterface {
       if (address !== this.validateAddress(address)) {
         throw new Error(`Distributor address must be checksummed: ${address}`);
       }
-      
+
       // Validate array structure
       if (!Array.isArray(distributorInfoArray)) {
         throw new Error(`Distributor data for ${address} must be an array`);
       }
-      
+
       if (distributorInfoArray.length === 0) {
         throw new Error(`Distributor array for ${address} cannot be empty`);
       }
-      
+
       // Validate each element in the array
       for (let i = 0; i < distributorInfoArray.length; i++) {
         const info = distributorInfoArray[i];
         if (!info) {
-          throw new Error(`Distributor array for ${address} contains undefined element at index ${i}`);
+          throw new Error(
+            `Distributor array for ${address} contains undefined element at index ${i}`,
+          );
         }
         this.validateDistributorInfo(address, info);
       }

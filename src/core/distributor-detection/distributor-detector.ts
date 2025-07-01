@@ -331,7 +331,7 @@ export class DistributorDetector {
     // Add new distributors
     for (const distributor of newDistributors) {
       const address = distributor.distributor_address;
-      
+
       if (!updatedData.distributors[address]) {
         // Initialize with single-element array for new address
         updatedData.distributors[address] = [distributor];
