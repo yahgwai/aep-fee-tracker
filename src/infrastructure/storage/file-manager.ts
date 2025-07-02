@@ -323,14 +323,33 @@ export class FileManager implements FileManagerInterface {
   }
 
   private validateDistributorsData(data: DistributorsData): void {
-    for (const [address, distributorInfo] of Object.entries(
+    for (const [address, distributorInfoArray] of Object.entries(
       data.distributors,
     )) {
       // Validate checksummed address
       if (address !== this.validateAddress(address)) {
         throw new Error(`Distributor address must be checksummed: ${address}`);
       }
-      this.validateDistributorInfo(address, distributorInfo);
+
+      // Validate array structure
+      if (!Array.isArray(distributorInfoArray)) {
+        throw new Error(`Distributor data for ${address} must be an array`);
+      }
+
+      if (distributorInfoArray.length === 0) {
+        throw new Error(`Distributor array for ${address} cannot be empty`);
+      }
+
+      // Validate each element in the array
+      for (let i = 0; i < distributorInfoArray.length; i++) {
+        const info = distributorInfoArray[i];
+        if (!info) {
+          throw new Error(
+            `Distributor array for ${address} contains undefined element at index ${i}`,
+          );
+        }
+        this.validateDistributorInfo(address, info);
+      }
     }
   }
 

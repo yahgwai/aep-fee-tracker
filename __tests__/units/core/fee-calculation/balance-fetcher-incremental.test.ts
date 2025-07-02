@@ -43,18 +43,20 @@ describe("BalanceFetcher - Incremental Processing", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -91,18 +93,20 @@ describe("BalanceFetcher - Incremental Processing", () => {
         ...mockDistributorsData,
         distributors: {
           ...mockDistributorsData.distributors,
-          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": {
-            type: DistributorType.L1_SURPLUS_FEE,
-            block: 155,
-            date: "2022-07-12",
-            tx_hash:
-              "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
-            method: "0x934be07d",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
-          },
+          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": [
+            {
+              type: DistributorType.L1_SURPLUS_FEE,
+              block: 155,
+              date: "2022-07-12",
+              tx_hash:
+                "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+              method: "0x934be07d",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
+            },
+          ],
         },
       };
 
@@ -156,18 +160,20 @@ describe("BalanceFetcher - Incremental Processing", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -277,18 +283,20 @@ describe("BalanceFetcher - Incremental Processing", () => {
       const distributorWithCustomCreationDate = {
         ...mockDistributorsData,
         distributors: {
-          "0xTestDistributor": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 500,
-            date: "2022-07-15", // Date not in block numbers
-            tx_hash:
-              "0x0000000000000000000000000000000000000000000000000000000000000000",
-            method: "0x57f585db",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xTestDistributor",
-          },
+          "0xTestDistributor": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 500,
+              date: "2022-07-15", // Date not in block numbers
+              tx_hash:
+                "0x0000000000000000000000000000000000000000000000000000000000000000",
+              method: "0x57f585db",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xTestDistributor",
+            },
+          ],
         },
       };
 

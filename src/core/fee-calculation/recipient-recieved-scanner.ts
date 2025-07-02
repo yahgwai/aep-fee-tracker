@@ -132,13 +132,21 @@ export class RecipientRecievedScanner {
 
     // Count only reward distributors for accurate progress tracking
     const rewardDistributors = distributorEntries.filter(
-      ([, info]) => info && info.is_reward_distributor,
+      ([, infoArray]) => infoArray && infoArray[0]?.is_reward_distributor,
     );
     let rewardDistributorIndex = 0;
 
     // Process distributors
-    for (const [address, distributorInfo] of distributorEntries) {
-      if (!distributorInfo) continue;
+    for (const [address, distributorInfoArray] of distributorEntries) {
+      if (!distributorInfoArray || distributorInfoArray.length === 0) continue;
+
+      const distributorInfo = distributorInfoArray[0];
+
+      if (!distributorInfo) {
+        throw new Error(
+          `Invalid distributor data for ${address}: array contains falsy element`,
+        );
+      }
 
       if (!distributorInfo.is_reward_distributor) {
         console.log(

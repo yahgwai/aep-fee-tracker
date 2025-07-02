@@ -91,19 +91,21 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data:
-              "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024fcdde2b400000000000000000000000037daa99b1caae0c22670963e103a66ca2c5db2db00000000000000000000000000000000000000000000000000000000",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data:
+                "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024fcdde2b400000000000000000000000037daa99b1caae0c22670963e103a66ca2c5db2db00000000000000000000000000000000000000000000000000000000",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -169,18 +171,20 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
     });
@@ -238,18 +242,20 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 672,
-            date: "2022-08-08",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
-          },
+          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 672,
+              date: "2022-08-08",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
+            },
+          ],
         },
       };
     });
@@ -295,18 +301,20 @@ describe("BalanceFetcher", () => {
       const distributorsWithFutureDate = {
         metadata: mockDistributorsData.metadata,
         distributors: {
-          "0xFutureDistributor": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 9999999,
-            date: futureDateString,
-            tx_hash:
-              "0x0000000000000000000000000000000000000000000000000000000000000000",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xFutureDistributor",
-          },
+          "0xFutureDistributor": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 9999999,
+              date: futureDateString,
+              tx_hash:
+                "0x0000000000000000000000000000000000000000000000000000000000000000",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xFutureDistributor",
+            },
+          ],
         },
       };
 
@@ -369,18 +377,20 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 684,
-            date: "2022-08-10", // Changed to a date NOT in block numbers
-            tx_hash:
-              "0x966831a2207df808ffcc44c90c0e60bce86185fb73b18c962f4f1303eb54efa2",
-            method: "0x57f585db",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
-          },
+          "0xdff90519a9DE6ad469D4f9839a9220C5D340B792": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 684,
+              date: "2022-08-10", // Changed to a date NOT in block numbers
+              tx_hash:
+                "0x966831a2207df808ffcc44c90c0e60bce86185fb73b18c962f4f1303eb54efa2",
+              method: "0x57f585db",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xdff90519a9DE6ad469D4f9839a9220C5D340B792",
+            },
+          ],
         },
       };
 
@@ -406,18 +416,20 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -451,31 +463,35 @@ describe("BalanceFetcher", () => {
         },
         distributors: {
           // Distributor created on 2023-03-16
-          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 3163115,
-            date: "2023-03-16",
-            tx_hash:
-              "0x9f0fa92f662f8a5b0cfa7623282fadf6088b5e819901b85d4fce45b060941669",
-            method: "0xfcdde2b4",
-            owner: "0xD0749b3e537Ed52DE4e6a3Ae1eB6fc26059d0895",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
-          },
+          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 3163115,
+              date: "2023-03-16",
+              tx_hash:
+                "0x9f0fa92f662f8a5b0cfa7623282fadf6088b5e819901b85d4fce45b060941669",
+              method: "0xfcdde2b4",
+              owner: "0xD0749b3e537Ed52DE4e6a3Ae1eB6fc26059d0895",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
+            },
+          ],
           // Distributor created on 2022-08-10 (date not in block numbers)
-          "0xTestDistributor": {
-            type: DistributorType.L1_BASE_FEE,
-            block: 4000,
-            date: "2022-08-10",
-            tx_hash:
-              "0x0000000000000000000000000000000000000000000000000000000000000000",
-            method: "0x934be07d",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xTestDistributor",
-          },
+          "0xTestDistributor": [
+            {
+              type: DistributorType.L1_BASE_FEE,
+              block: 4000,
+              date: "2022-08-10",
+              tx_hash:
+                "0x0000000000000000000000000000000000000000000000000000000000000000",
+              method: "0x934be07d",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xTestDistributor",
+            },
+          ],
         },
       };
 
@@ -555,30 +571,34 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
-          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": {
-            type: DistributorType.L1_SURPLUS_FEE,
-            block: 3163115,
-            date: "2023-03-16",
-            tx_hash:
-              "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
-            method: "0x934be07d",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
+          "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce": [
+            {
+              type: DistributorType.L1_SURPLUS_FEE,
+              block: 3163115,
+              date: "2023-03-16",
+              tx_hash:
+                "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+              method: "0x934be07d",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
+            },
+          ],
         },
       };
     });
@@ -663,18 +683,20 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
@@ -696,18 +718,20 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -794,18 +818,20 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
@@ -878,30 +904,34 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonRewardDistributor": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonRewardDistributor",
-          },
-          "0xRewardDistributor": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor",
-          },
+          "0xNonRewardDistributor": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonRewardDistributor",
+            },
+          ],
+          "0xRewardDistributor": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor",
+            },
+          ],
         },
       };
 
@@ -935,42 +965,48 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonReward1": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1111111111111111111111111111111111111111111111111111111111111111",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward1",
-          },
-          "0xRewardDistributor": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x2222222222222222222222222222222222222222222222222222222222222222",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor",
-          },
-          "0xNonReward2": {
-            type: DistributorType.L1_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x3333333333333333333333333333333333333333333333333333333333333333",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward2",
-          },
+          "0xNonReward1": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1111111111111111111111111111111111111111111111111111111111111111",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward1",
+            },
+          ],
+          "0xRewardDistributor": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x2222222222222222222222222222222222222222222222222222222222222222",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor",
+            },
+          ],
+          "0xNonReward2": [
+            {
+              type: DistributorType.L1_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x3333333333333333333333333333333333333333333333333333333333333333",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward2",
+            },
+          ],
         },
       };
 
@@ -1017,30 +1053,34 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xRewardDistributor1": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1111111111111111111111111111111111111111111111111111111111111111",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor1",
-          },
-          "0xRewardDistributor2": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x2222222222222222222222222222222222222222222222222222222222222222",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0xRewardDistributor2",
-          },
+          "0xRewardDistributor1": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1111111111111111111111111111111111111111111111111111111111111111",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor1",
+            },
+          ],
+          "0xRewardDistributor2": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x2222222222222222222222222222222222222222222222222222222222222222",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0xRewardDistributor2",
+            },
+          ],
         },
       };
 
@@ -1069,30 +1109,34 @@ describe("BalanceFetcher", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0xNonReward1": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x1111111111111111111111111111111111111111111111111111111111111111",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward1",
-          },
-          "0xNonReward2": {
-            type: DistributorType.L2_BASE_FEE,
-            block: 152,
-            date: "2022-07-12",
-            tx_hash:
-              "0x2222222222222222222222222222222222222222222222222222222222222222",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: false,
-            distributor_address: "0xNonReward2",
-          },
+          "0xNonReward1": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x1111111111111111111111111111111111111111111111111111111111111111",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward1",
+            },
+          ],
+          "0xNonReward2": [
+            {
+              type: DistributorType.L2_BASE_FEE,
+              block: 152,
+              date: "2022-07-12",
+              tx_hash:
+                "0x2222222222222222222222222222222222222222222222222222222222222222",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: false,
+              distributor_address: "0xNonReward2",
+            },
+          ],
         },
       };
 
