@@ -15,15 +15,67 @@ import {
 
 jest.mock("../../../../src/infrastructure/storage/file-manager");
 
+// Helper function to create a properly mocked FileManager
+function createMockFileManager(
+  overrides?: Partial<jest.Mocked<FileManager>>,
+): jest.Mocked<FileManager> {
+  const mock = {
+    readDistributors: jest.fn(),
+    writeDistributors: jest.fn(),
+    readBlockNumbers: jest.fn(),
+    writeBlockNumbers: jest.fn(),
+    readDistributorBalances: jest.fn(),
+    writeDistributorBalances: jest.fn(),
+    readRecipientRecievedEvents: jest.fn(),
+    writeRecipientRecievedEvents: jest.fn(),
+    readFeeReport: jest.fn(),
+    writeFeeReport: jest.fn(),
+    ensureStoreDirectory: jest.fn(),
+    validateAddress: jest.fn((address: string) => address),
+    formatDate: jest.fn((date: Date) => date.toISOString().split("T")[0]),
+    validateDateFormat: jest.fn(),
+    validateBlockNumber: jest.fn(),
+    validateWeiValue: jest.fn(),
+    validateTransactionHash: jest.fn(),
+    validateEnumValue: jest.fn(),
+    getMaxDate: jest.fn(() => {
+      // Calculate from block numbers
+      const data = mock.readBlockNumbers();
+      if (!data || !data.blocks) {
+        return null;
+      }
+      const dates = Object.keys(data.blocks).sort();
+      if (dates.length === 0) {
+        return null;
+      }
+      const maxDate = dates[dates.length - 1];
+      return maxDate ? new Date(maxDate) : null;
+    }),
+    getMinDate: jest.fn(() => {
+      // Calculate from block numbers
+      const data = mock.readBlockNumbers();
+      if (!data || !data.blocks) {
+        return null;
+      }
+      const dates = Object.keys(data.blocks).sort();
+      if (dates.length === 0) {
+        return null;
+      }
+      const minDate = dates[0];
+      return minDate ? new Date(minDate) : null;
+    }),
+    ...overrides,
+  } as unknown as jest.Mocked<FileManager>;
+
+  return mock;
+}
+
 describe("RecipientRecievedScanner", () => {
   let mockFileManager: jest.Mocked<FileManager>;
   let mockProvider: jest.Mocked<ethers.Provider>;
 
   beforeEach(() => {
-    mockFileManager = {
-      readDistributors: jest.fn(),
-      writeRecipientRecievedEvents: jest.fn(),
-    } as unknown as jest.Mocked<FileManager>;
+    mockFileManager = createMockFileManager();
     mockProvider = {
       getLogs: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<ethers.Provider>;
@@ -88,10 +140,10 @@ describe("RecipientRecievedScanner", () => {
     let scanner: RecipientRecievedScanner;
 
     beforeEach(() => {
-      mockFileManager = {
+      mockFileManager = createMockFileManager({
         readDistributors: jest.fn().mockReturnValue(undefined),
         writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      });
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
     });
 
@@ -128,10 +180,7 @@ describe("RecipientRecievedScanner", () => {
     let scanner: RecipientRecievedScanner;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
     });
 
@@ -199,12 +248,7 @@ describe("RecipientRecievedScanner", () => {
     let mockDistributorsData: DistributorsData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       // Set up a mock date for "today" to make tests deterministic
@@ -252,7 +296,8 @@ describe("RecipientRecievedScanner", () => {
 
       await scanner.scan();
 
-      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
+      // readBlockNumbers is called twice: once directly by scan() and once by getMaxDate()
+      expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(2);
     });
 
     it("returns early when no block numbers data is available", async () => {
@@ -271,12 +316,7 @@ describe("RecipientRecievedScanner", () => {
     let mockDistributorsData: DistributorsData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       // Set up a mock date for "today" to make tests deterministic
@@ -361,12 +401,7 @@ describe("RecipientRecievedScanner", () => {
     let mockBlockNumbersData: BlockNumberData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       // Set up a mock date for "today" to make tests deterministic
@@ -606,6 +641,125 @@ describe("RecipientRecievedScanner", () => {
         "Cannot find date for block 999 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
       );
     });
+
+    it("uses max date from block store instead of calculating yesterday", async () => {
+      // Set up block numbers data that ends at 2022-05-02 (much earlier than "today")
+      const historicalBlockNumbersData: BlockNumberData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-05-01": 100,
+          "2022-05-02": 200, // Max date in store
+        },
+      };
+
+      // Distributor created on 2022-05-01
+      const historicalDistributorsData: DistributorsData = {
+        metadata: {
+          chain_id: 42170,
+          arbowner_address: "0x0000000000000000000000000000000000000070",
+          last_scanned_block: 1000,
+        },
+        distributors: {
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
+            type: DistributorType.L2_SURPLUS_FEE,
+            block: 100,
+            date: "2022-05-01",
+            tx_hash:
+              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+            method: "0xfcdde2b4",
+            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+            event_data: "0x...",
+            is_reward_distributor: true,
+            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+          },
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(
+        historicalDistributorsData,
+      );
+      mockFileManager.readBlockNumbers.mockReturnValue(
+        historicalBlockNumbersData,
+      );
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.scan();
+
+      // Verify it queried for blocks up to 2022-05-02 (store max), not yesterday (2022-07-14)
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 101, // Day after creation
+        toBlock: 200, // Max block in store
+      });
+
+      // Verify no calls were made for dates beyond the store
+      const allCalls = mockProvider.getLogs.mock.calls;
+      const maxBlockQueried = Math.max(
+        ...allCalls.map((call) => {
+          const filter = call[0] as { toBlock: number };
+          return filter.toBlock;
+        }),
+      );
+      expect(maxBlockQueried).toBe(200); // Should not exceed max block in store
+    });
+
+    it("respects block store boundaries when processing distributors", async () => {
+      // Set up block numbers data with limited range
+      const limitedBlockNumbersData: BlockNumberData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-05-01": 100,
+          "2022-05-02": 200,
+          "2022-05-03": 300, // Only 3 days of data
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(limitedBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.scan();
+
+      // Even though distributor was created on 2022-07-12, it should not process
+      // because that date is not in the block store
+      expect(mockProvider.getLogs).not.toHaveBeenCalled();
+    });
+
+    it("handles missing block numbers gracefully without querying", async () => {
+      // Set up block numbers data with gaps
+      const gappedBlockNumbersData: BlockNumberData = {
+        metadata: { chain_id: 42170 },
+        blocks: {
+          "2022-07-12": 200, // Creation date
+          "2022-07-14": 400, // Missing 2022-07-13
+        },
+      };
+
+      mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
+      mockFileManager.readBlockNumbers.mockReturnValue(gappedBlockNumbersData);
+      mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
+
+      await scanner.scan();
+
+      // Should query for 2022-07-12 and 2022-07-14, but not fail on missing 2022-07-13
+      expect(mockProvider.getLogs).toHaveBeenCalledTimes(2);
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 1, // No previous day, so starts at 1
+        toBlock: 200,
+      });
+      expect(mockProvider.getLogs).toHaveBeenCalledWith({
+        address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+        topics: [RECIPIENT_RECIEVED_EVENT_TOPIC],
+        fromBlock: 201,
+        toBlock: 400,
+      });
+    });
   });
 
   describe("scan - distributor filtering", () => {
@@ -613,12 +767,7 @@ describe("RecipientRecievedScanner", () => {
     let mockDistributorsData: DistributorsData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       mockDistributorsData = {
@@ -706,12 +855,7 @@ describe("RecipientRecievedScanner", () => {
     let mockBlockNumbersData: BlockNumberData;
 
     beforeEach(() => {
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
 
       // Set up a mock date for "today" to make tests deterministic
@@ -818,7 +962,7 @@ describe("RecipientRecievedScanner", () => {
       });
     });
 
-    it("throws error when block number is missing for a date", async () => {
+    it("skips dates when block number is missing", async () => {
       const distributor =
         mockDistributorsData.distributors[
           "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB"
@@ -830,23 +974,36 @@ describe("RecipientRecievedScanner", () => {
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
 
-      await expect(scanner.scan()).rejects.toThrow(
-        "Missing block number for date 2022-07-09 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-      );
+      // Should not throw error, should skip the missing date
+      await expect(scanner.scan()).resolves.not.toThrow();
+
+      // Verify it only queried for available dates
+      expect(mockProvider.getLogs).toHaveBeenCalled();
     });
 
-    it("validates all required block numbers before processing", async () => {
+    it("skips missing block numbers during processing", async () => {
       // Add a gap in block numbers
       delete mockBlockNumbersData.blocks["2022-07-13"];
 
       mockFileManager.readDistributors.mockReturnValue(mockDistributorsData);
       mockFileManager.readBlockNumbers.mockReturnValue(mockBlockNumbersData);
       mockFileManager.readRecipientRecievedEvents.mockReturnValue(undefined);
+      mockProvider.getLogs.mockResolvedValue([]);
 
-      await expect(scanner.scan()).rejects.toThrow(
-        "Missing block number for date 2022-07-13 for distributor 0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-      );
+      // Should not throw error, should skip the missing date
+      await expect(scanner.scan()).resolves.not.toThrow();
+
+      // Verify it queried for available dates only
+      const calls = mockProvider.getLogs.mock.calls;
+      const queriedDates = calls.map((call) => {
+        const filter = call[0] as { toBlock: number };
+        return filter.toBlock;
+      });
+
+      // Should not have queried for block 300 (2022-07-13)
+      expect(queriedDates).not.toContain(300);
     });
 
     it("handles first date in block data correctly", async () => {
@@ -991,7 +1148,7 @@ describe("RecipientRecievedScanner", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
-      mockFileManager = {} as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       mockProvider = {
         getLogs: jest.fn(),
       } as unknown as jest.Mocked<ethers.Provider>;
@@ -1164,12 +1321,7 @@ describe("RecipientRecievedScanner", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       mockProvider = {
         getLogs: jest.fn(),
       } as unknown as jest.Mocked<ethers.Provider>;
@@ -1508,12 +1660,7 @@ describe("RecipientRecievedScanner", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       mockProvider = {
         getLogs: jest.fn(),
       } as unknown as jest.Mocked<ethers.Provider>;
@@ -2025,12 +2172,7 @@ describe("RecipientRecievedScanner", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
-      mockFileManager = {
-        readDistributors: jest.fn(),
-        readBlockNumbers: jest.fn(),
-        readRecipientRecievedEvents: jest.fn(),
-        writeRecipientRecievedEvents: jest.fn(),
-      } as unknown as jest.Mocked<FileManager>;
+      mockFileManager = createMockFileManager();
       mockProvider = {
         getLogs: jest.fn().mockResolvedValue([]),
       } as unknown as jest.Mocked<ethers.Provider>;

@@ -49,6 +49,8 @@ describe("orchestrator", () => {
     // Create mock instances
     mockFileManager = {
       ensureStoreDirectory: jest.fn(),
+      getMaxDate: jest.fn(),
+      getMinDate: jest.fn(),
     } as unknown as jest.Mocked<FileManager>;
 
     mockProvider = {
@@ -191,94 +193,6 @@ describe("orchestrator", () => {
       );
     });
 
-    it("should use block 1 timestamp and safe block timestamp when no dates provided", async () => {
-      const configWithoutDates: Configuration = {
-        storeDirectory: "/test/store",
-        rpcUrl: "https://test-rpc.example.com",
-      };
-
-      // Mock current block number
-      const currentBlockNumber = 5000;
-      mockProvider.getBlockNumber.mockResolvedValue(currentBlockNumber);
-
-      // Mock block 1 with a timestamp (July 12, 2022 UTC)
-      const block1Timestamp = Math.floor(
-        new Date("2022-07-12T00:00:00Z").getTime() / 1000,
-      );
-
-      // Mock safe block timestamp (June 29, 2025 UTC)
-      const safeBlockTimestamp = Math.floor(
-        new Date("2025-06-29T12:30:45Z").getTime() / 1000,
-      );
-
-      mockProvider.getBlock.mockImplementation(async (blockNumber) => {
-        if (blockNumber === 1) {
-          return {
-            timestamp: block1Timestamp,
-          } as unknown as ethers.Block;
-        } else if (blockNumber === currentBlockNumber - 100) {
-          // SAFE_BLOCK_OFFSET
-          return {
-            timestamp: safeBlockTimestamp,
-          } as unknown as ethers.Block;
-        }
-        return null;
-      });
-
-      const chainStartDate = new Date(block1Timestamp * 1000);
-      chainStartDate.setUTCHours(0, 0, 0, 0);
-
-      // Expected end date is one day before safe block timestamp
-      const expectedEndDate = new Date(safeBlockTimestamp * 1000);
-      expectedEndDate.setUTCDate(expectedEndDate.getUTCDate() - 1);
-      expectedEndDate.setUTCHours(0, 0, 0, 0);
-
-      await orchestrate(configWithoutDates);
-
-      // Verify that block 1 was fetched
-      expect(mockProvider.getBlock).toHaveBeenCalledWith(1);
-      // Verify that safe block was fetched
-      expect(mockProvider.getBlock).toHaveBeenCalledWith(
-        currentBlockNumber - 100,
-      );
-      // Verify that current block number was fetched
-      expect(mockProvider.getBlockNumber).toHaveBeenCalled();
-
-      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
-      expect(callArgs).toBeDefined();
-      const [startDate, endDate] = callArgs!;
-
-      expect(startDate.toISOString()).toBe(chainStartDate.toISOString());
-      expect(endDate.toISOString()).toBe(expectedEndDate.toISOString());
-    });
-
-    it("should throw error when block 1 cannot be fetched", async () => {
-      const configWithoutDates: Configuration = {
-        storeDirectory: "/test/store",
-        rpcUrl: "https://test-rpc.example.com",
-      };
-
-      // Mock getBlockNumber for the end date calculation
-      mockProvider.getBlockNumber.mockResolvedValue(5000);
-
-      // Mock getBlock to return null for block 1, but valid for safe block
-      mockProvider.getBlock.mockImplementation(async (blockNumber) => {
-        if (blockNumber === 1) {
-          return null;
-        } else if (blockNumber === 4900) {
-          // Safe block
-          return {
-            timestamp: Math.floor(Date.now() / 1000),
-          } as unknown as ethers.Block;
-        }
-        return null;
-      });
-
-      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
-        "Failed to fetch block 1 from provider",
-      );
-    });
-
     it("should use provided dates when specified", async () => {
       const customConfig: Configuration = {
         storeDirectory: "/test/store",
@@ -300,6 +214,68 @@ describe("orchestrator", () => {
         new Date("2023-06-01").toISOString(),
       );
       expect(endDate.toISOString()).toBe(new Date("2023-06-30").toISOString());
+    });
+
+    it("should use store dates as defaults when not provided", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock FileManager methods with specific date range
+      mockFileManager.getMinDate.mockReturnValue(new Date("2024-05-01"));
+      mockFileManager.getMaxDate.mockReturnValue(new Date("2024-05-03"));
+
+      await orchestrate(configWithoutDates);
+
+      // Should call FileManager methods to get date range
+      expect(mockFileManager.getMinDate).toHaveBeenCalled();
+      expect(mockFileManager.getMaxDate).toHaveBeenCalled();
+
+      // Should NOT call getBlock or getBlockNumber for date calculation
+      expect(mockProvider.getBlockNumber).not.toHaveBeenCalled();
+      expect(mockProvider.getBlock).not.toHaveBeenCalled();
+
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // Should use min date (2024-05-01) as start
+      expect(startDate.toISOString()).toBe(
+        new Date("2024-05-01").toISOString(),
+      );
+      // Should use max date (2024-05-03) as end
+      expect(endDate.toISOString()).toBe(new Date("2024-05-03").toISOString());
+    });
+
+    it("should throw error when block store is empty and no dates provided", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock FileManager methods returning null for empty block store
+      mockFileManager.getMinDate.mockReturnValue(null);
+      mockFileManager.getMaxDate.mockReturnValue(null);
+
+      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
+        "No block numbers found in store and no dates provided",
+      );
+    });
+
+    it("should throw error when block store is missing and no dates provided", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock FileManager methods returning null for missing block store
+      mockFileManager.getMinDate.mockReturnValue(null);
+      mockFileManager.getMaxDate.mockReturnValue(null);
+
+      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
+        "No block numbers found in store and no dates provided",
+      );
     });
 
     it("should pass endDate to distributorDetector", async () => {

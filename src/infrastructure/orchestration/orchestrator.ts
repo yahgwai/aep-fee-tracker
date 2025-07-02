@@ -1,6 +1,5 @@
 import { ethers } from "ethers";
 import { Configuration } from "../../types";
-import { SAFE_BLOCK_OFFSET } from "../../constants";
 import { FileManager } from "../storage/file-manager";
 import { BlockFinder } from "../../core/block-processing/block-finder";
 import { DistributorDetector } from "../../core/distributor-detection/distributor-detector";
@@ -17,7 +16,7 @@ export async function orchestrate(config: Configuration): Promise<void> {
   fileManager.ensureStoreDirectory();
 
   // Parse date range
-  const { startDate, endDate } = await parseDateRange(config, provider);
+  const { startDate, endDate } = await parseDateRange(config, fileManager);
 
   // Execute pipeline components sequentially
   await executePipeline(fileManager, provider, startDate, endDate);
@@ -25,53 +24,32 @@ export async function orchestrate(config: Configuration): Promise<void> {
 
 async function parseDateRange(
   config: Configuration,
-  provider: ethers.Provider,
+  fileManager: FileManager,
 ): Promise<{
   startDate: Date;
   endDate: Date;
 }> {
-  // Calculate end date from safe block timestamp
+  // Get dates from config or block store
   let endDate: Date;
   if (config.endDate) {
-    endDate = new Date(config.endDate);
-    if (isNaN(endDate.getTime())) {
-      throw new Error("Invalid end date format");
-    }
+    endDate = parseConfigDate(config.endDate, "end");
   } else {
-    // Get current block number
-    const currentBlockNumber = await provider.getBlockNumber();
-    const safeBlockNumber = currentBlockNumber - SAFE_BLOCK_OFFSET;
-
-    // Get safe block timestamp
-    const safeBlock = await provider.getBlock(safeBlockNumber);
-    if (!safeBlock) {
-      throw new Error(`Unable to fetch block ${safeBlockNumber}`);
+    const maxDate = fileManager.getMaxDate();
+    if (!maxDate) {
+      throw new Error("No block numbers found in store and no dates provided");
     }
-
-    // Calculate date from safe block timestamp
-    const safeBlockDate = new Date(safeBlock.timestamp * 1000);
-
-    // Set end date to one day before safe block date
-    endDate = new Date(safeBlockDate);
-    endDate.setUTCDate(endDate.getUTCDate() - 1);
-    endDate.setUTCHours(0, 0, 0, 0);
+    endDate = maxDate;
   }
 
-  // Determine start date
   let startDate: Date;
   if (config.startDate) {
-    startDate = new Date(config.startDate);
-    if (isNaN(startDate.getTime())) {
-      throw new Error("Invalid start date format");
-    }
+    startDate = parseConfigDate(config.startDate, "start");
   } else {
-    // Fetch block 1 to get chain start timestamp
-    const block1 = await provider.getBlock(1);
-    if (!block1) {
-      throw new Error("Failed to fetch block 1 from provider");
+    const minDate = fileManager.getMinDate();
+    if (!minDate) {
+      throw new Error("No block numbers found in store and no dates provided");
     }
-    startDate = new Date(block1.timestamp * 1000);
-    startDate.setUTCHours(0, 0, 0, 0);
+    startDate = minDate;
   }
 
   // Validate date range
@@ -80,6 +58,14 @@ async function parseDateRange(
   }
 
   return { startDate, endDate };
+}
+
+function parseConfigDate(dateStr: string, dateType: string): Date {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    throw new Error(`Invalid ${dateType} date format`);
+  }
+  return date;
 }
 
 async function executePipeline(

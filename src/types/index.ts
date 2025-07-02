@@ -135,6 +135,8 @@ export interface FileManager {
     enumName: string,
     validValues: string[],
   ): void;
+  getMaxDate(): Date | null;
+  getMinDate(): Date | null;
 }
 
 // Error Types

@@ -113,11 +113,12 @@ export class RecipientRecievedScanner {
       return;
     }
 
-    // Calculate yesterday's date
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = this.formatDate(yesterday);
+    // Get max date from block numbers store using FileManager
+    const maxDate = this.fileManager.getMaxDate();
+    if (!maxDate) {
+      return;
+    }
+    const maxDateInStore = this.formatDate(maxDate);
 
     // Process distributors
     const distributorsToProcess = distributorAddress
@@ -155,7 +156,7 @@ export class RecipientRecievedScanner {
         address,
         distributorInfo,
         blockNumbersData,
-        yesterdayStr,
+        maxDateInStore,
       );
     }
   }
@@ -207,17 +208,17 @@ export class RecipientRecievedScanner {
   }
 
   /**
-   * Processes a distributor day by day from last scanned date to yesterday.
+   * Processes a distributor day by day from last scanned date to max date in store.
    * @private
    */
   private async processDistributor(
     address: string,
     distributorInfo: DistributorInfo,
     blockNumbersData: BlockNumberData,
-    yesterdayStr: string,
+    maxDateInStore: string,
   ): Promise<void> {
-    // Check if distributor is created in the future
-    if (distributorInfo.date > yesterdayStr) {
+    // Check if distributor is created after the max date in store
+    if (distributorInfo.date > maxDateInStore) {
       return;
     }
 
@@ -248,12 +249,12 @@ export class RecipientRecievedScanner {
       startDate = distributorInfo.date;
     }
 
-    // Skip if start date is after yesterday (all dates processed)
-    if (startDate > yesterdayStr) {
+    // Skip if start date is after max date in store (all dates processed)
+    if (startDate > maxDateInStore) {
       return;
     }
 
-    console.log(`Scanning date range: ${startDate} to ${yesterdayStr}`);
+    console.log(`Scanning date range: ${startDate} to ${maxDateInStore}`);
 
     // Get chain ID from distributors data
     const distributorsData = this.fileManager.readDistributors();
@@ -264,7 +265,7 @@ export class RecipientRecievedScanner {
 
     // Process one day at a time
     const currentDate = new Date(startDate);
-    const endDate = new Date(yesterdayStr);
+    const endDate = new Date(maxDateInStore);
     let lastProcessedBlock = 0;
 
     while (currentDate <= endDate) {
@@ -272,9 +273,9 @@ export class RecipientRecievedScanner {
 
       // Check if block number exists for this date
       if (!(dateStr in blockNumbersData.blocks)) {
-        throw new Error(
-          `Missing block number for date ${dateStr} for distributor ${address}`,
-        );
+        // Skip dates that don't exist in the block store
+        currentDate.setDate(currentDate.getDate() + 1);
+        continue;
       }
 
       // Calculate block range for this day
@@ -318,6 +319,29 @@ export class RecipientRecievedScanner {
   }
 
   /**
+   * Finds the most recent block number before the given date.
+   * @private
+   */
+  private findPreviousBlockNumber(
+    date: string,
+    blockNumbersData: BlockNumberData,
+  ): number | null {
+    const sortedDates = Object.keys(blockNumbersData.blocks).sort();
+    const currentDateIndex = sortedDates.indexOf(date);
+
+    if (currentDateIndex <= 0) {
+      return null;
+    }
+
+    const previousDate = sortedDates[currentDateIndex - 1];
+    if (!previousDate) {
+      return null;
+    }
+
+    return blockNumbersData.blocks[previousDate] || null;
+  }
+
+  /**
    * Converts a date to a block range (start and end blocks).
    * @private
    */
@@ -330,13 +354,8 @@ export class RecipientRecievedScanner {
       throw new Error(`Block number not found for date ${date}`);
     }
 
-    // Calculate start block from previous day's end block
-    const previousDate = new Date(date);
-    previousDate.setDate(previousDate.getDate() - 1);
-    const previousDateStr = this.formatDate(previousDate);
-
-    const previousBlock = blockNumbersData.blocks[previousDateStr];
-    const startBlock = previousBlock !== undefined ? previousBlock + 1 : 1;
+    const previousBlock = this.findPreviousBlockNumber(date, blockNumbersData);
+    const startBlock = previousBlock !== null ? previousBlock + 1 : 1;
 
     return { startBlock, endBlock };
   }

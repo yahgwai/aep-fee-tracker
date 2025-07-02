@@ -416,6 +416,48 @@ export class FileManager implements FileManagerInterface {
     }
   }
 
+  /**
+   * Gets sorted dates from the block numbers store.
+   * @returns Array of sorted date strings, or empty array if no dates exist
+   * @private
+   */
+  private getSortedDatesFromBlockStore(): string[] {
+    const blockNumbersData = this.readBlockNumbers();
+    if (
+      !blockNumbersData ||
+      Object.keys(blockNumbersData.blocks).length === 0
+    ) {
+      return [];
+    }
+    return Object.keys(blockNumbersData.blocks).sort();
+  }
+
+  /**
+   * Gets the maximum date available in the block numbers store.
+   * @returns The maximum date as a Date object, or null if no dates exist
+   */
+  getMaxDate(): Date | null {
+    const sortedDates = this.getSortedDatesFromBlockStore();
+    if (sortedDates.length === 0) {
+      return null;
+    }
+    const maxDateStr = sortedDates[sortedDates.length - 1];
+    return maxDateStr ? new Date(maxDateStr) : null;
+  }
+
+  /**
+   * Gets the minimum date available in the block numbers store.
+   * @returns The minimum date as a Date object, or null if no dates exist
+   */
+  getMinDate(): Date | null {
+    const sortedDates = this.getSortedDatesFromBlockStore();
+    if (sortedDates.length === 0) {
+      return null;
+    }
+    const minDateStr = sortedDates[0];
+    return minDateStr ? new Date(minDateStr) : null;
+  }
+
   private validateRecipientRecievedEventData(
     address: Address,
     data: RecipientRecievedEventData,

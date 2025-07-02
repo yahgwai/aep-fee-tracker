@@ -27,6 +27,8 @@ describe("FeeCalculator Unit Tests", () => {
       validateWeiValue: jest.fn(),
       validateTransactionHash: jest.fn(),
       validateEnumValue: jest.fn(),
+      getMaxDate: jest.fn(),
+      getMinDate: jest.fn(),
     } as jest.Mocked<FileManager>;
 
     calculator = new FeeCalculator(mockFileManager);
