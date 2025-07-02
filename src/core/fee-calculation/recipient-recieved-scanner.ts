@@ -142,10 +142,9 @@ export class RecipientRecievedScanner {
       const distributorInfo = distributorInfoArray[0];
 
       if (!distributorInfo) {
-        console.log(
-          `Skipping distributor ${address}: no distributor info in array`,
+        throw new Error(
+          `Invalid distributor data for ${address}: array contains falsy element`,
         );
-        continue;
       }
 
       if (!distributorInfo.is_reward_distributor) {
