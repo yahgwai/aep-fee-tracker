@@ -674,18 +674,20 @@ describe("RecipientRecievedScanner", () => {
           last_scanned_block: 1000,
         },
         distributors: {
-          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": {
-            type: DistributorType.L2_SURPLUS_FEE,
-            block: 100,
-            date: "2022-05-01",
-            tx_hash:
-              "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
-            method: "0xfcdde2b4",
-            owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
-            event_data: "0x...",
-            is_reward_distributor: true,
-            distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
-          },
+          "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB": [
+            {
+              type: DistributorType.L2_SURPLUS_FEE,
+              block: 100,
+              date: "2022-05-01",
+              tx_hash:
+                "0x6151c7f22d923b9a1ae3d0302b03e8cd2af70ee5792b26e10858d4de6b005fa9",
+              method: "0xfcdde2b4",
+              owner: "0x9C040726F2A657226Ed95712245DeE84b650A1b5",
+              event_data: "0x...",
+              is_reward_distributor: true,
+              distributor_address: "0x37daA99b1cAAE0c22670963e103a66CA2c5dB2dB",
+            },
+          ],
         },
       };
 
