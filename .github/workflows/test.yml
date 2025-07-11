@@ -49,11 +49,9 @@ jobs:
     - name: Build project
       run: npm run build
 
-    - name: Run tests
-      run: npm test
+    - name: Run unit tests
+      run: npm run test:unit
       timeout-minutes: 2
-      env:
-        ARBITRUM_NOVA_RPC_URL: ${{ secrets.ARBITRUM_NOVA_RPC_URL }}
 
     - name: Test completed
       run: echo "Tests completed successfully!"

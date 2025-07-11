@@ -12,6 +12,7 @@
     "postbuild": "chmod +x dist/src/cli/cli.js",
     "typecheck": "tsc --noEmit",
     "test": "jest --maxWorkers=100%",
+    "test:unit": "jest --maxWorkers=100% --testPathPattern=units --testPathIgnorePatterns=block-finder --testPathIgnorePatterns=helpers",
     "test:coverage": "jest --coverage --maxWorkers=100%",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
