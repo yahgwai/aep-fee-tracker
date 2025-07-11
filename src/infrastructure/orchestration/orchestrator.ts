@@ -6,6 +6,7 @@ import { DistributorDetector } from "../../core/distributor-detection/distributo
 import { BalanceFetcher } from "../../core/fee-calculation/balance-fetcher";
 import { RecipientRecievedScanner } from "../../core/fee-calculation/recipient-recieved-scanner";
 import { FeeCalculator } from "../../core/fee-calculation/fee-calculator";
+import { getYesterday } from "../../utils/date-utils";
 
 export async function orchestrate(config: Configuration): Promise<void> {
   console.log("Starting fee calculator pipeline...");
@@ -16,7 +17,11 @@ export async function orchestrate(config: Configuration): Promise<void> {
   fileManager.ensureStoreDirectory();
 
   // Parse date range
-  const { startDate, endDate } = await parseDateRange(config, fileManager);
+  const { startDate, endDate } = await parseDateRange(
+    config,
+    fileManager,
+    provider,
+  );
 
   // Execute pipeline components sequentially
   await executePipeline(fileManager, provider, startDate, endDate);
@@ -25,36 +30,38 @@ export async function orchestrate(config: Configuration): Promise<void> {
 async function parseDateRange(
   config: Configuration,
   fileManager: FileManager,
+  provider: ethers.Provider,
 ): Promise<{
   startDate: Date;
   endDate: Date;
 }> {
-  // Get dates from config or block store
-  let endDate: Date;
-  if (config.endDate) {
-    endDate = parseConfigDate(config.endDate, "end");
-  } else {
-    const maxDate = fileManager.getMaxDate();
-    if (!maxDate) {
-      throw new Error("No block numbers found in store and no dates provided");
-    }
-    endDate = maxDate;
-  }
+  // Determine end date
+  const endDate = config.endDate
+    ? parseConfigDate(config.endDate, "end")
+    : getYesterday();
 
+  // Determine start date
   let startDate: Date;
   if (config.startDate) {
     startDate = parseConfigDate(config.startDate, "start");
   } else {
-    const minDate = fileManager.getMinDate();
-    if (!minDate) {
-      throw new Error("No block numbers found in store and no dates provided");
+    const maxDate = fileManager.getMaxDate();
+    if (maxDate) {
+      // Subsequent run: use max date from store
+      startDate = maxDate;
+    } else {
+      // First run: use the date of block 1
+      const block1 = await provider.getBlock(1);
+      if (!block1) {
+        throw new Error("Unable to fetch block 1 from the network");
+      }
+      startDate = new Date(block1.timestamp * 1000);
     }
-    startDate = minDate;
   }
 
-  // Validate date range
+  // Ensure valid date range
   if (startDate > endDate) {
-    throw new Error("Start date must be before or equal to end date");
+    startDate = endDate;
   }
 
   return { startDate, endDate };

@@ -222,14 +222,26 @@ describe("orchestrator", () => {
         rpcUrl: "https://test-rpc.example.com",
       };
 
+      // Mock current date for consistent testing
+      const mockDate = new Date("2024-05-10T12:00:00Z");
+      const originalDate = global.Date;
+      global.Date = jest.fn((value?: string | number | Date) => {
+        if (value !== undefined) {
+          return new originalDate(value);
+        }
+        return mockDate;
+      }) as unknown as DateConstructor;
+      global.Date.now = () => mockDate.getTime();
+      global.Date.parse = originalDate.parse;
+      global.Date.UTC = originalDate.UTC;
+
       // Mock FileManager methods with specific date range
       mockFileManager.getMinDate.mockReturnValue(new Date("2024-05-01"));
       mockFileManager.getMaxDate.mockReturnValue(new Date("2024-05-03"));
 
       await orchestrate(configWithoutDates);
 
-      // Should call FileManager methods to get date range
-      expect(mockFileManager.getMinDate).toHaveBeenCalled();
+      // Should call FileManager.getMaxDate to check for existing data
       expect(mockFileManager.getMaxDate).toHaveBeenCalled();
 
       // Should NOT call getBlock or getBlockNumber for date calculation
@@ -240,15 +252,70 @@ describe("orchestrator", () => {
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
 
-      // Should use min date (2024-05-01) as start
+      // Should use max date (2024-05-03) as start (for subsequent runs)
       expect(startDate.toISOString()).toBe(
-        new Date("2024-05-01").toISOString(),
+        new Date("2024-05-03").toISOString(),
       );
-      // Should use max date (2024-05-03) as end
-      expect(endDate.toISOString()).toBe(new Date("2024-05-03").toISOString());
+      // Should use yesterday as end date
+      const expectedYesterday = new Date("2024-05-09T23:59:59.999Z");
+      expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
+
+      // Restore Date
+      global.Date = originalDate;
     });
 
-    it("should throw error when block store is empty and no dates provided", async () => {
+    it("should not throw error when block store is empty and no dates provided - uses defaults", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock current date for consistent testing
+      const mockDate = new Date("2024-03-15T12:00:00Z");
+      const originalDate = global.Date;
+      global.Date = jest.fn((value?: string | number | Date) => {
+        if (value !== undefined) {
+          return new originalDate(value);
+        }
+        return mockDate;
+      }) as unknown as DateConstructor;
+      global.Date.now = () => mockDate.getTime();
+      global.Date.parse = originalDate.parse;
+      global.Date.UTC = originalDate.UTC;
+
+      // Mock FileManager methods returning null for empty block store
+      mockFileManager.getMinDate.mockReturnValue(null);
+      mockFileManager.getMaxDate.mockReturnValue(null);
+
+      // Mock block 1 with a specific timestamp
+      const block1Timestamp = 1622505600; // June 1, 2021 00:00:00 UTC
+      mockProvider.getBlock.mockResolvedValue({
+        timestamp: block1Timestamp,
+        number: 1,
+        hash: "0x1234567890",
+      } as never);
+
+      // Should not throw error - uses defaults instead
+      await expect(orchestrate(configWithoutDates)).resolves.not.toThrow();
+
+      // Verify defaults were used
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // End date should be yesterday
+      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
+
+      // Start date should be from block 1
+      const expectedStartDate = new Date(block1Timestamp * 1000);
+      expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
+
+      // Restore Date
+      global.Date = originalDate;
+    });
+
+    it("should default end date to yesterday when store is empty and no end date provided", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
@@ -258,24 +325,198 @@ describe("orchestrator", () => {
       mockFileManager.getMinDate.mockReturnValue(null);
       mockFileManager.getMaxDate.mockReturnValue(null);
 
-      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
-        "No block numbers found in store and no dates provided",
-      );
+      // Mock current date to a known value for testing
+      const mockDate = new Date("2024-03-15T12:00:00Z");
+      const originalDate = global.Date;
+      global.Date = jest.fn((value?: string | number | Date) => {
+        if (value !== undefined) {
+          return new originalDate(value);
+        }
+        return mockDate;
+      }) as unknown as DateConstructor;
+      global.Date.now = () => mockDate.getTime();
+      global.Date.parse = originalDate.parse;
+      global.Date.UTC = originalDate.UTC;
+
+      // Mock block 1 with a specific timestamp
+      const block1Timestamp = 1622505600; // June 1, 2021 00:00:00 UTC
+      mockProvider.getBlock.mockResolvedValue({
+        timestamp: block1Timestamp,
+        number: 1,
+        hash: "0x1234567890",
+      } as never);
+
+      await orchestrate(configWithoutDates);
+
+      // Verify that BlockFinder was called with yesterday as end date
+      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // Check end date is yesterday
+      expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
+
+      // Check start date is defined (will be from block 1)
+      expect(startDate).toBeDefined();
+
+      // Restore Date
+      global.Date = originalDate;
     });
 
-    it("should throw error when block store is missing and no dates provided", async () => {
+    it("should use block 1 date as start date when store is empty and no start date provided", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
       };
 
-      // Mock FileManager methods returning null for missing block store
+      // Mock FileManager methods returning null for empty block store
       mockFileManager.getMinDate.mockReturnValue(null);
       mockFileManager.getMaxDate.mockReturnValue(null);
 
+      // Mock current date to a known value for testing
+      const mockDate = new Date("2024-03-15T12:00:00Z");
+      const originalDate = global.Date;
+      global.Date = jest.fn((value?: string | number | Date) => {
+        if (value !== undefined) {
+          return new originalDate(value);
+        }
+        return mockDate;
+      }) as unknown as DateConstructor;
+      global.Date.now = () => mockDate.getTime();
+      global.Date.parse = originalDate.parse;
+      global.Date.UTC = originalDate.UTC;
+
+      // Mock block 1 with a specific timestamp
+      const block1Timestamp = 1622505600; // June 1, 2021 00:00:00 UTC
+      mockProvider.getBlock.mockResolvedValue({
+        timestamp: block1Timestamp,
+        number: 1,
+        hash: "0x1234567890",
+      } as never);
+
+      await orchestrate(configWithoutDates);
+
+      // Verify provider.getBlock(1) was called
+      expect(mockProvider.getBlock).toHaveBeenCalledWith(1);
+
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // Check start date is from block 1
+      expect(startDate).toBeDefined();
+      const expectedStartDate = new Date(block1Timestamp * 1000);
+      expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
+
+      // Verify end date is still yesterday
+      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
+
+      // Restore Date
+      global.Date = originalDate;
+    });
+
+    it("should throw error when block 1 cannot be fetched on first run", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock FileManager methods returning null for empty block store
+      mockFileManager.getMinDate.mockReturnValue(null);
+      mockFileManager.getMaxDate.mockReturnValue(null);
+
+      // Mock block 1 fetch failure
+      mockProvider.getBlock.mockResolvedValue(null);
+
       await expect(orchestrate(configWithoutDates)).rejects.toThrow(
-        "No block numbers found in store and no dates provided",
+        "Unable to fetch block 1 from the network",
       );
+    });
+
+    it("should use max date from store as start date on subsequent runs when no start date provided", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock FileManager methods with existing data in store
+      const existingMaxDate = new Date("2024-03-10T23:59:59.999Z");
+      const existingMinDate = new Date("2024-03-01T00:00:00.000Z");
+      mockFileManager.getMinDate.mockReturnValue(existingMinDate);
+      mockFileManager.getMaxDate.mockReturnValue(existingMaxDate);
+
+      // Mock current date to a known value for testing
+      const mockDate = new Date("2024-03-15T12:00:00Z");
+      const originalDate = global.Date;
+      global.Date = jest.fn((value?: string | number | Date) => {
+        if (value !== undefined) {
+          return new originalDate(value);
+        }
+        return mockDate;
+      }) as unknown as DateConstructor;
+      global.Date.now = () => mockDate.getTime();
+      global.Date.parse = originalDate.parse;
+      global.Date.UTC = originalDate.UTC;
+
+      await orchestrate(configWithoutDates);
+
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // Should use max date from store as start date
+      expect(startDate.toISOString()).toBe(existingMaxDate.toISOString());
+
+      // Should still default end date to yesterday
+      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
+
+      // Restore Date
+      global.Date = originalDate;
+    });
+
+    it("should handle edge case when max date in store is after yesterday", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock current date to a known value for testing
+      const mockDate = new Date("2024-03-15T12:00:00Z");
+      const originalDate = global.Date;
+      global.Date = jest.fn((value?: string | number | Date) => {
+        if (value !== undefined) {
+          return new originalDate(value);
+        }
+        return mockDate;
+      }) as unknown as DateConstructor;
+      global.Date.now = () => mockDate.getTime();
+      global.Date.parse = originalDate.parse;
+      global.Date.UTC = originalDate.UTC;
+
+      // Mock FileManager with max date that's after yesterday
+      const futureMaxDate = new Date("2024-03-16T23:59:59.999Z"); // In the future
+      const existingMinDate = new Date("2024-03-01T00:00:00.000Z");
+      mockFileManager.getMinDate.mockReturnValue(existingMinDate);
+      mockFileManager.getMaxDate.mockReturnValue(futureMaxDate);
+
+      await orchestrate(configWithoutDates);
+
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // Should ensure start date is not after end date
+      expect(startDate <= endDate).toBe(true);
+
+      // End date should still be yesterday
+      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
+
+      // Restore Date
+      global.Date = originalDate;
     });
 
     it("should pass endDate to distributorDetector", async () => {
