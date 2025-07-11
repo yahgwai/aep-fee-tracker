@@ -6,6 +6,7 @@ import { DistributorDetector } from "../../core/distributor-detection/distributo
 import { BalanceFetcher } from "../../core/fee-calculation/balance-fetcher";
 import { RecipientRecievedScanner } from "../../core/fee-calculation/recipient-recieved-scanner";
 import { FeeCalculator } from "../../core/fee-calculation/fee-calculator";
+import { getYesterday } from "../../utils/date-utils";
 
 export async function orchestrate(config: Configuration): Promise<void> {
   console.log("Starting fee calculator pipeline...");
@@ -29,27 +30,28 @@ async function parseDateRange(
   startDate: Date;
   endDate: Date;
 }> {
-  // Get dates from config or block store
+  // Handle end date: use provided date or default to yesterday
   let endDate: Date;
   if (config.endDate) {
     endDate = parseConfigDate(config.endDate, "end");
   } else {
-    const maxDate = fileManager.getMaxDate();
-    if (!maxDate) {
-      throw new Error("No block numbers found in store and no dates provided");
-    }
-    endDate = maxDate;
+    // Default to yesterday when no end date is provided
+    endDate = getYesterday();
   }
 
+  // Handle start date: use provided date, store max date (for subsequent runs), or default to yesterday (first run)
   let startDate: Date;
   if (config.startDate) {
     startDate = parseConfigDate(config.startDate, "start");
   } else {
-    const minDate = fileManager.getMinDate();
-    if (!minDate) {
-      throw new Error("No block numbers found in store and no dates provided");
+    const maxDate = fileManager.getMaxDate();
+    if (maxDate) {
+      // Subsequent run: continue from where we left off (use max date from store)
+      startDate = maxDate;
+    } else {
+      // First run: default to yesterday (same as end date for single-day processing)
+      startDate = getYesterday();
     }
-    startDate = minDate;
   }
 
   // Validate date range

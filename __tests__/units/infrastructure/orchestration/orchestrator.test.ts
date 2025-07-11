@@ -216,21 +216,22 @@ describe("orchestrator", () => {
       expect(endDate.toISOString()).toBe(new Date("2023-06-30").toISOString());
     });
 
-    it("should use store dates as defaults when not provided", async () => {
+    it("should use store dates for start date when no start-date provided on subsequent runs", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
       };
 
-      // Mock FileManager methods with specific date range
+      // Mock FileManager methods with specific date range to simulate subsequent run
       mockFileManager.getMinDate.mockReturnValue(new Date("2024-05-01"));
       mockFileManager.getMaxDate.mockReturnValue(new Date("2024-05-03"));
 
       await orchestrate(configWithoutDates);
 
-      // Should call FileManager methods to get date range
-      expect(mockFileManager.getMinDate).toHaveBeenCalled();
+      // Should call getMaxDate to get date range for start date
       expect(mockFileManager.getMaxDate).toHaveBeenCalled();
+      // Should NOT call getMinDate since we don't use it anymore
+      expect(mockFileManager.getMinDate).not.toHaveBeenCalled();
 
       // Should NOT call getBlock or getBlockNumber for date calculation
       expect(mockProvider.getBlockNumber).not.toHaveBeenCalled();
@@ -240,15 +241,18 @@ describe("orchestrator", () => {
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
 
-      // Should use min date (2024-05-01) as start
+      // Should use max date (2024-05-03) as start for subsequent run
       expect(startDate.toISOString()).toBe(
-        new Date("2024-05-01").toISOString(),
+        new Date("2024-05-03").toISOString(),
       );
-      // Should use max date (2024-05-03) as end
-      expect(endDate.toISOString()).toBe(new Date("2024-05-03").toISOString());
+      // Should use yesterday as end date (we can't predict the exact date, so check it's recent)
+      const expectedEndDate = new Date();
+      expectedEndDate.setUTCDate(expectedEndDate.getUTCDate() - 1);
+      expectedEndDate.setUTCHours(0, 0, 0, 0);
+      expect(endDate.toISOString()).toBe(expectedEndDate.toISOString());
     });
 
-    it("should throw error when block store is empty and no dates provided", async () => {
+    it("should use yesterday as default dates on first run (empty block store)", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
@@ -258,12 +262,25 @@ describe("orchestrator", () => {
       mockFileManager.getMinDate.mockReturnValue(null);
       mockFileManager.getMaxDate.mockReturnValue(null);
 
-      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
-        "No block numbers found in store and no dates provided",
-      );
+      await orchestrate(configWithoutDates);
+
+      // Should call getMaxDate to check if this is first run
+      expect(mockFileManager.getMaxDate).toHaveBeenCalled();
+
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // Both start and end should be yesterday
+      const expectedDate = new Date();
+      expectedDate.setUTCDate(expectedDate.getUTCDate() - 1);
+      expectedDate.setUTCHours(0, 0, 0, 0);
+      
+      expect(startDate.toISOString()).toBe(expectedDate.toISOString());
+      expect(endDate.toISOString()).toBe(expectedDate.toISOString());
     });
 
-    it("should throw error when block store is missing and no dates provided", async () => {
+    it("should use yesterday as default dates on first run (missing block store)", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
@@ -273,9 +290,22 @@ describe("orchestrator", () => {
       mockFileManager.getMinDate.mockReturnValue(null);
       mockFileManager.getMaxDate.mockReturnValue(null);
 
-      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
-        "No block numbers found in store and no dates provided",
-      );
+      await orchestrate(configWithoutDates);
+
+      // Should call getMaxDate to check if this is first run
+      expect(mockFileManager.getMaxDate).toHaveBeenCalled();
+
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // Both start and end should be yesterday
+      const expectedDate = new Date();
+      expectedDate.setUTCDate(expectedDate.getUTCDate() - 1);
+      expectedDate.setUTCHours(0, 0, 0, 0);
+      
+      expect(startDate.toISOString()).toBe(expectedDate.toISOString());
+      expect(endDate.toISOString()).toBe(expectedDate.toISOString());
     });
 
     it("should pass endDate to distributorDetector", async () => {
