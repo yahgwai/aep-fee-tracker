@@ -6,7 +6,7 @@ import { DistributorDetector } from "../../core/distributor-detection/distributo
 import { BalanceFetcher } from "../../core/fee-calculation/balance-fetcher";
 import { RecipientRecievedScanner } from "../../core/fee-calculation/recipient-recieved-scanner";
 import { FeeCalculator } from "../../core/fee-calculation/fee-calculator";
-import { getYesterday } from "../../utils/date-utils";
+import { getYesterday, getBlock1Date } from "../../utils/date-utils";
 
 export async function orchestrate(config: Configuration): Promise<void> {
   console.log("Starting fee calculator pipeline...");
@@ -17,7 +17,7 @@ export async function orchestrate(config: Configuration): Promise<void> {
   fileManager.ensureStoreDirectory();
 
   // Parse date range
-  const { startDate, endDate } = await parseDateRange(config, fileManager);
+  const { startDate, endDate } = await parseDateRange(config, fileManager, provider);
 
   // Execute pipeline components sequentially
   await executePipeline(fileManager, provider, startDate, endDate);
@@ -26,6 +26,7 @@ export async function orchestrate(config: Configuration): Promise<void> {
 async function parseDateRange(
   config: Configuration,
   fileManager: FileManager,
+  provider: ethers.Provider,
 ): Promise<{
   startDate: Date;
   endDate: Date;
@@ -39,7 +40,7 @@ async function parseDateRange(
     endDate = getYesterday();
   }
 
-  // Handle start date: use provided date, store max date (for subsequent runs), or default based on end date (first run)
+  // Handle start date: use provided date, store max date (for subsequent runs), or default based on store state (first run)
   let startDate: Date;
   if (config.startDate) {
     startDate = parseConfigDate(config.startDate, "start");
@@ -49,8 +50,8 @@ async function parseDateRange(
       // Subsequent run: continue from where we left off (use max date from store)
       startDate = maxDate;
     } else {
-      // First run: default to end date or yesterday, whichever is earlier, to ensure valid date range
-      startDate = endDate <= getYesterday() ? endDate : getYesterday();
+      // First run: use the date associated with block 1 for historical completeness
+      startDate = await getBlock1Date(provider);
     }
   }
 

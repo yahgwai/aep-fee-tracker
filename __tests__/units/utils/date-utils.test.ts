@@ -1,4 +1,5 @@
-import { getYesterday, formatDateToString } from "../../../src/utils/date-utils";
+import { getYesterday, formatDateToString, getBlock1Date } from "../../../src/utils/date-utils";
+import { ethers } from "ethers";
 
 describe("Date Utils", () => {
   describe("getYesterday", () => {
@@ -81,6 +82,61 @@ describe("Date Utils", () => {
       expect(formatDateToString(midnight)).toBe("2024-06-15");
       expect(formatDateToString(noon)).toBe("2024-06-15");
       expect(formatDateToString(endOfDay)).toBe("2024-06-15");
+    });
+  });
+
+  describe("getBlock1Date", () => {
+    it("should return the date associated with block 1 at start of day", async () => {
+      // Mock provider
+      const mockProvider = {
+        getBlock: jest.fn(),
+      } as unknown as ethers.Provider;
+
+      // Mock block 1 with timestamp for July 11, 2022, 10:30 AM UTC
+      const mockBlock1 = {
+        timestamp: 1657537800, // July 11, 2022, 10:30:00 UTC
+      };
+      
+      (mockProvider.getBlock as jest.Mock).mockResolvedValue(mockBlock1);
+
+      const block1Date = await getBlock1Date(mockProvider);
+
+      // Should return July 11, 2022 at start of day (00:00:00 UTC)
+      expect(block1Date.toISOString()).toBe("2022-07-11T00:00:00.000Z");
+      expect(mockProvider.getBlock).toHaveBeenCalledWith(1);
+    });
+
+    it("should set time to start of day regardless of block timestamp time", async () => {
+      const mockProvider = {
+        getBlock: jest.fn(),
+      } as unknown as ethers.Provider;
+
+      // Mock block 1 with timestamp for end of day
+      const mockBlock1 = {
+        timestamp: 1657580399, // July 11, 2022, 23:59:59 UTC
+      };
+      
+      (mockProvider.getBlock as jest.Mock).mockResolvedValue(mockBlock1);
+
+      const block1Date = await getBlock1Date(mockProvider);
+
+      // Should still return start of July 11, 2022
+      expect(block1Date.toISOString()).toBe("2022-07-11T00:00:00.000Z");
+      expect(block1Date.getUTCHours()).toBe(0);
+      expect(block1Date.getUTCMinutes()).toBe(0);
+      expect(block1Date.getUTCSeconds()).toBe(0);
+      expect(block1Date.getUTCMilliseconds()).toBe(0);
+    });
+
+    it("should throw error if block 1 is not found", async () => {
+      const mockProvider = {
+        getBlock: jest.fn(),
+      } as unknown as ethers.Provider;
+
+      (mockProvider.getBlock as jest.Mock).mockResolvedValue(null);
+
+      await expect(getBlock1Date(mockProvider)).rejects.toThrow("Block 1 not found");
+      expect(mockProvider.getBlock).toHaveBeenCalledWith(1);
     });
   });
 });

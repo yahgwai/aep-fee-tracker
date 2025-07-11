@@ -58,6 +58,18 @@ describe("orchestrator", () => {
       getBlockNumber: jest.fn(),
     } as unknown as jest.Mocked<ethers.Provider>;
 
+    // Mock block 1 for getBlock1Date functionality  
+    // Using July 11, 2022 as a reasonable genesis date for testing
+    const mockBlock1 = {
+      timestamp: 1657537800, // July 11, 2022, 10:30:00 UTC
+    };
+    (mockProvider.getBlock as jest.Mock).mockImplementation((blockNumber) => {
+      if (blockNumber === 1) {
+        return Promise.resolve(mockBlock1);
+      }
+      return Promise.resolve(null);
+    });
+
     // Mock constructors
     (FileManager as jest.MockedClass<typeof FileManager>).mockImplementation(
       () => mockFileManager,
@@ -252,7 +264,7 @@ describe("orchestrator", () => {
       expect(endDate.toISOString()).toBe(expectedEndDate.toISOString());
     });
 
-    it("should use yesterday as default dates on first run (empty block store)", async () => {
+    it("should use block 1 date as default start date on first run (empty block store)", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
@@ -266,21 +278,25 @@ describe("orchestrator", () => {
 
       // Should call getMaxDate to check if this is first run
       expect(mockFileManager.getMaxDate).toHaveBeenCalled();
+      // Should call getBlock(1) to get block 1 timestamp
+      expect(mockProvider.getBlock).toHaveBeenCalledWith(1);
 
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
 
-      // Both start and end should be yesterday
-      const expectedDate = new Date();
-      expectedDate.setUTCDate(expectedDate.getUTCDate() - 1);
-      expectedDate.setUTCHours(0, 0, 0, 0);
+      // Start date should be block 1 date (July 11, 2022)
+      const expectedStartDate = new Date("2022-07-11T00:00:00.000Z");
+      expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
       
-      expect(startDate.toISOString()).toBe(expectedDate.toISOString());
-      expect(endDate.toISOString()).toBe(expectedDate.toISOString());
+      // End date should be yesterday
+      const expectedEndDate = new Date();
+      expectedEndDate.setUTCDate(expectedEndDate.getUTCDate() - 1);
+      expectedEndDate.setUTCHours(0, 0, 0, 0);
+      expect(endDate.toISOString()).toBe(expectedEndDate.toISOString());
     });
 
-    it("should use yesterday as default dates on first run (missing block store)", async () => {
+    it("should use block 1 date as default start date on first run (missing block store)", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
@@ -294,21 +310,25 @@ describe("orchestrator", () => {
 
       // Should call getMaxDate to check if this is first run
       expect(mockFileManager.getMaxDate).toHaveBeenCalled();
+      // Should call getBlock(1) to get block 1 timestamp
+      expect(mockProvider.getBlock).toHaveBeenCalledWith(1);
 
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
 
-      // Both start and end should be yesterday
-      const expectedDate = new Date();
-      expectedDate.setUTCDate(expectedDate.getUTCDate() - 1);
-      expectedDate.setUTCHours(0, 0, 0, 0);
+      // Start date should be block 1 date (July 11, 2022)
+      const expectedStartDate = new Date("2022-07-11T00:00:00.000Z");
+      expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
       
-      expect(startDate.toISOString()).toBe(expectedDate.toISOString());
-      expect(endDate.toISOString()).toBe(expectedDate.toISOString());
+      // End date should be yesterday
+      const expectedEndDate = new Date();
+      expectedEndDate.setUTCDate(expectedEndDate.getUTCDate() - 1);
+      expectedEndDate.setUTCHours(0, 0, 0, 0);
+      expect(endDate.toISOString()).toBe(expectedEndDate.toISOString());
     });
 
-    it("should use end date as start date when end date is in the past on first run", async () => {
+    it("should use block 1 date as start date even when end date is in the past on first run", async () => {
       const pastEndDate = "2024-01-15";
       const config: Configuration = {
         storeDirectory: "/test/store",
@@ -323,12 +343,16 @@ describe("orchestrator", () => {
 
       await orchestrate(config);
 
+      // Should call getBlock(1) to get block 1 timestamp  
+      expect(mockProvider.getBlock).toHaveBeenCalledWith(1);
+
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
 
-      // Start date should equal end date to create valid range
-      expect(startDate.toISOString()).toBe(new Date(pastEndDate).toISOString());
+      // Start date should be block 1 date (July 11, 2022), end date should be the specified past date
+      const expectedStartDate = new Date("2022-07-11T00:00:00.000Z");
+      expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
       expect(endDate.toISOString()).toBe(new Date(pastEndDate).toISOString());
     });
 
