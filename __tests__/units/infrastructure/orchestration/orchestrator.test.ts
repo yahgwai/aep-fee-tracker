@@ -287,6 +287,14 @@ describe("orchestrator", () => {
       mockFileManager.getMinDate.mockReturnValue(null);
       mockFileManager.getMaxDate.mockReturnValue(null);
 
+      // Mock block 1 with a specific timestamp
+      const block1Timestamp = 1622505600; // June 1, 2021 00:00:00 UTC
+      mockProvider.getBlock.mockResolvedValue({
+        timestamp: block1Timestamp,
+        number: 1,
+        hash: "0x1234567890",
+      } as any);
+
       // Should not throw error - uses defaults instead
       await expect(orchestrate(configWithoutDates)).resolves.not.toThrow();
 
@@ -299,8 +307,8 @@ describe("orchestrator", () => {
       const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
       
-      // Start date should be 30 days before end date
-      const expectedStartDate = new Date("2024-02-13T00:00:00.000Z");
+      // Start date should be from block 1
+      const expectedStartDate = new Date(block1Timestamp * 1000);
       expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
 
       // Restore Date
@@ -330,6 +338,14 @@ describe("orchestrator", () => {
       global.Date.parse = originalDate.parse;
       global.Date.UTC = originalDate.UTC;
 
+      // Mock block 1 with a specific timestamp
+      const block1Timestamp = 1622505600; // June 1, 2021 00:00:00 UTC
+      mockProvider.getBlock.mockResolvedValue({
+        timestamp: block1Timestamp,
+        number: 1,
+        hash: "0x1234567890",
+      } as any);
+
       await orchestrate(configWithoutDates);
 
       // Verify that BlockFinder was called with yesterday as end date
@@ -341,14 +357,14 @@ describe("orchestrator", () => {
       // Check end date is yesterday
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
       
-      // Check start date is defined (will be determined by implementation)
+      // Check start date is defined (will be from block 1)
       expect(startDate).toBeDefined();
 
       // Restore Date
       global.Date = originalDate;
     });
 
-    it("should discover appropriate start date when store is empty and no start date provided", async () => {
+    it("should use block 1 date as start date when store is empty and no start date provided", async () => {
       const configWithoutDates: Configuration = {
         storeDirectory: "/test/store",
         rpcUrl: "https://test-rpc.example.com",
@@ -371,26 +387,52 @@ describe("orchestrator", () => {
       global.Date.parse = originalDate.parse;
       global.Date.UTC = originalDate.UTC;
 
+      // Mock block 1 with a specific timestamp
+      const block1Timestamp = 1622505600; // June 1, 2021 00:00:00 UTC
+      mockProvider.getBlock.mockResolvedValue({
+        timestamp: block1Timestamp,
+        number: 1,
+        hash: "0x1234567890",
+      } as any);
+
       await orchestrate(configWithoutDates);
+
+      // Verify provider.getBlock(1) was called
+      expect(mockProvider.getBlock).toHaveBeenCalledWith(1);
 
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
       
-      // Check start date is reasonable (30 days before end date)
+      // Check start date is from block 1
       expect(startDate).toBeDefined();
-      expect(startDate.toISOString).toBeDefined();
-      
-      // Verify it's 30 days before end date
-      const expectedStartDate = new Date("2024-02-13T00:00:00.000Z");
+      const expectedStartDate = new Date(block1Timestamp * 1000);
       expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
       
-      // Verify the range is correct
-      const daysBetween = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-      expect(Math.round(daysBetween)).toBe(31); // 30 days + the time difference rounds to 31
+      // Verify end date is still yesterday
+      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
 
       // Restore Date
       global.Date = originalDate;
+    });
+
+    it("should throw error when block 1 cannot be fetched on first run", async () => {
+      const configWithoutDates: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+      };
+
+      // Mock FileManager methods returning null for empty block store
+      mockFileManager.getMinDate.mockReturnValue(null);
+      mockFileManager.getMaxDate.mockReturnValue(null);
+
+      // Mock block 1 fetch failure
+      mockProvider.getBlock.mockResolvedValue(null);
+
+      await expect(orchestrate(configWithoutDates)).rejects.toThrow(
+        "Unable to fetch block 1 from the network"
+      );
     });
 
     it("should use max date from store as start date on subsequent runs when no start date provided", async () => {

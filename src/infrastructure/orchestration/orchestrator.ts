@@ -6,7 +6,7 @@ import { DistributorDetector } from "../../core/distributor-detection/distributo
 import { BalanceFetcher } from "../../core/fee-calculation/balance-fetcher";
 import { RecipientRecievedScanner } from "../../core/fee-calculation/recipient-recieved-scanner";
 import { FeeCalculator } from "../../core/fee-calculation/fee-calculator";
-import { getYesterday, getDefaultStartDate } from "../../utils/date-utils";
+import { getYesterday } from "../../utils/date-utils";
 
 export async function orchestrate(config: Configuration): Promise<void> {
   console.log("Starting fee calculator pipeline...");
@@ -17,7 +17,7 @@ export async function orchestrate(config: Configuration): Promise<void> {
   fileManager.ensureStoreDirectory();
 
   // Parse date range
-  const { startDate, endDate } = await parseDateRange(config, fileManager);
+  const { startDate, endDate } = await parseDateRange(config, fileManager, provider);
 
   // Execute pipeline components sequentially
   await executePipeline(fileManager, provider, startDate, endDate);
@@ -26,6 +26,7 @@ export async function orchestrate(config: Configuration): Promise<void> {
 async function parseDateRange(
   config: Configuration,
   fileManager: FileManager,
+  provider: ethers.Provider,
 ): Promise<{
   startDate: Date;
   endDate: Date;
@@ -41,7 +42,17 @@ async function parseDateRange(
     startDate = parseConfigDate(config.startDate, "start");
   } else {
     const maxDate = fileManager.getMaxDate();
-    startDate = maxDate || getDefaultStartDate(endDate);
+    if (maxDate) {
+      // Subsequent run: use max date from store
+      startDate = maxDate;
+    } else {
+      // First run: use the date of block 1
+      const block1 = await provider.getBlock(1);
+      if (!block1) {
+        throw new Error("Unable to fetch block 1 from the network");
+      }
+      startDate = new Date(block1.timestamp * 1000);
+    }
   }
 
   // Ensure valid date range
