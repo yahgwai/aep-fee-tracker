@@ -225,12 +225,12 @@ describe("orchestrator", () => {
       // Mock current date for consistent testing
       const mockDate = new Date("2024-05-10T12:00:00Z");
       const originalDate = global.Date;
-      global.Date = jest.fn((value?: any) => {
+      global.Date = jest.fn((value?: string | number | Date) => {
         if (value !== undefined) {
           return new originalDate(value);
         }
         return mockDate;
-      }) as any;
+      }) as unknown as DateConstructor;
       global.Date.now = () => mockDate.getTime();
       global.Date.parse = originalDate.parse;
       global.Date.UTC = originalDate.UTC;
@@ -273,12 +273,12 @@ describe("orchestrator", () => {
       // Mock current date for consistent testing
       const mockDate = new Date("2024-03-15T12:00:00Z");
       const originalDate = global.Date;
-      global.Date = jest.fn((value?: any) => {
+      global.Date = jest.fn((value?: string | number | Date) => {
         if (value !== undefined) {
           return new originalDate(value);
         }
         return mockDate;
-      }) as any;
+      }) as unknown as DateConstructor;
       global.Date.now = () => mockDate.getTime();
       global.Date.parse = originalDate.parse;
       global.Date.UTC = originalDate.UTC;
@@ -293,7 +293,7 @@ describe("orchestrator", () => {
         timestamp: block1Timestamp,
         number: 1,
         hash: "0x1234567890",
-      } as any);
+      } as never);
 
       // Should not throw error - uses defaults instead
       await expect(orchestrate(configWithoutDates)).resolves.not.toThrow();
@@ -302,11 +302,11 @@ describe("orchestrator", () => {
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
-      
+
       // End date should be yesterday
       const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
-      
+
       // Start date should be from block 1
       const expectedStartDate = new Date(block1Timestamp * 1000);
       expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
@@ -328,12 +328,12 @@ describe("orchestrator", () => {
       // Mock current date to a known value for testing
       const mockDate = new Date("2024-03-15T12:00:00Z");
       const originalDate = global.Date;
-      global.Date = jest.fn((value?: any) => {
+      global.Date = jest.fn((value?: string | number | Date) => {
         if (value !== undefined) {
           return new originalDate(value);
         }
         return mockDate;
-      }) as any;
+      }) as unknown as DateConstructor;
       global.Date.now = () => mockDate.getTime();
       global.Date.parse = originalDate.parse;
       global.Date.UTC = originalDate.UTC;
@@ -344,7 +344,7 @@ describe("orchestrator", () => {
         timestamp: block1Timestamp,
         number: 1,
         hash: "0x1234567890",
-      } as any);
+      } as never);
 
       await orchestrate(configWithoutDates);
 
@@ -353,10 +353,10 @@ describe("orchestrator", () => {
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
-      
+
       // Check end date is yesterday
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
-      
+
       // Check start date is defined (will be from block 1)
       expect(startDate).toBeDefined();
 
@@ -377,12 +377,12 @@ describe("orchestrator", () => {
       // Mock current date to a known value for testing
       const mockDate = new Date("2024-03-15T12:00:00Z");
       const originalDate = global.Date;
-      global.Date = jest.fn((value?: any) => {
+      global.Date = jest.fn((value?: string | number | Date) => {
         if (value !== undefined) {
           return new originalDate(value);
         }
         return mockDate;
-      }) as any;
+      }) as unknown as DateConstructor;
       global.Date.now = () => mockDate.getTime();
       global.Date.parse = originalDate.parse;
       global.Date.UTC = originalDate.UTC;
@@ -393,7 +393,7 @@ describe("orchestrator", () => {
         timestamp: block1Timestamp,
         number: 1,
         hash: "0x1234567890",
-      } as any);
+      } as never);
 
       await orchestrate(configWithoutDates);
 
@@ -403,12 +403,12 @@ describe("orchestrator", () => {
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
-      
+
       // Check start date is from block 1
       expect(startDate).toBeDefined();
       const expectedStartDate = new Date(block1Timestamp * 1000);
       expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
-      
+
       // Verify end date is still yesterday
       const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
@@ -431,7 +431,7 @@ describe("orchestrator", () => {
       mockProvider.getBlock.mockResolvedValue(null);
 
       await expect(orchestrate(configWithoutDates)).rejects.toThrow(
-        "Unable to fetch block 1 from the network"
+        "Unable to fetch block 1 from the network",
       );
     });
 
@@ -450,12 +450,12 @@ describe("orchestrator", () => {
       // Mock current date to a known value for testing
       const mockDate = new Date("2024-03-15T12:00:00Z");
       const originalDate = global.Date;
-      global.Date = jest.fn((value?: any) => {
+      global.Date = jest.fn((value?: string | number | Date) => {
         if (value !== undefined) {
           return new originalDate(value);
         }
         return mockDate;
-      }) as any;
+      }) as unknown as DateConstructor;
       global.Date.now = () => mockDate.getTime();
       global.Date.parse = originalDate.parse;
       global.Date.UTC = originalDate.UTC;
@@ -465,10 +465,10 @@ describe("orchestrator", () => {
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
-      
+
       // Should use max date from store as start date
       expect(startDate.toISOString()).toBe(existingMaxDate.toISOString());
-      
+
       // Should still default end date to yesterday
       const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
@@ -486,12 +486,12 @@ describe("orchestrator", () => {
       // Mock current date to a known value for testing
       const mockDate = new Date("2024-03-15T12:00:00Z");
       const originalDate = global.Date;
-      global.Date = jest.fn((value?: any) => {
+      global.Date = jest.fn((value?: string | number | Date) => {
         if (value !== undefined) {
           return new originalDate(value);
         }
         return mockDate;
-      }) as any;
+      }) as unknown as DateConstructor;
       global.Date.now = () => mockDate.getTime();
       global.Date.parse = originalDate.parse;
       global.Date.UTC = originalDate.UTC;
@@ -507,10 +507,10 @@ describe("orchestrator", () => {
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
-      
+
       // Should ensure start date is not after end date
       expect(startDate <= endDate).toBe(true);
-      
+
       // End date should still be yesterday
       const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());

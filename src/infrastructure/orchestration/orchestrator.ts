@@ -17,7 +17,11 @@ export async function orchestrate(config: Configuration): Promise<void> {
   fileManager.ensureStoreDirectory();
 
   // Parse date range
-  const { startDate, endDate } = await parseDateRange(config, fileManager, provider);
+  const { startDate, endDate } = await parseDateRange(
+    config,
+    fileManager,
+    provider,
+  );
 
   // Execute pipeline components sequentially
   await executePipeline(fileManager, provider, startDate, endDate);
@@ -32,7 +36,7 @@ async function parseDateRange(
   endDate: Date;
 }> {
   // Determine end date
-  const endDate = config.endDate 
+  const endDate = config.endDate
     ? parseConfigDate(config.endDate, "end")
     : getYesterday();
 
