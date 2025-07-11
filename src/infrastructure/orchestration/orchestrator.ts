@@ -39,7 +39,7 @@ async function parseDateRange(
     endDate = getYesterday();
   }
 
-  // Handle start date: use provided date, store max date (for subsequent runs), or default to yesterday (first run)
+  // Handle start date: use provided date, store max date (for subsequent runs), or default based on end date (first run)
   let startDate: Date;
   if (config.startDate) {
     startDate = parseConfigDate(config.startDate, "start");
@@ -49,8 +49,8 @@ async function parseDateRange(
       // Subsequent run: continue from where we left off (use max date from store)
       startDate = maxDate;
     } else {
-      // First run: default to yesterday (same as end date for single-day processing)
-      startDate = getYesterday();
+      // First run: default to end date or yesterday, whichever is earlier, to ensure valid date range
+      startDate = endDate <= getYesterday() ? endDate : getYesterday();
     }
   }
 

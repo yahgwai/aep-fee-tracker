@@ -308,6 +308,30 @@ describe("orchestrator", () => {
       expect(endDate.toISOString()).toBe(expectedDate.toISOString());
     });
 
+    it("should use end date as start date when end date is in the past on first run", async () => {
+      const pastEndDate = "2024-01-15";
+      const config: Configuration = {
+        storeDirectory: "/test/store",
+        rpcUrl: "https://test-rpc.example.com",
+        endDate: pastEndDate,
+        // No start-date provided
+      };
+
+      // Mock empty store (first run)
+      mockFileManager.getMinDate.mockReturnValue(null);
+      mockFileManager.getMaxDate.mockReturnValue(null);
+
+      await orchestrate(config);
+
+      const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
+      expect(callArgs).toBeDefined();
+      const [startDate, endDate] = callArgs!;
+
+      // Start date should equal end date to create valid range
+      expect(startDate.toISOString()).toBe(new Date(pastEndDate).toISOString());
+      expect(endDate.toISOString()).toBe(new Date(pastEndDate).toISOString());
+    });
+
     it("should pass endDate to distributorDetector", async () => {
       await orchestrate(configuration);
 
