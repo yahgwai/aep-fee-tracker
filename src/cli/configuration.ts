@@ -30,5 +30,17 @@ export function createConfiguration(
     config.endDate = endDate;
   }
 
+  if (parsedArgs["gcs-bucket"]) {
+    config.gcsBucket = parsedArgs["gcs-bucket"];
+  }
+
+  if (parsedArgs["gcs-project"]) {
+    config.gcsProject = parsedArgs["gcs-project"];
+  }
+
+  if (parsedArgs["chain"]) {
+    config.chain = parsedArgs["chain"];
+  }
+
   return config;
 }

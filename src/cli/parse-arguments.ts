@@ -6,20 +6,34 @@ export interface ParsedArguments {
   "start-date"?: string;
   "end-date"?: string;
   "store-dir"?: string;
+  "gcs-bucket"?: string;
+  "gcs-project"?: string;
+  chain?: string;
   _: string[];
   [key: string]: unknown;
 }
 
 const USAGE_MESSAGE =
-  "Usage: aep --rpc-url <url> [--start-date <date>] [--end-date <date>] [--store-dir <path>]";
+  "Usage: aep --rpc-url <url> [--start-date <date>] [--end-date <date>] [--store-dir <path>] [--gcs-bucket <bucket>] [--gcs-project <project>] [--chain <chain>]";
 
-const VALID_ARGUMENTS = ["rpc-url", "start-date", "end-date", "store-dir"];
+const VALID_ARGUMENTS = [
+  "rpc-url",
+  "start-date",
+  "end-date",
+  "store-dir",
+  "gcs-bucket",
+  "gcs-project",
+  "chain",
+];
 
 const ARGUMENT_DESCRIPTIONS = `Valid arguments:
-  --rpc-url <url>      RPC endpoint URL (required)
-  --start-date <date>  Start date in YYYY-MM-DD format
-  --end-date <date>    End date in YYYY-MM-DD format
-  --store-dir <path>   Directory for storing data`;
+  --rpc-url <url>         RPC endpoint URL (required)
+  --start-date <date>     Start date in YYYY-MM-DD format
+  --end-date <date>       End date in YYYY-MM-DD format
+  --store-dir <path>      Directory for storing data
+  --gcs-bucket <bucket>   GCS bucket name for persistent storage
+  --gcs-project <project> GCP project ID (optional, uses default credentials)
+  --chain <chain>         Chain identifier for GCS path partitioning`;
 
 function validateUnknownArguments(parsed: ParsedArguments): void {
   const unknownArgs = Object.keys(parsed)
