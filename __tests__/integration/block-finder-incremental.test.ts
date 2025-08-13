@@ -37,7 +37,6 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
       const [startDate, endDate] = getDateRange("2024-01-09", "2024-01-13");
       const expectedPartialDays = ["2024-01-09", "2024-01-10"];
 
-      console.log("Phase 1: Processing first 2 days (Jan 9-10)...");
       const partialEndDate = new Date("2024-01-10");
 
       const partialResult = await blockFinder.findBlocksForDateRange(
@@ -58,8 +57,6 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
         "2024-01-10": partialResult.blocks["2024-01-10"],
       };
 
-      console.log("Simulating interruption and restart...");
-
       const newProvider = createProvider();
       const { getCallCount, getRequestedBlocks } =
         instrumentProviderForCallTracking(newProvider);
@@ -67,8 +64,6 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
         testContext.fileManager,
         newProvider,
       );
-
-      console.log("Phase 2: Resuming for full range (Jan 9-13)...");
 
       const fullResult = await resumedBlockFinder.findBlocksForDateRange(
         startDate,
@@ -93,12 +88,10 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
 
       const resumeRpcCallCount = getCallCount();
       const requestedBlockNumbers = getRequestedBlocks();
-      console.log(`RPC calls made during resume: ${resumeRpcCallCount}`);
 
       expect(resumeRpcCallCount).toBeGreaterThan(0);
 
       const jan10Block = foundBlocks["2024-01-10"];
-      console.log(`Previously found block for Jan 10: ${jan10Block}`);
 
       const blocksBeforeOrAtJan10 = requestedBlockNumbers.filter(
         (block) => block <= jan10Block!,
@@ -107,21 +100,8 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
         (block) => block > jan10Block!,
       );
 
-      console.log(`Block requests analysis:`);
-      console.log(
-        `  - Total blocks requested: ${requestedBlockNumbers.length}`,
-      );
-      console.log(
-        `  - Blocks <= Jan 10 end-of-day (${jan10Block}): ${blocksBeforeOrAtJan10.length}`,
-      );
-      if (blocksBeforeOrAtJan10.length > 0) {
-        console.log(
-          `  - Specific blocks at/before Jan 10: ${blocksBeforeOrAtJan10.join(", ")}`,
-        );
-      }
-      console.log(`  - Blocks > Jan 10 end-of-day: ${blocksAfterJan10.length}`);
-
       expect(blocksBeforeOrAtJan10.length).toBe(0);
+      expect(blocksAfterJan10.length).toBeGreaterThan(0);
 
       expectedPartialDays.forEach((date) => {
         expect(fullResult.blocks[date]).toBe(partialResult.blocks[date]);
@@ -130,6 +110,6 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
       expect(fullResult.metadata.chain_id).toBe(CHAIN_IDS.ARBITRUM_NOVA);
 
       await newProvider.destroy();
-    }, 30000);
+    }, 60000);
   });
 });

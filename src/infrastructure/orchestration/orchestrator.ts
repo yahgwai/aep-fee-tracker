@@ -8,9 +8,10 @@ import { BalanceFetcher } from "../../core/fee-calculation/balance-fetcher";
 import { RecipientRecievedScanner } from "../../core/fee-calculation/recipient-recieved-scanner";
 import { FeeCalculator } from "../../core/fee-calculation/fee-calculator";
 import { getYesterday } from "../../utils/date-utils";
+import { logger } from "../../utils/logger";
 
 export async function orchestrate(config: Configuration): Promise<void> {
-  console.log("Starting fee calculator pipeline...");
+  logger.log("Starting fee calculator pipeline...");
 
   // Initialize infrastructure
   const fileManager = new FileManager(config.storeDirectory);
@@ -115,22 +116,22 @@ async function executePipeline(
   endDate: Date,
 ): Promise<void> {
   // 1. Find blocks for date range
-  console.log("Starting Block Finder...");
+  logger.log("Starting Block Finder...");
   const blockFinder = new BlockFinder(fileManager, provider);
   await blockFinder.findBlocksForDateRange(startDate, endDate);
 
   // 2. Detect distributors up to end date
-  console.log("Starting Distributor Detector...");
+  logger.log("Starting Distributor Detector...");
   const distributorDetector = new DistributorDetector(fileManager, provider);
   await distributorDetector.detectDistributors(endDate);
 
   // 3. Fetch distributor balances
-  console.log("Starting Balance Fetcher...");
+  logger.log("Starting Balance Fetcher...");
   const balanceFetcher = new BalanceFetcher(fileManager, provider);
   await balanceFetcher.fetchBalances();
 
   // 4. Scan for recipient received events
-  console.log("Starting Recipient Received Scanner...");
+  logger.log("Starting Recipient Received Scanner...");
   const recipientRecievedScanner = new RecipientRecievedScanner(
     provider,
     fileManager,
@@ -138,7 +139,9 @@ async function executePipeline(
   await recipientRecievedScanner.scan();
 
   // 5. Calculate fees
-  console.log("Starting Fee Calculator...");
+  logger.log("Starting Fee Calculator...");
   const feeCalculator = new FeeCalculator(fileManager);
   feeCalculator.calculateFees();
+
+  logger.log("Pipeline completed successfully");
 }

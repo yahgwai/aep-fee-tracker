@@ -257,7 +257,10 @@ describe("orchestrator", () => {
         new Date("2024-05-03").toISOString(),
       );
       // Should use yesterday as end date
-      const expectedYesterday = new Date("2024-05-09T23:59:59.999Z");
+      // Create expected date the same way getYesterday does (timezone agnostic)
+      const expectedYesterday = new Date(mockDate);
+      expectedYesterday.setDate(expectedYesterday.getDate() - 1);
+      expectedYesterday.setHours(23, 59, 59, 999);
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
 
       // Restore Date
@@ -304,7 +307,10 @@ describe("orchestrator", () => {
       const [startDate, endDate] = callArgs!;
 
       // End date should be yesterday
-      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      // Create expected date the same way getYesterday does (timezone agnostic)
+      const expectedYesterday = new Date(mockDate);
+      expectedYesterday.setDate(expectedYesterday.getDate() - 1);
+      expectedYesterday.setHours(23, 59, 59, 999);
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
 
       // Start date should be from block 1
@@ -349,7 +355,10 @@ describe("orchestrator", () => {
       await orchestrate(configWithoutDates);
 
       // Verify that BlockFinder was called with yesterday as end date
-      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      // Create expected date the same way getYesterday does (timezone agnostic)
+      const expectedYesterday = new Date(mockDate);
+      expectedYesterday.setDate(expectedYesterday.getDate() - 1);
+      expectedYesterday.setHours(23, 59, 59, 999);
       const callArgs = mockBlockFinder.findBlocksForDateRange.mock.calls[0];
       expect(callArgs).toBeDefined();
       const [startDate, endDate] = callArgs!;
@@ -410,7 +419,10 @@ describe("orchestrator", () => {
       expect(startDate.toISOString()).toBe(expectedStartDate.toISOString());
 
       // Verify end date is still yesterday
-      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      // Create expected date the same way getYesterday does (timezone agnostic)
+      const expectedYesterday = new Date(mockDate);
+      expectedYesterday.setDate(expectedYesterday.getDate() - 1);
+      expectedYesterday.setHours(23, 59, 59, 999);
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
 
       // Restore Date
@@ -442,7 +454,9 @@ describe("orchestrator", () => {
       };
 
       // Mock FileManager methods with existing data in store
-      const existingMaxDate = new Date("2024-03-10T23:59:59.999Z");
+      // Create max date with end-of-day time in local timezone
+      const existingMaxDate = new Date("2024-03-10");
+      existingMaxDate.setHours(23, 59, 59, 999);
       const existingMinDate = new Date("2024-03-01T00:00:00.000Z");
       mockFileManager.getMinDate.mockReturnValue(existingMinDate);
       mockFileManager.getMaxDate.mockReturnValue(existingMaxDate);
@@ -470,7 +484,10 @@ describe("orchestrator", () => {
       expect(startDate.toISOString()).toBe(existingMaxDate.toISOString());
 
       // Should still default end date to yesterday
-      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      // Create expected date the same way getYesterday does (timezone agnostic)
+      const expectedYesterday = new Date(mockDate);
+      expectedYesterday.setDate(expectedYesterday.getDate() - 1);
+      expectedYesterday.setHours(23, 59, 59, 999);
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
 
       // Restore Date
@@ -497,7 +514,9 @@ describe("orchestrator", () => {
       global.Date.UTC = originalDate.UTC;
 
       // Mock FileManager with max date that's after yesterday
-      const futureMaxDate = new Date("2024-03-16T23:59:59.999Z"); // In the future
+      // Create future max date with end-of-day time in local timezone
+      const futureMaxDate = new Date("2024-03-16"); // In the future
+      futureMaxDate.setHours(23, 59, 59, 999);
       const existingMinDate = new Date("2024-03-01T00:00:00.000Z");
       mockFileManager.getMinDate.mockReturnValue(existingMinDate);
       mockFileManager.getMaxDate.mockReturnValue(futureMaxDate);
@@ -512,7 +531,10 @@ describe("orchestrator", () => {
       expect(startDate <= endDate).toBe(true);
 
       // End date should still be yesterday
-      const expectedYesterday = new Date("2024-03-14T23:59:59.999Z");
+      // Create expected date the same way getYesterday does (timezone agnostic)
+      const expectedYesterday = new Date(mockDate);
+      expectedYesterday.setDate(expectedYesterday.getDate() - 1);
+      expectedYesterday.setHours(23, 59, 59, 999);
       expect(endDate.toISOString()).toBe(expectedYesterday.toISOString());
 
       // Restore Date
