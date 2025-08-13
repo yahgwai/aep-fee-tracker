@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 export interface RetryOptions {
   maxRetries?: number;
   initialDelay?: number;
@@ -25,11 +27,11 @@ function logRetryAttempt(
   const baseMessage = `Retry attempt ${retryNumber}/${maxRetries}`;
 
   if (operationName) {
-    console.log(
+    logger.log(
       `${baseMessage} for ${operationName} after error: ${error.message}`,
     );
   } else {
-    console.log(baseMessage);
+    logger.log(baseMessage);
   }
 }
 
@@ -65,7 +67,7 @@ export async function withRetry<T>(
         const isRateLimit = lastError.message.includes("429");
 
         if (isRateLimit && operationName) {
-          console.log(
+          logger.log(
             `Rate limit detected for ${operationName}, using longer delay`,
           );
         }

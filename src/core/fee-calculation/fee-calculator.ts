@@ -3,6 +3,7 @@ import {
   FeeReport,
   RecipientRecievedEventData,
 } from "../../types";
+import { logger } from "../../utils/logger";
 
 // Type for individual fee report entries
 type FeeReportEntry = {
@@ -168,7 +169,7 @@ export class FeeCalculator {
 
     // Check if total_wei is negative and log warning
     if (totalWei < 0n) {
-      console.warn(
+      logger.warn(
         `Negative total_wei detected for distributor ${distributorAddress} on ${date}: ${totalWei.toString()} wei (balance_change_wei: ${balanceChangeWei.toString()}, distributions_wei: ${distributionsWei.toString()})`,
       );
     }

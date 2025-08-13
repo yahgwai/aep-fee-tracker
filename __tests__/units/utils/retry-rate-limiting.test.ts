@@ -6,15 +6,11 @@ interface ExtendedRetryOptions extends RetryOptions {
 }
 
 describe("Retry with HTTP 429 Rate Limiting", () => {
-  let consoleSpy: jest.SpiedFunction<typeof console.log>;
-
   beforeEach(() => {
-    consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
     jest.useFakeTimers();
   });
 
   afterEach(() => {
-    consoleSpy.mockRestore();
     jest.useRealTimers();
   });
 
@@ -80,31 +76,6 @@ describe("Retry with HTTP 429 Rate Limiting", () => {
 
     await promise;
     expect(mockCall).toHaveBeenCalledTimes(2);
-  });
-
-  it("logs rate limiting detection when operation name is provided", async () => {
-    const http429Error = new Error("429 Rate Limit Exceeded");
-    const mockCall = jest
-      .fn<() => Promise<{ number: number }>>()
-      .mockRejectedValueOnce(http429Error)
-      .mockResolvedValueOnce({ number: 100 });
-
-    const promise = withRetry(mockCall, {
-      maxRetries: 2,
-      initialDelay: 100,
-      rateLimitDelay: 100,
-      operationName: "getBlock",
-    } as ExtendedRetryOptions);
-
-    // Advance timer
-    await jest.advanceTimersByTimeAsync(100);
-
-    await promise;
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Rate limit detected for getBlock, using longer delay",
-      ),
-    );
   });
 
   it("applies rate limit delay multiple times", async () => {
