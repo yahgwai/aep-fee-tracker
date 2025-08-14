@@ -34,10 +34,6 @@ export function createConfiguration(
     config.gcsBucket = parsedArgs["gcs-bucket"];
   }
 
-  if (parsedArgs["gcs-project"]) {
-    config.gcsProject = parsedArgs["gcs-project"];
-  }
-
   if (parsedArgs["chain"]) {
     config.chain = parsedArgs["chain"];
   }

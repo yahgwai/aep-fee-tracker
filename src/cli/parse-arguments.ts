@@ -7,14 +7,13 @@ export interface ParsedArguments {
   "end-date"?: string;
   "store-dir"?: string;
   "gcs-bucket"?: string;
-  "gcs-project"?: string;
   chain?: string;
   _: string[];
   [key: string]: unknown;
 }
 
 const USAGE_MESSAGE =
-  "Usage: aep --rpc-url <url> [--start-date <date>] [--end-date <date>] [--store-dir <path>] [--gcs-bucket <bucket>] [--gcs-project <project>] [--chain <chain>]";
+  "Usage: aep --rpc-url <url> [--start-date <date>] [--end-date <date>] [--store-dir <path>] [--gcs-bucket <bucket>] [--chain <chain>]";
 
 const VALID_ARGUMENTS = [
   "rpc-url",
@@ -22,7 +21,6 @@ const VALID_ARGUMENTS = [
   "end-date",
   "store-dir",
   "gcs-bucket",
-  "gcs-project",
   "chain",
 ];
 
@@ -32,7 +30,6 @@ const ARGUMENT_DESCRIPTIONS = `Valid arguments:
   --end-date <date>       End date in YYYY-MM-DD format
   --store-dir <path>      Directory for storing data
   --gcs-bucket <bucket>   GCS bucket name for persistent storage
-  --gcs-project <project> GCP project ID (optional, uses default credentials)
   --chain <chain>         Chain identifier for GCS path partitioning`;
 
 function validateUnknownArguments(parsed: ParsedArguments): void {
@@ -55,12 +52,25 @@ function validateRequiredArguments(parsed: ParsedArguments): void {
   }
 }
 
+function validateGcsArguments(parsed: ParsedArguments): void {
+  const hasGcsBucket = !!parsed["gcs-bucket"];
+  const hasChain = !!parsed["chain"];
+
+  // If GCS bucket is provided, chain must also be provided
+  if (hasGcsBucket && !hasChain) {
+    throw new Error(
+      `--chain is required when using --gcs-bucket\n\n${USAGE_MESSAGE}`,
+    );
+  }
+}
+
 export function parseArguments(args: string[]): ParsedArguments {
   const parsed = minimist(args) as ParsedArguments;
 
   validateUnknownArguments(parsed);
   validateRequiredArguments(parsed);
   validateRpcUrl(parsed["rpc-url"]!);
+  validateGcsArguments(parsed);
 
   return parsed;
 }

@@ -6,7 +6,6 @@ export interface Configuration {
   startDate?: string;
   endDate?: string;
   gcsBucket?: string;
-  gcsProject?: string;
   chain?: string;
 }
 

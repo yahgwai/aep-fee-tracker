@@ -7,11 +7,7 @@ export class GcsSync {
   private readonly bucketName: string;
   private readonly remotePath: string;
 
-  constructor(
-    bucketName: string,
-    remotePath: string = "aep-fee-tracker",
-    chain?: string,
-  ) {
+  constructor(bucketName: string, remotePath: string, chain?: string) {
     this.storage = new Storage();
     this.bucketName = bucketName;
     // If chain is provided, partition by chain: aep-fee-tracker/{chain}
@@ -21,6 +17,7 @@ export class GcsSync {
   /**
    * Download the entire store directory from GCS to local filesystem
    * Creates local directory structure matching GCS
+   * Files in GCS will overwrite existing local files
    */
   async downloadStore(localStorePath: string): Promise<void> {
     console.log(
@@ -112,6 +109,12 @@ export class GcsSync {
       if (stat.isDirectory()) {
         uploadCount += await this.uploadDirectory(fullPath, basePath, bucket);
       } else {
+        // Only upload JSON files
+        if (!fullPath.endsWith(".json")) {
+          console.warn(`  ⚠️  Skipping non-JSON file: ${item}`);
+          continue;
+        }
+
         // Calculate relative path for GCS
         const relativePath = path.relative(basePath, fullPath);
         const gcsPath = `${this.remotePath}/${relativePath.replace(/\\/g, "/")}`;
@@ -120,9 +123,7 @@ export class GcsSync {
         await bucket.upload(fullPath, {
           destination: gcsPath,
           metadata: {
-            contentType: fullPath.endsWith(".json")
-              ? "application/json"
-              : "application/octet-stream",
+            contentType: "application/json",
           },
         });
 
@@ -132,45 +133,5 @@ export class GcsSync {
     }
 
     return uploadCount;
-  }
-
-  /**
-   * Check if store exists in GCS
-   */
-  async storeExists(): Promise<boolean> {
-    try {
-      const bucket = this.storage.bucket(this.bucketName);
-      const [files] = await bucket.getFiles({
-        prefix: `${this.remotePath}/`,
-        maxResults: 1,
-      });
-      return files.length > 0;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Get store info for debugging
-   */
-  async getStoreInfo(): Promise<{ fileCount: number; totalSize: number }> {
-    try {
-      const bucket = this.storage.bucket(this.bucketName);
-      const [files] = await bucket.getFiles({ prefix: `${this.remotePath}/` });
-
-      let totalSize = 0;
-      for (const file of files) {
-        const [metadata] = await file.getMetadata();
-        totalSize += parseInt(String(metadata.size || "0"));
-      }
-
-      return {
-        fileCount: files.length,
-        totalSize,
-      };
-    } catch (error) {
-      console.error("Error getting store info:", error);
-      return { fileCount: 0, totalSize: 0 };
-    }
   }
 }

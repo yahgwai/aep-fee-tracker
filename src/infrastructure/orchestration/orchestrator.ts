@@ -21,7 +21,11 @@ export async function orchestrate(config: Configuration): Promise<void> {
   let gcsSync: GcsSync | undefined;
   if (config.gcsBucket) {
     console.log(`🔗 Initializing GCS sync with bucket: ${config.gcsBucket}`);
-    gcsSync = new GcsSync(config.gcsBucket, "aep-fee-tracker", config.chain);
+    gcsSync = new GcsSync(
+      config.gcsBucket,
+      "raw/aep_fee/router",
+      config.chain ? `chain=${config.chain}` : undefined,
+    );
 
     // Download existing store data from GCS
     console.log("📥 Downloading existing store data from GCS...");
@@ -39,27 +43,20 @@ export async function orchestrate(config: Configuration): Promise<void> {
     // Execute pipeline components sequentially
     await executePipeline(fileManager, provider, startDate, endDate);
 
-    // Upload updated store data to GCS if configured
-    if (gcsSync) {
-      console.log("📤 Uploading updated store data to GCS...");
-      await gcsSync.uploadStore(config.storeDirectory);
-    }
-
     console.log("✅ Pipeline completed successfully");
   } catch (error) {
     console.error("❌ Pipeline failed:", error);
-
-    // Still try to upload partial results to GCS if configured
+    throw error;
+  } finally {
+    // Upload store data to GCS if configured (runs on success or failure)
     if (gcsSync) {
-      console.log("📤 Uploading partial results to GCS...");
+      console.log("📤 Uploading store data to GCS...");
       try {
         await gcsSync.uploadStore(config.storeDirectory);
       } catch (uploadError) {
         console.error("❌ Failed to upload to GCS:", uploadError);
       }
     }
-
-    throw error;
   }
 }
 
