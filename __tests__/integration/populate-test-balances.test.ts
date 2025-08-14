@@ -233,8 +233,9 @@ describe("populate-test-balances script", () => {
         );
         fail("Should have thrown error for invalid output directory");
       } catch (error) {
+        // Cross-platform: Linux may return "Permission denied", macOS may return "Directory not found"
         expect((error as Error & { stderr?: string }).stderr).toMatch(
-          /permission.*denied|no.*such.*file|directory.*error/i,
+          /permission.*denied|no.*such.*file|directory.*error|Directory not found/i,
         );
       }
     });

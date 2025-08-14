@@ -8,6 +8,7 @@ import {
 } from "../../types";
 import { withRetry } from "../../utils/retry";
 import { SAFE_BLOCK_OFFSET } from "../../constants";
+import { logger } from "../../utils/logger";
 const MILLISECONDS_PER_SECOND = 1000;
 const MINIMUM_VALID_BLOCK = 1;
 const RETRY_CONFIG = {
@@ -28,7 +29,7 @@ export class BlockFinder {
   ): Promise<BlockNumberData> {
     this.validateDateRange(startDate, endDate);
 
-    console.log(
+    logger.log(
       `Finding blocks for dates: ${this.formatDateString(startDate)} to ${this.formatDateString(endDate)}`,
     );
 
@@ -85,7 +86,7 @@ export class BlockFinder {
   ): Promise<void> {
     const dateStr = this.formatDateString(date);
     if (result.blocks[dateStr]) return;
-    console.log(`Processing date: ${dateStr}`);
+    logger.log(`Processing date: ${dateStr}`);
 
     const [lowerBound, upperBound] = this.getSearchBounds(
       date,

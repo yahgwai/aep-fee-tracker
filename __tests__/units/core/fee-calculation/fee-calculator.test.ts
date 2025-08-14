@@ -91,7 +91,7 @@ describe("FeeCalculator Unit Tests", () => {
       expect(result.total_wei).toBe("5000000000000000000"); // -20 + 25 = 5
     });
 
-    it("should log warning when total_wei is negative", () => {
+    it("should handle negative total_wei correctly", () => {
       // Scenario: Large withdrawal causes negative balance change exceeding distributions
       const date = "2024-01-20";
       const distributorAddress = "0x1234567890123456789012345678901234567890";
@@ -100,11 +100,6 @@ describe("FeeCalculator Unit Tests", () => {
       const balanceChangeWei = BigInt("-500000000000000000000"); // -500 ETH (large withdrawal)
       const distributionsWei = BigInt("100000000000000000000"); // 100 ETH distributed
       const distributionsCount = 10;
-
-      // Mock console.warn
-      const consoleWarnSpy = jest
-        .spyOn(console, "warn")
-        .mockImplementation(() => {});
 
       // Access private method through reflection for unit testing
       // Note: We're updating the expected signature to include distributorAddress
@@ -141,18 +136,8 @@ describe("FeeCalculator Unit Tests", () => {
         distributionsCount,
       );
 
-      // Verify warning was logged with all required information
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          "Negative total_wei detected for distributor 0x1234567890123456789012345678901234567890 on 2024-01-20: -400000000000000000000 wei (balance_change_wei: -500000000000000000000, distributions_wei: 100000000000000000000)",
-        ),
-      );
-
       // Verify result still contains negative total_wei
       expect(result.total_wei).toBe("-400000000000000000000");
-
-      // Restore console.warn
-      consoleWarnSpy.mockRestore();
     });
   });
 

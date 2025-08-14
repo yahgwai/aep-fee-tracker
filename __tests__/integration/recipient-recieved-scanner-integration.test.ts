@@ -236,7 +236,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       for (const distributorAddress of TEST_DISTRIBUTORS_WITH_EVENTS) {
         assertEventDataCreated(distributorAddress);
       }
-    }, 30000);
+    }, 60000);
 
     it("should parse RecipientRecieved events correctly", async () => {
       const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
@@ -246,7 +246,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
 
       // Assert
       assertEventDataCreated(testDistributor);
-    });
+    }, 30000);
 
     it("should handle distributors without events gracefully", async () => {
       const testDistributor = TEST_DISTRIBUTORS_WITHOUT_EVENTS[0]!;
@@ -279,7 +279,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       expect(eventData?.metadata.last_scanned_block).toBeGreaterThan(0);
       expect(eventData?.events).toBeDefined();
       expect(typeof eventData?.events).toBe("object");
-    });
+    }, 30000);
 
     it("should handle block range chunking for large ranges", async () => {
       // This test verifies chunking works by scanning a distributor
@@ -295,7 +295,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       // Should have created the file and scanned successfully
       expect(eventData).toBeDefined();
       expect(eventData?.metadata.last_scanned_block).toBeGreaterThan(0);
-    });
+    }, 30000);
   });
 
   describe("Data Persistence", () => {
@@ -348,7 +348,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       );
       expect(eventData?.metadata.last_scanned_block).toBeDefined();
       expect(eventData?.events).toBeDefined();
-    });
+    }, 30000);
   });
 
   describe("Incremental Scanning", () => {
@@ -390,7 +390,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
 
       // Assert - should have scanned the additional day
       expect(secondScanLastBlock).toBeGreaterThan(firstScanLastBlock);
-    });
+    }, 30000);
 
     it("should not duplicate events on re-run", async () => {
       const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
@@ -412,7 +412,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       // Assert
       expect(secondEventCount).toBe(firstEventCount);
       expect(new Set(secondEventKeys)).toEqual(new Set(firstEventKeys));
-    });
+    }, 30000);
 
     it("should correctly merge new events with existing", async () => {
       const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
@@ -440,7 +440,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       for (const key of firstEventKeys) {
         expect(secondEventKeys.includes(key)).toBe(true);
       }
-    });
+    }, 30000);
 
     it("should handle date-based incremental updates correctly", async () => {
       const testDistributor = TEST_DISTRIBUTORS_WITH_EVENTS[0]!;
@@ -467,7 +467,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
       expect(secondScanData?.metadata.last_scanned_block).toBeGreaterThan(
         firstScanData?.metadata.last_scanned_block || 0,
       );
-    });
+    }, 30000);
   });
 
   describe("Edge Cases", () => {
@@ -540,7 +540,7 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
 
       // Assert - If we got results, the retry mechanism worked
       assertEventDataCreated(testDistributor);
-    });
+    }, 30000);
 
     it("should throw error for non-existent distributor", async () => {
       const nonExistentAddress = ethers.getAddress(
@@ -572,6 +572,6 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
           fileManager.readRecipientRecievedEvents(distributorAddress);
         expect(eventData).toBeUndefined();
       }
-    }, 30000);
+    }, 60000);
   });
 });

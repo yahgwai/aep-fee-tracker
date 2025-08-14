@@ -26,7 +26,6 @@ describe("FileManager - Integration Tests", () => {
       const { fileManager } = testContext;
 
       // Step 1: Write block numbers for date range
-      console.log("Step 1: Writing block numbers for date range...");
       const blockNumbers = {
         metadata: {
           chain_id: 42170,
@@ -46,7 +45,6 @@ describe("FileManager - Integration Tests", () => {
       expect(savedBlockNumbers).toEqual(blockNumbers);
 
       // Step 2: Discover and write new distributors
-      console.log("Step 2: Writing distributor data...");
       const distributor1Address = getAddress(
         "0x1111111111111111111111111111111111111111",
       );
@@ -102,7 +100,6 @@ describe("FileManager - Integration Tests", () => {
       expect(savedDistributors).toEqual(distributors);
 
       // Step 3: Write daily balances for each distributor
-      console.log("Step 3: Writing distributor balances...");
 
       const balances1 = {
         metadata: {
@@ -151,7 +148,6 @@ describe("FileManager - Integration Tests", () => {
       // Step 4: Outflows removed - using recipient received events instead
 
       // Step 5: Read everything back and verify consistency
-      console.log("Step 5: Reading all data back and verifying consistency...");
 
       // Verify all files exist
       const storePath = path.join(testContext.tempDir, "store");
@@ -220,7 +216,6 @@ describe("FileManager - Integration Tests", () => {
       // expect(readOutflows2).toEqual(outflows2);
 
       // Step 6: Simulate multi-day updates
-      console.log("Step 6: Simulating multi-day updates...");
 
       // Add a new day's data
       const updatedBlockNumbers = {
@@ -398,7 +393,6 @@ describe("FileManager - Integration Tests", () => {
       ];
 
       // Execute all operations concurrently
-      console.log("Executing concurrent operations...");
       await Promise.all(
         operations.map(
           (op) =>
@@ -413,7 +407,6 @@ describe("FileManager - Integration Tests", () => {
       );
 
       // Verify no data corruption or lost writes
-      console.log("Verifying data integrity after concurrent operations...");
 
       // Check block numbers
       const finalBlockNumbers = fileManager.readBlockNumbers();

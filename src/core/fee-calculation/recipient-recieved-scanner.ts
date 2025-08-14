@@ -8,6 +8,7 @@ import {
 } from "../../types";
 import { withRetry } from "../../utils/retry";
 import { chunkBlockRange } from "../block-processing/block-range-chunking";
+import { logger } from "../../utils/logger";
 
 // Event signature and topic for RecipientRecieved event
 export const RECIPIENT_RECIEVED_EVENT_SIGNATURE =
@@ -149,14 +150,12 @@ export class RecipientRecievedScanner {
       }
 
       if (!distributorInfo.is_reward_distributor) {
-        console.log(
-          `Skipping distributor ${address}: not a reward distributor`,
-        );
+        logger.log(`Skipping distributor ${address}: not a reward distributor`);
         continue;
       }
 
       rewardDistributorIndex++;
-      console.log(
+      logger.log(
         `Scanning events for distributor ${rewardDistributorIndex}/${rewardDistributors.length}: ${address}`,
       );
 
@@ -262,7 +261,7 @@ export class RecipientRecievedScanner {
       return;
     }
 
-    console.log(`Scanning date range: ${startDate} to ${maxDateInStore}`);
+    logger.log(`Scanning date range: ${startDate} to ${maxDateInStore}`);
 
     // Get chain ID from distributors data
     const distributorsData = this.fileManager.readDistributors();
@@ -313,9 +312,7 @@ export class RecipientRecievedScanner {
 
     // Parse and store all accumulated events at once
     if (allEvents.length > 0 || lastProcessedBlock > 0) {
-      console.log(
-        `Found ${allEvents.length} events for distributor ${address}`,
-      );
+      logger.log(`Found ${allEvents.length} events for distributor ${address}`);
       this.parseAndStoreEvents(
         address,
         allEvents,

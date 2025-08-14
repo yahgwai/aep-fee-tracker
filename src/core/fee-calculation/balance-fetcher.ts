@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import { FileManager } from "../../infrastructure/storage/file-manager";
 import { BalanceData } from "../../types";
 import { withRetry } from "../../utils/retry";
+import { logger } from "../../utils/logger";
 
 // Retry configuration for RPC calls
 const RPC_RETRY_CONFIG = {
@@ -137,14 +138,12 @@ export class BalanceFetcher {
       }
 
       if (!distributorInfo.is_reward_distributor) {
-        console.log(
-          `Skipping distributor ${address}: not a reward distributor`,
-        );
+        logger.log(`Skipping distributor ${address}: not a reward distributor`);
         continue;
       }
 
       rewardDistributorIndex++;
-      console.log(
+      logger.log(
         `Fetching balances for distributor ${rewardDistributorIndex}/${rewardDistributors.length}: ${address}`,
       );
 
@@ -197,7 +196,7 @@ export class BalanceFetcher {
 
     // Fetch balances in chronological order
     for (const { address, date, block } of allFetches) {
-      console.log(`Fetching balance for ${address} on ${date}`);
+      logger.log(`Fetching balance for ${address} on ${date}`);
       const balance = await withRetry(
         () => this.provider.getBalance(address, block),
         {

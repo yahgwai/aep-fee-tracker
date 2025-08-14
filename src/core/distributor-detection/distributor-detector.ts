@@ -8,6 +8,7 @@ import {
 import { withRetry } from "../../utils/retry";
 import { VALID_REWARD_DISTRIBUTOR_HASHES } from "../../constants/reward-distributor-bytecode";
 import { DISTRIBUTOR_METHODS } from "../../constants";
+import { logger } from "../../utils/logger";
 import {
   OWNER_ACTS_EVENT_ABI,
   ARBOWNER_PRECOMPILE_ADDRESS,
@@ -182,7 +183,7 @@ export class DistributorDetector {
     // Process each chunk
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i]!;
-      console.log(`Processing chunk ${i + 1}/${chunks.length}`);
+      logger.log(`Processing chunk ${i + 1}/${chunks.length}`);
       // Construct filter with OR logic for method signatures
       const filter = {
         address: ARBOWNER_PRECOMPILE_ADDRESS,
@@ -230,7 +231,7 @@ export class DistributorDetector {
     const endBlock = this.getBlockForDate(endDate);
     const scanRange = this.calculateScanRange(existingData, endBlock);
 
-    console.log(`Scanning blocks ${scanRange.fromBlock}-${scanRange.toBlock}`);
+    logger.log(`Scanning blocks ${scanRange.fromBlock}-${scanRange.toBlock}`);
 
     // Check if scanning is needed
     if (!this.isScanningNeeded(scanRange)) {
@@ -335,13 +336,13 @@ export class DistributorDetector {
       if (!updatedData.distributors[address]) {
         // Initialize with single-element array for new address
         updatedData.distributors[address] = [distributor];
-        console.log(
+        logger.log(
           `Found new distributor: ${address} (type: ${distributor.type})`,
         );
       } else {
         // Append to existing array for existing address
         updatedData.distributors[address].push(distributor);
-        console.log(
+        logger.log(
           `Found additional type for distributor: ${address} (type: ${distributor.type})`,
         );
       }
