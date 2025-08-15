@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { Configuration } from "../../types";
 import { FileManager } from "../storage/file-manager";
+import { GcsSync } from "../storage/gcs-sync";
 import { BlockFinder } from "../../core/block-processing/block-finder";
 import { DistributorDetector } from "../../core/distributor-detection/distributor-detector";
 import { BalanceFetcher } from "../../core/fee-calculation/balance-fetcher";
@@ -17,15 +18,47 @@ export async function orchestrate(config: Configuration): Promise<void> {
   const provider = new ethers.JsonRpcProvider(config.rpcUrl);
   fileManager.ensureStoreDirectory();
 
-  // Parse date range
-  const { startDate, endDate } = await parseDateRange(
-    config,
-    fileManager,
-    provider,
-  );
+  // Initialize GCS sync if bucket is provided
+  let gcsSync: GcsSync | undefined;
+  if (config.gcsBucket) {
+    console.log(`🔗 Initializing GCS sync with bucket: ${config.gcsBucket}`);
+    gcsSync = new GcsSync(
+      config.gcsBucket,
+      "raw/aep_fee/router",
+      config.chain ? `chain=${config.chain}` : undefined,
+    );
 
-  // Execute pipeline components sequentially
-  await executePipeline(fileManager, provider, startDate, endDate);
+    // Download existing store data from GCS
+    console.log("📥 Downloading existing store data from GCS...");
+    await gcsSync.downloadStore(config.storeDirectory);
+  }
+
+  try {
+    // Parse date range (after potentially downloading existing data)
+    const { startDate, endDate } = await parseDateRange(
+      config,
+      fileManager,
+      provider,
+    );
+
+    // Execute pipeline components sequentially
+    await executePipeline(fileManager, provider, startDate, endDate);
+
+    console.log("✅ Pipeline completed successfully");
+  } catch (error) {
+    console.error("❌ Pipeline failed:", error);
+    throw error;
+  } finally {
+    // Upload store data to GCS if configured (runs on success or failure)
+    if (gcsSync) {
+      console.log("📤 Uploading store data to GCS...");
+      try {
+        await gcsSync.uploadStore(config.storeDirectory);
+      } catch (uploadError) {
+        console.error("❌ Failed to upload to GCS:", uploadError);
+      }
+    }
+  }
 }
 
 async function parseDateRange(

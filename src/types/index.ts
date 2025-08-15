@@ -5,6 +5,8 @@ export interface Configuration {
   rpcUrl: string;
   startDate?: string;
   endDate?: string;
+  gcsBucket?: string;
+  chain?: string;
 }
 
 export interface BlockNumberData {
