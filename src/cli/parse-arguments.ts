@@ -25,10 +25,10 @@ const VALID_ARGUMENTS = [
 ];
 
 const ARGUMENT_DESCRIPTIONS = `Valid arguments:
-  --rpc-url <url>         RPC endpoint URL (required)
-  --start-date <date>     Start date in YYYY-MM-DD format
-  --end-date <date>       End date in YYYY-MM-DD format
-  --store-dir <path>      Directory for storing data
+  --rpc-url <url>      RPC endpoint URL (required)
+  --start-date <date>  Start date in YYYY-MM-DD format
+  --end-date <date>    End date in YYYY-MM-DD format
+  --store-dir <path>   Directory for storing data
   --gcs-bucket <bucket>   GCS bucket name for persistent storage
   --chain <chain>         Chain identifier for GCS path partitioning`;
 
