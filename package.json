@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --maxWorkers=100%",
     "test:coverage": "jest --coverage --maxWorkers=100%",
+    "test:timing": "jest --maxWorkers=100% --json --outputFile=test-results/test-results.json 2>&1; npx ts-node scripts/analyze-test-timings.ts",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
