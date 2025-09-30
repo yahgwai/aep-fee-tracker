@@ -16,23 +16,11 @@ import {
   cleanupTestEnvironment,
   TestContext,
 } from "../units/infrastructure/storage/test-utils";
+import { createMockedProvider } from "../units/core/block-processing/test-utils";
 import { ARBOWNER_PRECOMPILE_ADDRESS } from "../../src/core/distributor-detection/constants";
 
 // Network configuration for Nova RPC
 const ARBITRUM_NOVA_CHAIN_ID = 42170;
-const ARBITRUM_NOVA_RPC_URL = process.env["ARBITRUM_NOVA_RPC_URL"] as string;
-const NETWORK_CONFIG = {
-  chainId: ARBITRUM_NOVA_CHAIN_ID,
-  name: "arbitrum-nova",
-};
-
-// Helper to create Nova provider
-function createNovaProvider(): ethers.JsonRpcProvider {
-  const network = ethers.Network.from(NETWORK_CONFIG);
-  return new ethers.JsonRpcProvider(ARBITRUM_NOVA_RPC_URL, network, {
-    staticNetwork: network,
-  });
-}
 
 // Test distributor addresses - using checksummed addresses
 const TEST_DISTRIBUTORS_WITH_EVENTS = [
@@ -205,7 +193,11 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
   beforeEach(() => {
     testContext = setupTestEnvironment();
     fileManager = testContext.fileManager as unknown as FileManager;
-    provider = createNovaProvider();
+    // Use mocked provider with auto-loaded test event data
+    provider = createMockedProvider({
+      loadEventData: true,
+      currentBlock: 80000000, // High enough for our test data
+    });
     scanner = new RecipientRecievedScanner(provider, fileManager);
 
     // Mock Date to return a date within our test data range
