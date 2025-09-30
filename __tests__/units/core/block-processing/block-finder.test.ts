@@ -6,11 +6,10 @@ import {
   TestContext,
 } from "../../infrastructure/storage/test-utils";
 import {
-  createProvider,
+  createMockedProvider,
   createBlockFinder,
   TEST_BLOCKS,
   getDateRange,
-  LOCALHOST_RPC,
 } from "./test-utils";
 import { BlockFinder } from "../../../../src/core/block-processing/block-finder";
 import { BlockNumberData } from "../../../../src/types";
@@ -23,7 +22,10 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
   beforeEach(() => {
     testContext = setupTestEnvironment();
-    provider = createProvider();
+    provider = createMockedProvider({
+      loadEventData: true,
+      currentBlock: 84000000,
+    });
     blockFinder = createBlockFinder(testContext.fileManager, provider);
   });
 
@@ -255,8 +257,22 @@ describe("BlockFinder - findBlocksForDateRange", () => {
 
   describe("Error handling", () => {
     it("should throw error with context when RPC provider is not available", async () => {
-      const badProvider = createProvider(LOCALHOST_RPC);
-      const [startDate, endDate] = getDateRange("2024-01-15", "2024-01-15");
+      const badProvider = {
+        async getNetwork() {
+          return {
+            chainId: BigInt(42170),
+            name: "arbitrum-nova",
+          };
+        },
+        async getBlockNumber() {
+          throw new Error("Network error");
+        },
+        async getBlock() {
+          throw new Error("Network error");
+        },
+        async destroy() {},
+      } as unknown as ethers.JsonRpcProvider;
+      const [startDate, endDate] = getDateRange("2022-01-15", "2022-01-16");
 
       try {
         const badBlockFinder = createBlockFinder(

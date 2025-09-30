@@ -197,6 +197,17 @@ function interpolateBlockTimestamp(
   }
 
   if (blockNumber >= lastEntry.blockNumber) {
+    // Extrapolate beyond the last known block using average block time from last two entries
+    if (blockTimestampMap.length >= 2) {
+      const secondLast = blockTimestampMap[blockTimestampMap.length - 2];
+      if (secondLast) {
+        const avgBlockTime =
+          (lastEntry.timestamp - secondLast.timestamp) /
+          (lastEntry.blockNumber - secondLast.blockNumber);
+        const blocksAfterLast = blockNumber - lastEntry.blockNumber;
+        return lastEntry.timestamp + Math.floor(blocksAfterLast * avgBlockTime);
+      }
+    }
     return lastEntry.timestamp;
   }
 
@@ -333,10 +344,11 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
   const eventData = loadEventData ? loadRecipientEventTestData() : null;
 
   let blockTimestampMap: BlockTimestampEntry[] | null = null;
+  let effectiveCurrentBlock = currentBlock;
   if (loadEventData) {
     const blockNumbersPath = path.join(
       __dirname,
-      "../../test-data/distributor-detector/block_numbers.json",
+      "../../../test-data/distributor-detector/block_numbers.json",
     );
     if (fs.existsSync(blockNumbersPath)) {
       try {
@@ -344,6 +356,13 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
           fs.readFileSync(blockNumbersPath, "utf8"),
         );
         blockTimestampMap = createBlockTimestampMap(blockNumbersData.blocks);
+        // Use the last known block as currentBlock
+        if (blockTimestampMap && blockTimestampMap.length > 0) {
+          const lastEntry = blockTimestampMap[blockTimestampMap.length - 1];
+          if (lastEntry) {
+            effectiveCurrentBlock = lastEntry.blockNumber;
+          }
+        }
       } catch {
         blockTimestampMap = null;
       }
@@ -368,6 +387,12 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
     },
 
     async getBlockNumber() {
+      callCount++;
+
+      if (failAfterNCalls && callCount > failAfterNCalls) {
+        throw new Error(`Simulated RPC error after ${failAfterNCalls} calls`);
+      }
+
       if (trackCalls) {
         callLog.push({
           method: "getBlockNumber",
@@ -377,7 +402,7 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
       }
       if (delayMs > 0)
         await new Promise((resolve) => setTimeout(resolve, delayMs));
-      return currentBlock;
+      return effectiveCurrentBlock;
     },
 
     async getBlock(blockTag: number | string) {
@@ -388,7 +413,7 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
       }
 
       if (typeof blockTag === "string" && blockTag === "latest") {
-        blockTag = currentBlock;
+        blockTag = effectiveCurrentBlock;
       }
 
       const blockNumber =
@@ -408,7 +433,7 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
       if (delayMs > 0)
         await new Promise((resolve) => setTimeout(resolve, delayMs));
 
-      if (blockNumber > currentBlock || blockNumber < 1) {
+      if (blockNumber > effectiveCurrentBlock || blockNumber < 1) {
         return null;
       }
 
@@ -448,7 +473,7 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
       const normalizeBlockTag = (tag: ethers.BlockTag | undefined): number => {
         if (tag === undefined || tag === null) return 0;
         if (typeof tag === "string") {
-          if (tag === "latest") return currentBlock;
+          if (tag === "latest") return effectiveCurrentBlock;
           if (tag === "earliest") return 0;
           return parseInt(tag, 16);
         }
@@ -477,7 +502,8 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
       }
 
       const fromBlock = normalizeBlockTag(filter.fromBlock);
-      const toBlock = normalizeBlockTag(filter.toBlock) || currentBlock;
+      const toBlock =
+        normalizeBlockTag(filter.toBlock) || effectiveCurrentBlock;
 
       const filteredLogs = allLogs.filter(
         (log) => log.blockNumber >= fromBlock && log.blockNumber <= toBlock,
