@@ -24,7 +24,6 @@ describe("BlockFinder - findBlocksForDateRange", () => {
     testContext = setupTestEnvironment();
     provider = createMockedProvider({
       loadEventData: true,
-      currentBlock: 84000000,
     });
     blockFinder = createBlockFinder(testContext.fileManager, provider);
   });

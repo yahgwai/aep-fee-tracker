@@ -34,6 +34,24 @@ export function createMockProvider(
   return createProvider(rpcUrl);
 }
 
+export function createFailingMockProvider(): ethers.JsonRpcProvider {
+  const mockProvider = {
+    async getNetwork() {
+      throw new Error("Test network error");
+    },
+    async getBlockNumber() {
+      throw new Error("Test RPC error");
+    },
+    async getBlock() {
+      throw new Error("Test block fetch error");
+    },
+    async destroy() {},
+    _isProvider: true,
+  } as unknown as ethers.JsonRpcProvider;
+
+  return mockProvider;
+}
+
 // BlockFinder creation helpers
 export function createBlockFinder(
   fileManager: FileManager,
@@ -197,17 +215,8 @@ function interpolateBlockTimestamp(
   }
 
   if (blockNumber >= lastEntry.blockNumber) {
-    // Extrapolate beyond the last known block using average block time from last two entries
-    if (blockTimestampMap.length >= 2) {
-      const secondLast = blockTimestampMap[blockTimestampMap.length - 2];
-      if (secondLast) {
-        const avgBlockTime =
-          (lastEntry.timestamp - secondLast.timestamp) /
-          (lastEntry.blockNumber - secondLast.blockNumber);
-        const blocksAfterLast = blockNumber - lastEntry.blockNumber;
-        return lastEntry.timestamp + Math.floor(blocksAfterLast * avgBlockTime);
-      }
-    }
+    // Use the last known block's timestamp for any block at or beyond it
+    // This prevents extrapolation beyond our test data
     return lastEntry.timestamp;
   }
 

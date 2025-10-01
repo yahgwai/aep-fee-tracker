@@ -5,7 +5,11 @@ import {
   cleanupTestEnvironment,
   TestContext,
 } from "../../infrastructure/storage/test-utils";
-import { createMockProvider, expectError, INVALID_RPC } from "./test-utils";
+import {
+  createMockProvider,
+  createFailingMockProvider,
+  expectError,
+} from "./test-utils";
 import { BlockFinder } from "../../../../src/core/block-processing/block-finder";
 import { BlockFinderError, RPCError } from "../../../../src/types";
 
@@ -14,10 +18,20 @@ describe("BlockFinder - Error Messages", () => {
   let provider: ethers.JsonRpcProvider;
   let blockFinder: BlockFinder;
 
+  const fastRetryConfig = {
+    initialDelay: 0,
+    backoffMultiplier: 1,
+    maxRetries: 3,
+  };
+
   beforeEach(() => {
     testContext = setupTestEnvironment();
-    provider = createMockProvider(INVALID_RPC);
-    blockFinder = new BlockFinder(testContext.fileManager, provider);
+    provider = createFailingMockProvider();
+    blockFinder = new BlockFinder(
+      testContext.fileManager,
+      provider,
+      fastRetryConfig,
+    );
   });
 
   afterEach(async () => {
@@ -87,6 +101,7 @@ describe("BlockFinder - Error Messages", () => {
       const mockBlockFinder = new BlockFinder(
         testContext.fileManager,
         mockProvider,
+        fastRetryConfig,
       );
 
       const error = await expectError(() =>
@@ -130,6 +145,7 @@ describe("BlockFinder - Error Messages", () => {
       const mockBlockFinder = new BlockFinder(
         testContext.fileManager,
         mockProvider,
+        fastRetryConfig,
       );
 
       const error = await expectError(() =>
@@ -166,6 +182,7 @@ describe("BlockFinder - Error Messages", () => {
       const mockBlockFinder = new BlockFinder(
         testContext.fileManager,
         mockProvider,
+        fastRetryConfig,
       );
 
       const error = await expectError(() =>
