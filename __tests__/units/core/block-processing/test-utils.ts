@@ -263,7 +263,6 @@ function loadRecipientEventTestData(): Map<string, ethers.Log[]> {
     "../../test-data/recipient-recieved",
   );
 
-  // Check if directory exists
   if (!fs.existsSync(testDataDir)) {
     return eventData;
   }
@@ -312,6 +311,60 @@ function loadRecipientEventTestData(): Map<string, ethers.Log[]> {
   return eventData;
 }
 
+/**
+ * Load balance test data from test-data directory.
+ * Returns a Map keyed by checksummed addresses with balance data per block.
+ */
+function loadBalanceTestData(): Map<string, Map<number, bigint>> {
+  const balanceData = new Map<string, Map<number, bigint>>();
+  const testDataDir = path.join(
+    __dirname,
+    "../../../test-data/distributor-detector/balance_data",
+  );
+
+  if (!fs.existsSync(testDataDir)) {
+    return balanceData;
+  }
+
+  const distributorDirs = fs.readdirSync(testDataDir).filter((item) => {
+    const itemPath = path.join(testDataDir, item);
+    return fs.statSync(itemPath).isDirectory() && ethers.isAddress(item);
+  });
+
+  for (const distributorAddress of distributorDirs) {
+    const balanceFilePath = path.join(
+      testDataDir,
+      distributorAddress,
+      "balances.json",
+    );
+
+    if (fs.existsSync(balanceFilePath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(balanceFilePath, "utf8"));
+
+        if (data.balances) {
+          const blockBalances = new Map<number, bigint>();
+
+          for (const [, balanceInfo] of Object.entries(data.balances)) {
+            const { block_number, balance_wei } = balanceInfo as {
+              block_number: number;
+              balance_wei: string;
+            };
+            blockBalances.set(block_number, BigInt(balance_wei));
+          }
+
+          const checksummedAddress = ethers.getAddress(distributorAddress);
+          balanceData.set(checksummedAddress, blockBalances);
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  return balanceData;
+}
+
 export interface MockProviderOptions {
   trackCalls?: boolean;
   currentBlock?: number;
@@ -319,6 +372,7 @@ export interface MockProviderOptions {
   failAfterNCalls?: number;
   delayMs?: number;
   loadEventData?: boolean; // Auto-load test data when true
+  loadBalanceData?: boolean; // Auto-load balance test data when true
 }
 
 /**
@@ -343,6 +397,7 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
     failAfterNCalls,
     delayMs = 0,
     loadEventData = false,
+    loadBalanceData = false,
   } = options;
 
   let callCount = 0;
@@ -351,6 +406,7 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
     [];
 
   const eventData = loadEventData ? loadRecipientEventTestData() : null;
+  const balanceData = loadBalanceData ? loadBalanceTestData() : null;
 
   let blockTimestampMap: BlockTimestampEntry[] | null = null;
   let effectiveCurrentBlock = currentBlock;
@@ -526,6 +582,46 @@ export function createMockedProvider(options: MockProviderOptions = {}) {
       });
 
       return filteredLogs;
+    },
+
+    async getBalance(address: string, blockTag?: number | string) {
+      callCount++;
+
+      if (failAfterNCalls && callCount > failAfterNCalls) {
+        throw new Error(`Simulated RPC error after ${failAfterNCalls} calls`);
+      }
+
+      const blockNumber =
+        blockTag === undefined || blockTag === "latest"
+          ? effectiveCurrentBlock
+          : typeof blockTag === "number"
+            ? blockTag
+            : parseInt(blockTag as string, 10);
+
+      if (trackCalls) {
+        callLog.push({
+          method: "getBalance",
+          params: [address, blockNumber],
+          timestamp: Date.now(),
+        });
+      }
+
+      if (delayMs > 0)
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+      if (balanceData) {
+        const checksummedAddress = ethers.getAddress(address);
+        const addressBalances = balanceData.get(checksummedAddress);
+
+        if (addressBalances) {
+          const balance = addressBalances.get(blockNumber);
+          if (balance !== undefined) {
+            return balance;
+          }
+        }
+      }
+
+      return BigInt(0);
     },
 
     async destroy() {
