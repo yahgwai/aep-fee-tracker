@@ -1,43 +1,38 @@
 import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
-import { ethers } from "ethers";
 import {
   setupTestEnvironment,
   cleanupTestEnvironment,
   TestContext,
 } from "../units/infrastructure/storage/test-utils";
 import {
-  createProvider,
   createBlockFinder,
-  instrumentProviderForCallTracking,
   getDateRange,
+  createMockedProvider,
 } from "../units/core/block-processing/test-utils";
-import { BlockFinder } from "../../src/core/block-processing/block-finder";
 import { CHAIN_IDS } from "../../src/constants";
 
 describe("BlockFinder - Incremental Processing Integration Test", () => {
   let testContext: TestContext;
-  let provider: ethers.JsonRpcProvider;
-  let blockFinder: BlockFinder;
 
   beforeEach(() => {
     testContext = setupTestEnvironment();
-    provider = createProvider();
-    blockFinder = createBlockFinder(testContext.fileManager, provider);
   });
 
   afterEach(async () => {
     cleanupTestEnvironment(testContext.tempDir);
-    if (provider) {
-      await provider.destroy();
-    }
   });
 
   describe("Incremental processing after interruption", () => {
     it("should resume processing after interruption without duplicate RPC calls", async () => {
       const [startDate, endDate] = getDateRange("2024-01-09", "2024-01-13");
       const expectedPartialDays = ["2024-01-09", "2024-01-10"];
-
       const partialEndDate = new Date("2024-01-10");
+
+      const firstProvider = createMockedProvider();
+      const blockFinder = createBlockFinder(
+        testContext.fileManager,
+        firstProvider,
+      );
 
       const partialResult = await blockFinder.findBlocksForDateRange(
         startDate,
@@ -57,12 +52,10 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
         "2024-01-10": partialResult.blocks["2024-01-10"],
       };
 
-      const newProvider = createProvider();
-      const { getCallCount, getRequestedBlocks } =
-        instrumentProviderForCallTracking(newProvider);
+      const resumedProvider = createMockedProvider();
       const resumedBlockFinder = createBlockFinder(
         testContext.fileManager,
-        newProvider,
+        resumedProvider,
       );
 
       const fullResult = await resumedBlockFinder.findBlocksForDateRange(
@@ -86,21 +79,21 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
         expectedAllDays.length,
       );
 
-      const resumeRpcCallCount = getCallCount();
-      const requestedBlockNumbers = getRequestedBlocks();
+      const resumeRpcCallCount = resumedProvider._getCallCount();
 
       expect(resumeRpcCallCount).toBeGreaterThan(0);
 
       const jan10Block = foundBlocks["2024-01-10"];
 
-      const blocksBeforeOrAtJan10 = requestedBlockNumbers.filter(
-        (block) => block <= jan10Block!,
+      const blocksBeforeOrAtJan10 = resumedProvider._getBlocksRequestedInRange(
+        1,
+        jan10Block!,
       );
-      const blocksAfterJan10 = requestedBlockNumbers.filter(
-        (block) => block > jan10Block!,
-      );
-
       expect(blocksBeforeOrAtJan10.length).toBe(0);
+
+      const blocksAfterJan10 = resumedProvider._getBlocksRequestedAfter(
+        jan10Block!,
+      );
       expect(blocksAfterJan10.length).toBeGreaterThan(0);
 
       expectedPartialDays.forEach((date) => {
@@ -109,7 +102,8 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
 
       expect(fullResult.metadata.chain_id).toBe(CHAIN_IDS.ARBITRUM_NOVA);
 
-      await newProvider.destroy();
-    }, 60000);
+      await firstProvider.destroy();
+      await resumedProvider.destroy();
+    });
   });
 });

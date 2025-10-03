@@ -18,22 +18,10 @@ import {
 } from "../units/infrastructure/storage/test-utils";
 import testBlockNumbers from "../test-data/distributor-detector/block_numbers.json";
 import { ARBOWNER_PRECOMPILE_ADDRESS } from "../../src/core/distributor-detection/constants";
+import { createMockedProvider } from "../units/core/block-processing/test-utils";
 
 // Network configuration for Nova RPC
 const ARBITRUM_NOVA_CHAIN_ID = 42170;
-const ARBITRUM_NOVA_RPC_URL = process.env["ARBITRUM_NOVA_RPC_URL"] as string;
-const NETWORK_CONFIG = {
-  chainId: ARBITRUM_NOVA_CHAIN_ID,
-  name: "arbitrum-nova",
-};
-
-// Helper to create Nova provider
-function createNovaProvider(): ethers.JsonRpcProvider {
-  const network = ethers.Network.from(NETWORK_CONFIG);
-  return new ethers.JsonRpcProvider(ARBITRUM_NOVA_RPC_URL, network, {
-    staticNetwork: network,
-  });
-}
 
 // Test distributor addresses and their creation dates - using checksummed addresses
 const TEST_DISTRIBUTORS: Record<
@@ -221,7 +209,10 @@ describe("BalanceFetcher - Integration Tests", () => {
   beforeEach(() => {
     testContext = setupTestEnvironment();
     fileManager = testContext.fileManager as unknown as FileManager;
-    provider = createNovaProvider();
+    provider = createMockedProvider({
+      loadEventData: true,
+      loadBalanceData: true,
+    });
     balanceFetcher = new BalanceFetcher(fileManager, provider);
 
     // Setup test data

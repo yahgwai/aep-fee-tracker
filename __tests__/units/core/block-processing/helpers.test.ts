@@ -139,7 +139,9 @@ describe("BlockFinder - Helper Functions", () => {
       const badProvider = createProvider(LOCALHOST_RPC);
 
       try {
-        const badBlockFinder = new BlockFinder({} as FileManager, badProvider);
+        const badBlockFinder = new BlockFinder({} as FileManager, badProvider, {
+          initialDelay: 0,
+        });
         await expect(badBlockFinder.getSafeCurrentBlock()).rejects.toThrow(
           /Failed to get current block/,
         );

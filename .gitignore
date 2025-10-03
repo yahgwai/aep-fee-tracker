@@ -13,6 +13,7 @@ dist/
 coverage/
 *.lcov
 .nyc_output/
+test-results/
 
 # Environment files
 .env

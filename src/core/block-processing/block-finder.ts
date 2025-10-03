@@ -6,22 +6,27 @@ import {
   RPCError,
   BlockFinderError,
 } from "../../types";
-import { withRetry } from "../../utils/retry";
+import { withRetry, RetryOptions } from "../../utils/retry";
 import { SAFE_BLOCK_OFFSET } from "../../constants";
 import { logger } from "../../utils/logger";
 const MILLISECONDS_PER_SECOND = 1000;
 const MINIMUM_VALID_BLOCK = 1;
-const RETRY_CONFIG = {
+const DEFAULT_RETRY_CONFIG = {
   maxRetries: 3,
   initialDelay: 1000,
   backoffMultiplier: 2,
 };
 
 export class BlockFinder {
+  private readonly retryConfig: RetryOptions;
+
   constructor(
     private readonly fileManager: FileManager,
     private readonly provider: ethers.Provider,
-  ) {}
+    retryConfig?: Partial<RetryOptions>,
+  ) {
+    this.retryConfig = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
+  }
 
   async findBlocksForDateRange(
     startDate: Date,
@@ -66,14 +71,14 @@ export class BlockFinder {
   private async getNetwork(): Promise<ethers.Network> {
     try {
       return await withRetry(() => this.provider.getNetwork(), {
-        ...RETRY_CONFIG,
+        ...this.retryConfig,
         operationName: "getNetwork",
       });
     } catch (error) {
       throw new RPCError(
-        `Failed to get network information after ${RETRY_CONFIG.maxRetries} retries`,
+        `Failed to get network information after ${this.retryConfig.maxRetries} retries`,
         "getNetwork",
-        RETRY_CONFIG.maxRetries,
+        this.retryConfig.maxRetries as number,
         error instanceof Error ? error : undefined,
       );
     }
@@ -149,7 +154,7 @@ export class BlockFinder {
     const upperBlock = await withRetry(
       () => this.provider.getBlock(upperBound),
       {
-        ...RETRY_CONFIG,
+        ...this.retryConfig,
         operationName: `getBlock(${upperBound})`,
       },
     );
@@ -172,7 +177,7 @@ export class BlockFinder {
       const lowerBlock = await withRetry(
         () => this.provider.getBlock(lowerBound),
         {
-          ...RETRY_CONFIG,
+          ...this.retryConfig,
           operationName: `getBlock(${lowerBound})`,
         },
       );
@@ -285,7 +290,7 @@ export class BlockFinder {
 
     try {
       const block = await withRetry(() => this.provider.getBlock(blockNumber), {
-        ...RETRY_CONFIG,
+        ...this.retryConfig,
         operationName: `getBlock(${blockNumber})`,
       });
       if (!block) {
@@ -330,16 +335,16 @@ export class BlockFinder {
       const currentBlock = await withRetry(
         () => this.provider.getBlockNumber(),
         {
-          ...RETRY_CONFIG,
+          ...this.retryConfig,
           operationName: "getBlockNumber",
         },
       );
       return currentBlock - SAFE_BLOCK_OFFSET;
     } catch (error) {
       const rpcError = new RPCError(
-        `Failed to get current block number after ${RETRY_CONFIG.maxRetries} retries`,
+        `Failed to get current block number after ${this.retryConfig.maxRetries} retries`,
         "getBlockNumber",
-        RETRY_CONFIG.maxRetries,
+        this.retryConfig.maxRetries as number,
         error instanceof Error ? error : undefined,
       );
       throw new BlockFinderError(
