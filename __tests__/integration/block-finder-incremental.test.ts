@@ -28,7 +28,6 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
       const expectedPartialDays = ["2024-01-09", "2024-01-10"];
       const partialEndDate = new Date("2024-01-10");
 
-      // Phase 1: Initial run with first mock provider
       const firstProvider = createMockedProvider();
       const blockFinder = createBlockFinder(
         testContext.fileManager,
@@ -53,7 +52,6 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
         "2024-01-10": partialResult.blocks["2024-01-10"],
       };
 
-      // Phase 2: Resume with new mock provider that tracks calls
       const resumedProvider = createMockedProvider();
       const resumedBlockFinder = createBlockFinder(
         testContext.fileManager,
@@ -81,27 +79,23 @@ describe("BlockFinder - Incremental Processing Integration Test", () => {
         expectedAllDays.length,
       );
 
-      // Verify incremental behavior - no re-fetching of already found blocks
       const resumeRpcCallCount = resumedProvider._getCallCount();
 
       expect(resumeRpcCallCount).toBeGreaterThan(0);
 
       const jan10Block = foundBlocks["2024-01-10"];
 
-      // Should not request any blocks at or before Jan 10 since they're cached
       const blocksBeforeOrAtJan10 = resumedProvider._getBlocksRequestedInRange(
         1,
         jan10Block!,
       );
       expect(blocksBeforeOrAtJan10.length).toBe(0);
 
-      // Should only request blocks for the new dates (Jan 11-13)
       const blocksAfterJan10 = resumedProvider._getBlocksRequestedAfter(
         jan10Block!,
       );
       expect(blocksAfterJan10.length).toBeGreaterThan(0);
 
-      // Verify the cached blocks were not modified
       expectedPartialDays.forEach((date) => {
         expect(fullResult.blocks[date]).toBe(partialResult.blocks[date]);
       });

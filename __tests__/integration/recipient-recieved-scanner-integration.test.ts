@@ -193,10 +193,9 @@ describe("RecipientRecievedScanner - Integration Tests", () => {
   beforeEach(() => {
     testContext = setupTestEnvironment();
     fileManager = testContext.fileManager as unknown as FileManager;
-    // Use mocked provider with auto-loaded test event data
     provider = createMockedProvider({
       loadEventData: true,
-      currentBlock: 80000000, // High enough for our test data
+      currentBlock: 80000000,
     });
     scanner = new RecipientRecievedScanner(provider, fileManager);
 
