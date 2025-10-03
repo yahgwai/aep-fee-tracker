@@ -57,14 +57,14 @@ export function createBlockFinder(
   fileManager: FileManager,
   provider: ethers.JsonRpcProvider,
 ): BlockFinder {
-  return new BlockFinder(fileManager, provider);
+  return new BlockFinder(fileManager, provider, { initialDelay: 0 });
 }
 
 export function createBlockFinderWithMockFileManager(
   provider: ethers.JsonRpcProvider,
 ): BlockFinder {
   const dummyFileManager = {} as FileManager;
-  return new BlockFinder(dummyFileManager, provider);
+  return new BlockFinder(dummyFileManager, provider, { initialDelay: 0 });
 }
 
 // Error expectation helper

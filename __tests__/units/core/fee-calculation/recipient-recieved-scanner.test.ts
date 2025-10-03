@@ -1176,7 +1176,9 @@ describe("RecipientRecievedScanner", () => {
       mockProvider = {
         getLogs: jest.fn(),
       } as unknown as jest.Mocked<ethers.Provider>;
-      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager);
+      scanner = new RecipientRecievedScanner(mockProvider, mockFileManager, {
+        initialDelay: 0,
+      });
     });
 
     it("exists as a method on RecipientRecievedScanner instance", () => {

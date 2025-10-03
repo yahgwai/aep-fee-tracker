@@ -6,7 +6,7 @@ import {
   DistributorInfo,
   RecipientRecievedEventData,
 } from "../../types";
-import { withRetry } from "../../utils/retry";
+import { withRetry, RetryOptions } from "../../utils/retry";
 import { chunkBlockRange } from "../block-processing/block-range-chunking";
 import { logger } from "../../utils/logger";
 
@@ -32,12 +32,18 @@ export const recipientRecievedInterface = new ethers.Interface(
  *
  * @param provider - Ethereum provider for RPC calls
  * @param fileManager - File manager instance for data persistence
+ * @param retryConfig - Optional retry configuration for RPC calls
  */
 export class RecipientRecievedScanner {
+  private readonly retryConfig: Partial<RetryOptions>;
+
   constructor(
     public readonly provider: ethers.Provider,
     public readonly fileManager: FileManager,
-  ) {}
+    retryConfig?: Partial<RetryOptions>,
+  ) {
+    this.retryConfig = retryConfig || {};
+  }
 
   /**
    * Queries RecipientRecieved events for a distributor within a block range.
@@ -69,6 +75,7 @@ export class RecipientRecievedScanner {
       const logs = await withRetry(() => this.provider.getLogs(filter), {
         maxRetries: 3,
         operationName: `queryRecipientRecievedEvents.getLogs(${chunk.fromBlock}-${chunk.toBlock})`,
+        ...this.retryConfig,
       });
 
       allLogs.push(...logs);
