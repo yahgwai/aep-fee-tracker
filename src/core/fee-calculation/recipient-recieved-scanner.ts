@@ -297,6 +297,11 @@ export class RecipientRecievedScanner {
         dateStr,
         blockNumbersData,
       );
+      if (startBlock === endBlock) {
+        // this occurs when there are no blocks on a given day, in this
+        // case we dont need to search for events, since we've already found them for this date
+        continue;
+      }
 
       // Query RecipientRecieved events for this block range
       const events = await this.queryRecipientRecievedEvents(
@@ -367,6 +372,8 @@ export class RecipientRecievedScanner {
     }
 
     const previousBlock = this.findPreviousBlockNumber(date, blockNumbersData);
+    if (previousBlock === endBlock)
+      return { startBlock: previousBlock, endBlock };
     const startBlock = previousBlock !== null ? previousBlock + 1 : 1;
 
     return { startBlock, endBlock };
