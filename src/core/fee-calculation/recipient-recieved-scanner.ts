@@ -300,6 +300,7 @@ export class RecipientRecievedScanner {
       if (startBlock === endBlock) {
         // this occurs when there are no blocks on a given day, in this
         // case we dont need to search for events, since we've already found them for this date
+        currentDate.setDate(currentDate.getDate() + 1);
         continue;
       }
 
