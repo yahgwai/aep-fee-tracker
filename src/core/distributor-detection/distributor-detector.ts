@@ -230,6 +230,10 @@ export class DistributorDetector {
     const existingData = this.fileManager.readDistributors();
     const endBlock = this.getBlockForDate(endDate);
     const scanRange = this.calculateScanRange(existingData, endBlock);
+    if (scanRange.fromBlock === scanRange.toBlock) {
+      // nothing to scan - this can happen when there are no blocks on a given day
+      return existingData!;
+    }
 
     logger.log(`Scanning blocks ${scanRange.fromBlock}-${scanRange.toBlock}`);
 
@@ -285,6 +289,8 @@ export class DistributorDetector {
     endBlock: number,
   ): { fromBlock: number; toBlock: number } {
     const lastScannedBlock = existingData?.metadata.last_scanned_block;
+    if (lastScannedBlock === endBlock)
+      return { fromBlock: lastScannedBlock, toBlock: endBlock };
     const fromBlock = lastScannedBlock !== undefined ? lastScannedBlock + 1 : 0;
 
     return { fromBlock, toBlock: endBlock };
