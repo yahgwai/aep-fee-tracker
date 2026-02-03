@@ -151,6 +151,43 @@ describe("BlockFinder - findBlocksForDateRange", () => {
       (provider.getBlockNumber as jest.Mock).mockRestore();
     });
 
+    it("should skip dates when chain has not reached end of day", async () => {
+      // Use a block number that's in the middle of 2024-01-15 (before midnight)
+      // TEST_BLOCKS["2024-01-15"] = 40268100 is the end-of-day block
+      // We use a block ~50000 blocks earlier, which would be ~3.5 hours earlier
+      const midDayBlock = TEST_BLOCKS["2024-01-15"] - 50000;
+
+      const customProvider = createMockedProvider({
+        currentBlock: midDayBlock + 100, // Add SAFE_BLOCK_OFFSET back
+        loadEventData: false,
+      });
+
+      const customBlockFinder = createBlockFinder(
+        testContext.fileManager,
+        customProvider,
+      );
+
+      const existingData: BlockNumberData = {
+        metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
+        blocks: {
+          "2024-01-14": TEST_BLOCKS["2024-01-10"], // Previous day exists
+        },
+      };
+      testContext.fileManager.writeBlockNumbers(existingData);
+
+      const [startDate, endDate] = getDateRange("2024-01-15", "2024-01-15");
+
+      const result = await customBlockFinder.findBlocksForDateRange(
+        startDate,
+        endDate,
+      );
+
+      // The date should be skipped (not in result) because chain hasn't reached midnight
+      expect(result.blocks["2024-01-15"]).toBeUndefined();
+
+      await customProvider.destroy();
+    });
+
     it("should persist block numbers after finding them", async () => {
       const existingData: BlockNumberData = {
         metadata: { chain_id: CHAIN_IDS.ARBITRUM_NOVA },
