@@ -1,0 +1,7 @@
+{
+  "1112708": {
+    "active": true,
+    "notes": "fast-xml-parser DoS via malformed XML numeric entities. Low risk: XML parsed comes from Google Cloud Storage API responses, not user input. Waiting for @google-cloud/storage to update their dependency.",
+    "expiry": "2026-06-01"
+  }
+}
