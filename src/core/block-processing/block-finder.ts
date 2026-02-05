@@ -99,7 +99,16 @@ export class BlockFinder {
       safeCurrentBlock,
     );
 
-    if (upperBound > safeCurrentBlock) return;
+    // Check if chain has reached end of this day before attempting to find the block
+    const targetMidnight = this.toUnixTimestamp(this.getNextMidnight(date));
+    const upperBlock = await withRetry(
+      () => this.provider.getBlock(upperBound),
+      { ...this.retryConfig, operationName: `getBlock(${upperBound})` },
+    );
+    if (!upperBlock || upperBlock.timestamp < targetMidnight) {
+      logger.log(`Skipping ${dateStr}: chain has not reached end of day yet`);
+      return;
+    }
 
     try {
       const blockNumber = await this.findEndOfDayBlock(
