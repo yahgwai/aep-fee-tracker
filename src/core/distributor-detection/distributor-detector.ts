@@ -218,17 +218,16 @@ export class DistributorDetector {
   }
 
   /**
-   * Detects new distributors up to a specified end date by scanning blockchain events.
+   * Detects new distributors by scanning blockchain events up to the latest block in the store.
    * Performs incremental scanning from the last processed block.
    *
-   * @param endDate - The date to scan up to (inclusive)
    * @returns Complete DistributorsData object with all known distributors
-   * @throws Error if end date not found in block numbers data
+   * @throws Error if block numbers data not found or empty
    */
-  async detectDistributors(endDate: Date): Promise<DistributorsData> {
+  async detectDistributors(): Promise<DistributorsData> {
     // Load existing data and determine scan range
     const existingData = this.fileManager.readDistributors();
-    const endBlock = this.getBlockForDate(endDate);
+    const endBlock = this.getMaxBlock();
     const scanRange = this.calculateScanRange(existingData, endBlock);
     if (scanRange.fromBlock === scanRange.toBlock) {
       // nothing to scan - this can happen when there are no blocks on a given day
@@ -261,23 +260,21 @@ export class DistributorDetector {
   }
 
   /**
-   * Gets the block number for a given date from block numbers data.
+   * Gets the maximum block number from the block numbers store.
    * @private
    */
-  private getBlockForDate(date: Date): number {
+  private getMaxBlock(): number {
     const blockNumbersData = this.fileManager.readBlockNumbers();
     if (!blockNumbersData) {
       throw new Error("Block numbers data not found");
     }
 
-    const dateString = date.toISOString().split("T")[0]!;
-    const blockNumber = blockNumbersData.blocks[dateString];
-
-    if (blockNumber === undefined) {
-      throw new Error(`Block number not found for date ${dateString}`);
+    const blockNumbers = Object.values(blockNumbersData.blocks);
+    if (blockNumbers.length === 0) {
+      throw new Error("Block numbers data is empty");
     }
 
-    return blockNumber;
+    return Math.max(...blockNumbers);
   }
 
   /**

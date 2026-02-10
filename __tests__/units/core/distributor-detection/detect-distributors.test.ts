@@ -89,24 +89,23 @@ describe("DistributorDetector.detectDistributors", () => {
   describe("successful detection", () => {
     it("should handle first run when no existing data exists", async () => {
       // Arrange
-      const endDate = new Date("2023-03-16");
       mockFileManager.readDistributors.mockReturnValue(undefined);
       mockFileManager.readBlockNumbers.mockReturnValue(testBlockNumbers);
       scanBlockRangeSpy.mockResolvedValue([newDistributorInfo]);
 
       // Act
-      const result = await detector.detectDistributors(endDate);
+      const result = await detector.detectDistributors();
 
       // Assert
       expect(mockFileManager.readDistributors).toHaveBeenCalledTimes(1);
       expect(mockFileManager.readBlockNumbers).toHaveBeenCalledTimes(1);
-      expect(scanBlockRangeSpy).toHaveBeenCalledWith(mockProvider, 0, 300);
+      expect(scanBlockRangeSpy).toHaveBeenCalledWith(mockProvider, 0, 400);
 
       const expectedData: DistributorsData = {
         metadata: {
           chain_id: 42170,
           arbowner_address: "0x0000000000000000000000000000000000000070",
-          last_scanned_block: 300,
+          last_scanned_block: 400,
         },
         distributors: {
           "0xABCDEF0123456789ABCDEF0123456789ABCDEF01": [newDistributorInfo],
@@ -121,13 +120,12 @@ describe("DistributorDetector.detectDistributors", () => {
 
     it("should perform incremental scan from last_scanned_block", async () => {
       // Arrange
-      const endDate = new Date("2023-03-17");
       mockFileManager.readDistributors.mockReturnValue(existingDistributors);
       mockFileManager.readBlockNumbers.mockReturnValue(testBlockNumbers);
       scanBlockRangeSpy.mockResolvedValue([newDistributorInfo]);
 
       // Act
-      const result = await detector.detectDistributors(endDate);
+      const result = await detector.detectDistributors();
 
       // Assert
       expect(scanBlockRangeSpy).toHaveBeenCalledWith(mockProvider, 151, 400);
@@ -155,19 +153,18 @@ describe("DistributorDetector.detectDistributors", () => {
 
     it("should return existing data without scanning when already up-to-date", async () => {
       // Arrange
-      const endDate = new Date("2023-03-15");
       const upToDateDistributors = {
         ...existingDistributors,
         metadata: {
           ...existingDistributors.metadata,
-          last_scanned_block: 200,
+          last_scanned_block: 400,
         },
       };
       mockFileManager.readDistributors.mockReturnValue(upToDateDistributors);
       mockFileManager.readBlockNumbers.mockReturnValue(testBlockNumbers);
 
       // Act
-      const result = await detector.detectDistributors(endDate);
+      const result = await detector.detectDistributors();
 
       // Assert
       expect(scanBlockRangeSpy).not.toHaveBeenCalled();
@@ -177,21 +174,20 @@ describe("DistributorDetector.detectDistributors", () => {
 
     it("should handle empty scan results", async () => {
       // Arrange
-      const endDate = new Date("2023-03-16");
       mockFileManager.readDistributors.mockReturnValue(existingDistributors);
       mockFileManager.readBlockNumbers.mockReturnValue(testBlockNumbers);
       scanBlockRangeSpy.mockResolvedValue([]);
 
       // Act
-      const result = await detector.detectDistributors(endDate);
+      const result = await detector.detectDistributors();
 
       // Assert
-      expect(scanBlockRangeSpy).toHaveBeenCalledWith(mockProvider, 151, 300);
+      expect(scanBlockRangeSpy).toHaveBeenCalledWith(mockProvider, 151, 400);
 
       const expectedData: DistributorsData = {
         metadata: {
           ...existingDistributors.metadata,
-          last_scanned_block: 300,
+          last_scanned_block: 400,
         },
         distributors: existingDistributors.distributors,
       };
@@ -204,7 +200,6 @@ describe("DistributorDetector.detectDistributors", () => {
 
     it("should skip already known distributors", async () => {
       // Arrange
-      const endDate = new Date("2023-03-16");
       const existingDistributorInfo =
         existingDistributors.distributors[
           "0x1234567890123456789012345678901234567890"
@@ -229,13 +224,13 @@ describe("DistributorDetector.detectDistributors", () => {
       ]);
 
       // Act
-      const result = await detector.detectDistributors(endDate);
+      const result = await detector.detectDistributors();
 
       // Assert
       const expectedData: DistributorsData = {
         metadata: {
           ...existingDistributors.metadata,
-          last_scanned_block: 300,
+          last_scanned_block: 400,
         },
         distributors: {
           "0x1234567890123456789012345678901234567890":
@@ -254,15 +249,17 @@ describe("DistributorDetector.detectDistributors", () => {
   });
 
   describe("error handling", () => {
-    it("should throw error when end date not found in block numbers", async () => {
+    it("should throw error when block numbers data is empty", async () => {
       // Arrange
-      const endDate = new Date("2023-03-20");
       mockFileManager.readDistributors.mockReturnValue(existingDistributors);
-      mockFileManager.readBlockNumbers.mockReturnValue(testBlockNumbers);
+      mockFileManager.readBlockNumbers.mockReturnValue({
+        metadata: { chain_id: 42170 },
+        blocks: {},
+      });
 
       // Act & Assert
-      await expect(detector.detectDistributors(endDate)).rejects.toThrow(
-        "Block number not found for date 2023-03-20",
+      await expect(detector.detectDistributors()).rejects.toThrow(
+        "Block numbers data is empty",
       );
 
       expect(scanBlockRangeSpy).not.toHaveBeenCalled();
@@ -271,12 +268,11 @@ describe("DistributorDetector.detectDistributors", () => {
 
     it("should throw error when block numbers data is missing", async () => {
       // Arrange
-      const endDate = new Date("2023-03-16");
       mockFileManager.readDistributors.mockReturnValue(existingDistributors);
       mockFileManager.readBlockNumbers.mockReturnValue(undefined);
 
       // Act & Assert
-      await expect(detector.detectDistributors(endDate)).rejects.toThrow(
+      await expect(detector.detectDistributors()).rejects.toThrow(
         "Block numbers data not found",
       );
 
@@ -286,14 +282,13 @@ describe("DistributorDetector.detectDistributors", () => {
 
     it("should propagate errors from scanBlockRange", async () => {
       // Arrange
-      const endDate = new Date("2023-03-16");
       const scanError = new Error("RPC connection failed");
       mockFileManager.readDistributors.mockReturnValue(existingDistributors);
       mockFileManager.readBlockNumbers.mockReturnValue(testBlockNumbers);
       scanBlockRangeSpy.mockRejectedValue(scanError);
 
       // Act & Assert
-      await expect(detector.detectDistributors(endDate)).rejects.toThrow(
+      await expect(detector.detectDistributors()).rejects.toThrow(
         "RPC connection failed",
       );
 
@@ -302,7 +297,6 @@ describe("DistributorDetector.detectDistributors", () => {
 
     it("should propagate errors from FileManager writes", async () => {
       // Arrange
-      const endDate = new Date("2023-03-16");
       const writeError = new Error("Disk full");
       mockFileManager.readDistributors.mockReturnValue(existingDistributors);
       mockFileManager.readBlockNumbers.mockReturnValue(testBlockNumbers);
@@ -312,22 +306,19 @@ describe("DistributorDetector.detectDistributors", () => {
       scanBlockRangeSpy.mockResolvedValue([newDistributorInfo]);
 
       // Act & Assert
-      await expect(detector.detectDistributors(endDate)).rejects.toThrow(
-        "Disk full",
-      );
+      await expect(detector.detectDistributors()).rejects.toThrow("Disk full");
     });
   });
 
   describe("chain ID handling", () => {
     it("should get chain ID from provider for new data", async () => {
       // Arrange
-      const endDate = new Date("2023-03-16");
       mockFileManager.readDistributors.mockReturnValue(undefined);
       mockFileManager.readBlockNumbers.mockReturnValue(testBlockNumbers);
       scanBlockRangeSpy.mockResolvedValue([newDistributorInfo]);
 
       // Act
-      await detector.detectDistributors(endDate);
+      await detector.detectDistributors();
 
       // Assert
       expect(mockProvider.getNetwork).toHaveBeenCalledTimes(1);
@@ -338,7 +329,6 @@ describe("DistributorDetector.detectDistributors", () => {
 
     it("should preserve existing chain ID when updating", async () => {
       // Arrange
-      const endDate = new Date("2023-03-16");
       const existingWithDifferentChain = {
         ...existingDistributors,
         metadata: {
@@ -353,30 +343,13 @@ describe("DistributorDetector.detectDistributors", () => {
       scanBlockRangeSpy.mockResolvedValue([newDistributorInfo]);
 
       // Act
-      await detector.detectDistributors(endDate);
+      await detector.detectDistributors();
 
       // Assert
       expect(mockProvider.getNetwork).not.toHaveBeenCalled();
       const writtenData = mockFileManager.writeDistributors.mock
         .calls[0]![0] as DistributorsData;
       expect(writtenData.metadata.chain_id).toBe(99999);
-    });
-  });
-
-  describe("date formatting", () => {
-    it("should format date correctly for block lookup", async () => {
-      // Arrange
-      const endDate = new Date("2023-03-16T12:34:56.789Z");
-      mockFileManager.readDistributors.mockReturnValue(existingDistributors);
-      mockFileManager.readBlockNumbers.mockReturnValue(testBlockNumbers);
-      scanBlockRangeSpy.mockResolvedValue([]);
-
-      // Act
-      await detector.detectDistributors(endDate);
-
-      // Assert
-      expect(mockFileManager.readBlockNumbers).toHaveBeenCalled();
-      expect(scanBlockRangeSpy).toHaveBeenCalledWith(mockProvider, 151, 300);
     });
   });
 });

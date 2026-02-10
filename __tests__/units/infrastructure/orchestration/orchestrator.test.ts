@@ -541,12 +541,10 @@ describe("orchestrator", () => {
       global.Date = originalDate;
     });
 
-    it("should pass endDate to distributorDetector", async () => {
+    it("should call distributorDetector without parameters", async () => {
       await orchestrate(configuration);
 
-      expect(mockDistributorDetector.detectDistributors).toHaveBeenCalledWith(
-        new Date(configuration.endDate!),
-      );
+      expect(mockDistributorDetector.detectDistributors).toHaveBeenCalledWith();
     });
 
     it("should call balanceFetcher without parameters", async () => {

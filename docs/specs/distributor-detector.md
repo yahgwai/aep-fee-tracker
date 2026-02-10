@@ -112,11 +112,10 @@ class DistributorDetector {
  * Scans OwnerActs events from the last scanned block to find new distributors.
  * Tracks its own progress to support incremental scanning.
  *
- * @param endDate - Scan up to this date
  * @returns Updated distributor registry data
  * @throws Error if unable to query events or write data
  */
-async detectDistributors(endDate: Date): Promise<DistributorsData>;
+async detectDistributors(): Promise<DistributorsData>;
 ```
 
 ### Public Static Methods
@@ -406,10 +405,8 @@ const fileManager = new FileManager("./store");
 // Create DistributorDetector instance
 const distributorDetector = new DistributorDetector(fileManager, provider);
 
-// Detect distributors up to end of January 2024
-const distributors = await distributorDetector.detectDistributors(
-  new Date("2024-01-31"),
-);
+// Detect distributors up to the latest block in the store
+const distributors = await distributorDetector.detectDistributors();
 
 console.log(
   `Found ${Object.keys(distributors.distributors).length} distributors`,
