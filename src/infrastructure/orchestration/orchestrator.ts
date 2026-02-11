@@ -123,7 +123,7 @@ async function executePipeline(
   // 2. Detect distributors up to end date
   logger.log("Starting Distributor Detector...");
   const distributorDetector = new DistributorDetector(fileManager, provider);
-  await distributorDetector.detectDistributors(endDate);
+  await distributorDetector.detectDistributors();
 
   // 3. Fetch distributor balances
   logger.log("Starting Balance Fetcher...");
